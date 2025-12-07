@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Hubballi&family=Inter:wght@300;400;500;600&family=Satoshi:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-bg-void text-gray-300 font-sans antialiased overflow-hidden;
+  /* Cinematic Easing */
+  transition-timing-function: cubic-bezier(0.32, 0.12, 0.0, 1);
+}
+
+@layer components {
+  .depth-card {
+    @apply bg-bg-surface rounded-2xl border border-glass-stroke shadow-monolith transition-all duration-500 ease-out;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-glass-stroke rounded-full hover:bg-glass-highlight;
+  }
+}

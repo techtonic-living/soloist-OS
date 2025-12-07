@@ -1,0 +1,24 @@
+.
+├── package.json
+├── plugin/
+│   ├── code.tsx                # Figma Plugin Logic (Backend)
+│   ├── manifest.json           # Plugin Configuration
+│   └── tsconfig.json
+└── ui-src/
+    ├── package.json
+    ├── postcss.config.js
+    ├── tailwind.config.js      # "The Void" Theme Config
+    ├── tsconfig.json
+    ├── vite.config.ts
+    └── src/
+        ├── index.css           # Fonts & Global Styles
+        ├── main.tsx            # React Entry
+        ├── App.tsx             # Main Shell & Navigation
+        ├── utils/
+        │   └── aiLogic.ts      # Contrast Math & Teacher Mode
+        ├── hooks/
+        │   └── useSoloistSystem.ts  # Storage Adapter
+        └── components/
+            ├── ColorMatrix.tsx      # 3D Color Ramp Visualizer
+            ├── ExportTerminal.tsx   # Code Export View
+            └── KnowledgeBase.tsx    # Journal & Cheatsheets
