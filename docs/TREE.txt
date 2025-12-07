@@ -1,12 +1,16 @@
 .
+├── .gitignore
 ├── package.json
 ├── plugin/
 │   ├── code.tsx                # Figma Plugin Logic (Backend)
 │   ├── manifest.json           # Plugin Configuration
 │   └── tsconfig.json
 └── ui-src/
+    ├── .env                    # Secrets (Gitignored)
+    ├── .gitignore
+    ├── index.html              # Vite Entry
     ├── package.json
-    ├── postcss.config.js
+    ├── postcss.config.js       # Tailwind PostCSS Config
     ├── tailwind.config.js      # "The Void" Theme Config
     ├── tsconfig.json
     ├── vite.config.ts
@@ -14,10 +18,14 @@
         ├── index.css           # Fonts & Global Styles
         ├── main.tsx            # React Entry
         ├── App.tsx             # Main Shell & Navigation
+        ├── types.d.ts          # Type Definitions
+        ├── vite-env.d.ts
         ├── utils/
         │   └── aiLogic.ts      # Contrast Math & Teacher Mode
         ├── hooks/
         │   └── useSoloistSystem.ts  # Storage Adapter
+        ├── services/
+        │   └── gemini.ts       # Gemini API Client
         └── components/
             ├── ColorMatrix.tsx      # 3D Color Ramp Visualizer
             ├── ExportTerminal.tsx   # Code Export View
