@@ -11,13 +11,28 @@ import {
 import { ColorMatrix } from "./components/ColorMatrix";
 import { KnowledgeBase } from "./components/KnowledgeBase";
 import { ExportTerminal } from "./components/ExportTerminal";
-import { useSoloistSystem, AILevel } from "./hooks/useSoloistSystem";
+import { useSoloistSystem } from "./hooks/useSoloistSystem";
 
 type View = "tokens" | "knowledge" | "settings" | "export";
+
+const INITIAL_RAMP = [
+	{ id: 1, hex: "#0B0D12", name: "void/900", locked: true },
+	{ id: 2, hex: "#1A1D24", name: "void/800", locked: false },
+	{ id: 3, hex: "#2C3038", name: "void/700", locked: false },
+	{
+		id: 4,
+		hex: "#3D8BFF",
+		name: "primary/500",
+		locked: true,
+		isAccent: true,
+	},
+	{ id: 5, hex: "#6AA4FF", name: "primary/300", locked: false },
+];
 
 const App = () => {
 	const [activeView, setActiveView] = useState<View>("tokens");
 	const { settings, updateSettings } = useSoloistSystem();
+	const [ramp, setRamp] = useState(INITIAL_RAMP);
 
 	return (
 		<div className="flex h-screen w-full bg-bg-void overflow-hidden text-sm">
@@ -154,7 +169,7 @@ const App = () => {
 							className="w-full h-full max-w-6xl mx-auto"
 						>
 							{activeView === "tokens" && (
-								<TokensView aiLevel={settings.aiLevel} />
+								<TokensView ramp={ramp} setRamp={setRamp} />
 							)}
 							{activeView === "knowledge" && <KnowledgeBase />}
 							{activeView === "export" && <ExportTerminal />}
@@ -166,24 +181,15 @@ const App = () => {
 	);
 };
 
-const TokensView = ({ aiLevel }: { aiLevel: AILevel }) => {
+const TokensView = ({ ramp, setRamp }: { ramp: any[]; setRamp: any }) => {
 	const handleSync = () => {
-		// Current hardcoded mock for syncing.
-		// In next phase, this comes from state.
-		const currentRamp = [
-			{ name: "void/900", hex: "#0B0D12" },
-			{ name: "void/800", hex: "#1A1D24" },
-			{ name: "primary/500", hex: "#3D8BFF" },
-		];
-		parent.postMessage(
-			{
-				pluginMessage: {
-					type: "create-variables",
-					payload: { colors: currentRamp },
-				},
+		const msg = {
+			pluginMessage: {
+				type: "create-variables",
+				payload: { colors: ramp },
 			},
-			"*"
-		);
+		};
+		parent.postMessage(msg, "*");
 	};
 
 	return (
@@ -198,7 +204,7 @@ const TokensView = ({ aiLevel }: { aiLevel: AILevel }) => {
 					</span>
 				</div>
 				<div className="flex-1 bg-bg-surface/30 rounded-2xl border border-glass-stroke p-8 relative overflow-hidden backdrop-blur-sm">
-					<ColorMatrix aiLevel={aiLevel} />
+					<ColorMatrix ramp={ramp} setRamp={setRamp} />
 				</div>
 			</div>
 

@@ -1,35 +1,95 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
-export type StorageType = 'local' | 'github' | 'cloud';
-export type VisualFidelity = 'performance' | 'high';
-export type AILevel = 'silent' | 'guide' | 'teacher';
+export type StorageType = "local" | "github" | "cloud";
+export type VisualFidelity = "performance" | "high";
+export type AILevel = "silent" | "guide" | "teacher";
 
 interface SystemSettings {
-  storageType: StorageType;
-  visualFidelity: VisualFidelity;
-  aiLevel: AILevel;
+	storageType: StorageType;
+	visualFidelity: VisualFidelity;
+	aiLevel: AILevel;
 }
 
 const DEFAULT_SETTINGS: SystemSettings = {
-  storageType: 'local',
-  visualFidelity: 'high',
-  aiLevel: 'guide'
+	storageType: "local",
+	visualFidelity: "high",
+	aiLevel: "guide",
 };
 
 export const useSoloistSystem = () => {
-  const [settings, setSettings] = useState<SystemSettings>(() => {
-    const saved = localStorage.getItem('soloist-settings');
-    return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
-  });
+	const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS);
+	// We'll treat generic data as a simple key-value store in React state for now
+	// to allow reactive updates.
+	const [dataStore, setDataStore] = useState<Record<string, any>>({});
 
-  useEffect(() => {
-    localStorage.setItem('soloist-settings', JSON.stringify(settings));
-  }, [settings]);
+	useEffect(() => {
+		// Listen for messages from the plugin backend
+		const handleMessage = (event: MessageEvent) => {
+			const { type, payload } = event.data.pluginMessage || {};
+			if (type === "storage-loaded") {
+				const { key, data } = payload;
+				if (key === "soloist-settings" && data) {
+					setSettings(data);
+				} else if (key.startsWith("soloist-data-")) {
+					const dataKey = key.replace("soloist-data-", "");
+					setDataStore((prev) => ({ ...prev, [dataKey]: data }));
+				}
+			}
+		};
 
-  return {
-    settings,
-    updateSettings: (newSettings: Partial<SystemSettings>) => setSettings(p => ({ ...p, ...newSettings })),
-    saveData: (key: string, data: any) => localStorage.setItem(`soloist-data-${key}`, JSON.stringify(data)),
-    loadData: (key: string) => { const d = localStorage.getItem(`soloist-data-${key}`); return d ? JSON.parse(d) : null; }
-  };
+		window.addEventListener("message", handleMessage);
+
+		// Initial load requests
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "load-storage",
+					payload: { key: "soloist-settings" },
+				},
+			},
+			"*"
+		);
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "load-storage",
+					payload: { key: "soloist-data-kb-entries" },
+				},
+			},
+			"*"
+		);
+
+		return () => window.removeEventListener("message", handleMessage);
+	}, []);
+
+	return {
+		settings,
+		updateSettings: (newSettings: Partial<SystemSettings>) => {
+			const updated = { ...settings, ...newSettings };
+			setSettings(updated);
+			parent.postMessage(
+				{
+					pluginMessage: {
+						type: "save-storage",
+						payload: { key: "soloist-settings", data: updated },
+					},
+				},
+				"*"
+			);
+		},
+		updateData: (key: string, data: any) => {
+			setDataStore((prev) => ({ ...prev, [key]: data }));
+			parent.postMessage(
+				{
+					pluginMessage: {
+						type: "save-storage",
+						payload: { key: `soloist-data-${key}`, data },
+					},
+				},
+				"*"
+			);
+		},
+		// Reactive data access
+		dataStore,
+	};
 };

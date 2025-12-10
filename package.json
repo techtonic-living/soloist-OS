@@ -1,0 +1,18 @@
+{
+	"name": "soloist-os",
+	"version": "1.0.0",
+	"scripts": {
+		"build": "npm run build:plugin && npm run build:ui",
+		"build:ui": "npm run build --prefix ui-src",
+		"build:plugin": "esbuild plugin/code.tsx --bundle --outfile=dist/code.js --target=es6 --format=iife",
+		"watch": "concurrently \"npm run watch:ui\" \"npm run watch:plugin\"",
+		"watch:ui": "npm run dev --prefix ui-src",
+		"watch:plugin": "npm run build:plugin -- --watch"
+	},
+	"devDependencies": {
+		"esbuild": "^0.19.5",
+		"concurrently": "^8.2.2",
+		"@figma/plugin-typings": "^1.81.0",
+		"typescript": "^5.2.2"
+	}
+}

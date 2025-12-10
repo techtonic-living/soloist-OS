@@ -31,7 +31,7 @@
 ### Running in Figma
 1.  Open Figma.
 2.  `Right Click` > `Plugins` > `Development` > `Import plugin from manifest...`
-3.  Select `plugin/manifest.json`.
+3.  Select `manifest.json`.
 
 ## 🏗 Architecture
 

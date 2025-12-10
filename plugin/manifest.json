@@ -1,9 +1,0 @@
-{
-  "name": "Soloist OS",
-  "id": "123456789",
-  "api": "1.0.0",
-  "main": "dist/code.js",
-  "ui": "ui-src/dist/index.html",
-  "editorType": ["figma", "figjam"],
-  "networkAccess": { "allowedDomains": ["*"] }
-}

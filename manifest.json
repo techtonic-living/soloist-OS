@@ -1,0 +1,13 @@
+{
+	"name": "Soloist OS",
+	"id": "123456789",
+	"api": "1.0.0",
+	"main": "dist/code.js",
+	"ui": "ui-src/dist/index.html",
+	"editorType": ["figma", "figjam"],
+	"documentAccess": "dynamic-page",
+	"networkAccess": {
+		"allowedDomains": ["*"],
+		"reasoning": "Required for accessing external AI services, fonts, and user-defined API endpoints."
+	}
+}

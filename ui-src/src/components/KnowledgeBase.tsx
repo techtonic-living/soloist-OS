@@ -1,34 +1,42 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Book, Code, Save, Github, Plus, Search } from "lucide-react";
 import { useSoloistSystem } from "../hooks/useSoloistSystem";
 
 export const KnowledgeBase = () => {
-	const { loadData, settings } = useSoloistSystem();
+	const { dataStore, updateData, settings } = useSoloistSystem();
 	const [activeTab, setActiveTab] = useState<"journal" | "cheatsheet">(
 		"journal"
 	);
-	const [entries, setEntries] = useState<any[]>([]);
 
-	useEffect(() => {
-		const loaded = loadData("kb-entries") || [
-			{
-				id: 1,
-				title: "Typography Scale",
-				type: "cheatsheet",
-				content: "Base: 16px\nScale: 1.250 (Major Third)",
-				date: "2025-12-01",
-			},
-			{
-				id: 2,
-				title: "Design System V2 Notes",
-				type: "journal",
-				content: "Moving to OKLCH for better gradients...",
-				date: "2025-12-05",
-			},
-		];
-		setEntries(loaded);
-	}, []);
+	const entries: any[] = dataStore["kb-entries"] || [
+		{
+			id: 1,
+			title: "Typography Scale",
+			type: "cheatsheet",
+			content: "Base: 16px\nScale: 1.250 (Major Third)",
+			date: "2025-12-01",
+		},
+		{
+			id: 2,
+			title: "Design System V2 Notes",
+			type: "journal",
+			content: "Moving to OKLCH for better gradients...",
+			date: "2025-12-05",
+		},
+	];
+
+	const handleNewEntry = () => {
+		const newEntry = {
+			id: Date.now(),
+			title: "New Note",
+			type: activeTab,
+			content: "Start typing...",
+			date: new Date().toISOString().split("T")[0],
+		};
+		const updatedEntries = [newEntry, ...entries];
+		updateData("kb-entries", updatedEntries);
+	};
 
 	return (
 		<div className="h-full flex flex-col gap-6">
@@ -56,7 +64,10 @@ export const KnowledgeBase = () => {
 						)}
 						<span>{settings.storageType.toUpperCase()}</span>
 					</div>
-					<button className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg transition-all text-xs uppercase tracking-wider font-semibold">
+					<button
+						onClick={handleNewEntry}
+						className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg transition-all text-xs uppercase tracking-wider font-semibold"
+					>
 						<Plus size={14} />
 						<span>New Entry</span>
 					</button>
@@ -79,8 +90,8 @@ export const KnowledgeBase = () => {
 
 			<div className="grid grid-cols-2 gap-4 overflow-y-auto pr-2 custom-scrollbar pb-20">
 				{entries
-					.filter((e) => e.type === activeTab)
-					.map((entry, i) => (
+					.filter((e: any) => e.type === activeTab)
+					.map((entry: any, i: number) => (
 						<MonolithCard key={entry.id} index={i} entry={entry} />
 					))}
 			</div>
