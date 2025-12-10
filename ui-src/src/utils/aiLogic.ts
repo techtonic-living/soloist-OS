@@ -1,23 +1,29 @@
-import { hex } from "wcag-contrast"; // You might need to install: npm install wcag-contrast
+import { hex } from "wcag-contrast";
 
 // Types
 export type AILevel = "silent" | "guide" | "teacher";
 
 interface Advice {
 	status: "success" | "warning" | "error";
+	ratio: number;
+	rating: string; // AA, AAA, Fail
 	message: string;
 }
 
-// 1. The Math (Simulated for this demo, usually requires a color library)
+// 1. The Math
 const getContrastRatio = (hex1: string, hex2: string) => {
-	// Mocking simple relative luminance check if library isn't present
-	// In prod, use a robust library like 'tinycolor2' or 'colord'
 	try {
 		return hex(hex1, hex2);
 	} catch (e) {
-		// Fallback mock if package missing or error
-		return 4.5;
+		return 1; // Fail safe
 	}
+};
+
+const getRating = (ratio: number) => {
+	if (ratio >= 7) return "AAA";
+	if (ratio >= 4.5) return "AA"; // Normal Text
+	if (ratio >= 3) return "AA+"; // Large Text / UI
+	return "Fail";
 };
 
 // 2. The Personality Engine
@@ -29,36 +35,48 @@ export const generateColorAdvice = (
 	if (level === "silent") return null;
 
 	const ratio = getContrastRatio(fgColor, bgColor);
-	const isPass = ratio >= 4.5; // AA Standard
+	const rating = getRating(ratio);
+	const isPass = ratio >= 4.5; // Baseline for text
 
-	// MODE: GUIDE (Concise, professional, just the facts)
+	// MODE: GUIDE (Concise data)
 	if (level === "guide") {
-		if (isPass)
-			return {
-				status: "success",
-				message: `Contrast AA Pass (${ratio.toFixed(1)})`,
-			};
 		return {
-			status: "warning",
-			message: `Contrast Fail (${ratio.toFixed(1)}). Target: 4.5`,
+			status: isPass ? "success" : ratio >= 3 ? "warning" : "error",
+			ratio,
+			rating,
+			message: `${rating} (${ratio.toFixed(2)})`,
 		};
 	}
 
-	// MODE: TEACHER (Educational, explanatory, helpful)
+	// MODE: TEACHER (Educational context)
 	if (level === "teacher") {
 		if (isPass) {
 			return {
 				status: "success",
-				message: `Excellent work. A ratio of ${ratio.toFixed(
-					1
-				)} exceeds WCAG AA standards, ensuring readability for users with visual impairments. This combination is safe for body text.`,
+				ratio,
+				rating,
+				message: `Strong contrast (${ratio.toFixed(
+					2
+				)}). Great for body text.`,
+			};
+		}
+		if (ratio >= 3) {
+			return {
+				status: "warning",
+				ratio,
+				rating,
+				message: `Moderate contrast (${ratio.toFixed(
+					2
+				)}). Good for headlines or UI components, but avoid for small text.`,
 			};
 		}
 		return {
 			status: "error",
-			message: `Critique: The contrast ratio is only ${ratio.toFixed(
-				1
-			)}. To meet accessibility standards, you need at least 4.5:1. Try darkening the background lightness by ~15% or increasing the foreground saturation.`,
+			ratio,
+			rating,
+			message: `Low contrast (${ratio.toFixed(
+				2
+			)}). Only use for decorative elements or disabled states.`,
 		};
 	}
 

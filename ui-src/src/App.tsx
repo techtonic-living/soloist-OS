@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { colord } from "colord";
 import { motion, AnimatePresence } from "framer-motion";
 import {
 	Layers,
@@ -6,36 +7,123 @@ import {
 	Settings,
 	Terminal,
 	Activity,
-	ChevronRight,
+	Sparkles,
+	Palette,
+	Type,
 } from "lucide-react";
-import { ColorMatrix } from "./components/ColorMatrix";
+import { ColorAtelier } from "./components/ColorAtelier";
+import { TypographyAtelier } from "./components/TypographyAtelier";
 import { KnowledgeBase } from "./components/KnowledgeBase";
+
+import { SettingsView } from "./components/SettingsView";
 import { ExportTerminal } from "./components/ExportTerminal";
+import { TokensView } from "./components/TokensView";
+import { TeacherPanel } from "./components/TeacherPanel";
 import { useSoloistSystem } from "./hooks/useSoloistSystem";
+import {
+	generateRamp,
+	generateNeutrals,
+	generateSignals,
+	generateAlphas,
+} from "./utils/colorUtils";
+import { useEffect } from "react";
 
-type View = "tokens" | "knowledge" | "settings" | "export";
+type View =
+	| "tokens"
+	| "knowledge"
+	| "settings"
+	| "export"
+	| "atelier"
+	| "typography";
 
-const INITIAL_RAMP = [
-	{ id: 1, hex: "#0B0D12", name: "void/900", locked: true },
-	{ id: 2, hex: "#1A1D24", name: "void/800", locked: false },
-	{ id: 3, hex: "#2C3038", name: "void/700", locked: false },
-	{
-		id: 4,
-		hex: "#3D8BFF",
-		name: "primary/500",
-		locked: true,
-		isAccent: true,
-	},
-	{ id: 5, hex: "#6AA4FF", name: "primary/300", locked: false },
-];
+import { OnboardingWizard } from "./components/OnboardingWizard";
+import { DEFAULT_SEMANTICS, SemanticToken } from "./components/SemanticMapper";
 
 const App = () => {
+	// Navigation State
 	const [activeView, setActiveView] = useState<View>("tokens");
+	const [activeColorStep, setActiveColorStep] = useState<
+		"primary" | "secondary" | "tertiary" | "neutrals" | "signals" | "alphas"
+	>("primary");
+	const [activeColorTab, setActiveColorTab] = useState<
+		"atelier" | "generator" | "contrast" | "mixer" | "library"
+	>("atelier");
+	const [activeTokensModule, setActiveTokensModule] = useState<
+		"colors" | "typography" | "spacing" | "semantics"
+	>("colors");
+	const [activeTypeTab, setActiveTypeTab] = useState<
+		"scale" | "pairing" | "library"
+	>("scale");
+
+	const [showWizard, setShowWizard] = useState(false); // Demo: could be true by default for new users
+
+	// Global Design System State
 	const { settings, updateSettings } = useSoloistSystem();
-	const [ramp, setRamp] = useState(INITIAL_RAMP);
+	// Global Color State
+	const [seedColor, setSeedColor] = useState("#3D8BFF");
+	const [ramp, setRamp] = useState(() => generateRamp(seedColor));
+	const [neutralRamp, setNeutralRamp] = useState(() =>
+		generateNeutrals(seedColor)
+	);
+	const [signalRamp, setSignalRamp] = useState(() => generateSignals());
+	const [alphaRamp, setAlphaRamp] = useState(() => generateAlphas("#000000"));
+
+	// Secondary & Tertiary (Harmonies)
+	// Default Secondary: Complementary (180deg)
+	const [secondaryRamp, setSecondaryRamp] = useState(() =>
+		generateRamp(colord(seedColor).rotate(180).toHex())
+	);
+	// Default Tertiary: Triadic/Analogous (-30deg for Analogous is safer than Triadic for UI usually, let's try Split Comp -150)
+	// Let's go with a safe Analogous (-30) for Tertiary
+	const [tertiaryRamp, setTertiaryRamp] = useState(() =>
+		generateRamp(colord(seedColor).rotate(-30).toHex())
+	);
+
+	// Lifted State for Wizard/Dashboard consistency
+	const [baseSize, setBaseSize] = useState(16);
+	const [baseSpacing, setBaseSpacing] = useState(4);
+	const [baseRadius, setBaseRadius] = useState(4);
+	const [scale, setScale] = useState({ name: "Major Third", ratio: 1.25 });
+	const [semanticTokens, setSemanticTokens] =
+		useState<SemanticToken[]>(DEFAULT_SEMANTICS);
+
+	// Update ramps when seed changes
+	useEffect(() => {
+		setRamp((prevRamp) => generateRamp(seedColor, prevRamp));
+		setNeutralRamp((_) => generateNeutrals(seedColor)); // Neutrals always track seed hue
+	}, [seedColor]);
 
 	return (
 		<div className="flex h-screen w-full bg-bg-void overflow-hidden text-sm">
+			{/* WIZARD OVERLAY */}
+			<AnimatePresence>
+				{showWizard && (
+					<motion.div
+						initial={{ opacity: 0, scale: 0.95 }}
+						animate={{ opacity: 1, scale: 1 }}
+						exit={{ opacity: 0, scale: 0.95 }}
+						className="fixed inset-0 z-[100] p-12 bg-black/80 backdrop-blur-sm"
+					>
+						<OnboardingWizard
+							ramp={ramp}
+							setRamp={setRamp}
+							setSeedColor={setSeedColor}
+							baseSize={baseSize}
+							setBaseSize={setBaseSize}
+							scale={scale}
+							setScale={setScale}
+							baseSpacing={baseSpacing}
+							setBaseSpacing={setBaseSpacing}
+							baseRadius={baseRadius}
+							setBaseRadius={setBaseRadius}
+							semanticTokens={semanticTokens}
+							setSemanticTokens={setSemanticTokens}
+							onComplete={() => setShowWizard(false)}
+						/>
+					</motion.div>
+				)}
+			</AnimatePresence>
+
 			{/* SIDEBAR */}
 			<nav className="w-16 flex-shrink-0 flex flex-col items-center py-6 border-r border-glass-stroke bg-bg-void/50 backdrop-blur-md z-50">
 				<div className="mb-8 font-brand text-2xl text-primary tracking-widest text-shadow-glow">
@@ -43,6 +131,16 @@ const App = () => {
 				</div>
 
 				<div className="space-y-6 flex flex-col w-full items-center">
+					<NavIcon
+						icon={Palette}
+						active={activeView === "atelier"}
+						onClick={() => setActiveView("atelier")}
+					/>
+					<NavIcon
+						icon={Type}
+						active={activeView === "typography"}
+						onClick={() => setActiveView("typography")}
+					/>
 					<NavIcon
 						icon={Layers}
 						active={activeView === "tokens"}
@@ -53,6 +151,7 @@ const App = () => {
 						active={activeView === "knowledge"}
 						onClick={() => setActiveView("knowledge")}
 					/>
+
 					<NavIcon
 						icon={Terminal}
 						active={activeView === "export"}
@@ -61,6 +160,15 @@ const App = () => {
 				</div>
 
 				<div className="mt-auto space-y-6 flex flex-col w-full items-center">
+					{/* Wizard Launcher */}
+					<button
+						onClick={() => setShowWizard(true)}
+						className="p-3 rounded-xl text-accent-cyan hover:bg-accent-cyan/10 transition-all relative group"
+						title="Start Guided Setup"
+					>
+						<Sparkles size={20} strokeWidth={1.5} />
+					</button>
+
 					{/* AI Toggle Indicator */}
 					<div className="h-24 w-1 bg-glass-stroke rounded-full relative group">
 						<motion.div
@@ -127,110 +235,181 @@ const App = () => {
 			</nav>
 
 			{/* MAIN CONTENT AREA */}
-			<main className="flex-1 relative overflow-hidden flex flex-col">
-				<header className="h-16 flex items-center justify-between px-8 border-b border-glass-stroke bg-bg-void/30 backdrop-blur-sm z-20">
-					<div className="flex items-center gap-3">
-						<h1 className="font-brand text-3xl text-white tracking-wide">
-							Soloist
-						</h1>
-						<span className="text-gray-600 font-light text-xl">
-							/
-						</span>
-						<h2 className="text-gray-400 font-display tracking-wide uppercase text-xs">
-							Workbench
-						</h2>
-					</div>
-					<div className="flex items-center gap-4">
-						<div className="flex items-center gap-2 px-3 py-1 rounded-full bg-glass-subtle border border-glass-stroke">
-							<Activity
-								size={14}
-								className="text-accent-cyan animate-pulse"
-							/>
-							<span className="text-xs text-gray-400 font-mono">
-								SYSTEM: ONLINE
+			<main className="flex-1 relative overflow-hidden flex flex-row">
+				<div className="flex-1 flex flex-col h-full overflow-hidden">
+					<header className="h-16 flex-shrink-0 flex items-center justify-between px-8 border-b border-glass-stroke bg-bg-void/30 backdrop-blur-sm z-20">
+						<div className="flex items-center gap-3">
+							<h1 className="font-brand text-3xl text-white tracking-wide">
+								Soloist
+							</h1>
+							<span className="text-gray-600 font-light text-xl">
+								/
 							</span>
+							<h2 className="text-gray-400 font-display tracking-wide uppercase text-xs">
+								Workbench
+							</h2>
 						</div>
+						<div className="flex items-center gap-4">
+							<div className="flex items-center gap-2 px-3 py-1 rounded-full bg-glass-subtle border border-glass-stroke">
+								<Activity
+									size={14}
+									className="text-accent-cyan animate-pulse"
+								/>
+								<span className="text-xs text-gray-400 font-mono">
+									SYSTEM: ONLINE
+								</span>
+							</div>
+						</div>
+					</header>
+
+					<div className="flex-1 p-8 overflow-y-auto custom-scrollbar relative">
+						{/* Ambient Background */}
+						{settings.visualFidelity === "high" && (
+							<div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[150px] pointer-events-none" />
+						)}
+
+						<AnimatePresence mode="wait">
+							<motion.div
+								key={activeView}
+								initial={{ opacity: 0, y: 20 }}
+								animate={{ opacity: 1, y: 0 }}
+								exit={{ opacity: 0, y: -20 }}
+								transition={{ duration: 0.4 }}
+								className="w-full h-full max-w-6xl mx-auto"
+							>
+								{activeView === "tokens" && (
+									<TokensView
+										ramp={ramp}
+										setRamp={setRamp}
+										neutralRamp={neutralRamp}
+										setNeutralRamp={setNeutralRamp}
+										secondaryRamp={secondaryRamp}
+										setSecondaryRamp={setSecondaryRamp}
+										tertiaryRamp={tertiaryRamp}
+										setTertiaryRamp={setTertiaryRamp}
+										signalRamp={signalRamp}
+										setSignalRamp={setSignalRamp}
+										alphaRamp={alphaRamp}
+										setAlphaRamp={setAlphaRamp}
+										setSeedColor={setSeedColor}
+										baseSize={baseSize}
+										setBaseSize={setBaseSize}
+										scale={scale}
+										setScale={setScale}
+										baseSpacing={baseSpacing}
+										setBaseSpacing={setBaseSpacing}
+										baseRadius={baseRadius}
+										setBaseRadius={setBaseRadius}
+										semanticTokens={semanticTokens}
+										setSemanticTokens={setSemanticTokens}
+										aiLevel={settings.aiLevel}
+										activeColorStep={activeColorStep}
+										setActiveColorStep={setActiveColorStep}
+										onNavigateToAtelier={() =>
+											setActiveView("atelier")
+										}
+										onNavigateToTypeAtelier={() =>
+											setActiveView("typography")
+										}
+										activeModule={activeTokensModule}
+										setActiveModule={setActiveTokensModule}
+									/>
+								)}
+								{activeView === "atelier" && (
+									<ColorAtelier
+										seedColor={seedColor}
+										setSeedColor={setSeedColor}
+										secondaryColor={
+											secondaryRamp[5]?.hex || "#000000"
+										}
+										setSecondaryColor={(hex: string) =>
+											setSecondaryRamp(
+												generateRamp(
+													hex,
+													secondaryRamp,
+													"secondary"
+												)
+											)
+										}
+										tertiaryColor={
+											tertiaryRamp[5]?.hex || "#000000"
+										}
+										setTertiaryColor={(hex: string) =>
+											setTertiaryRamp(
+												generateRamp(
+													hex,
+													tertiaryRamp,
+													"tertiary"
+												)
+											)
+										}
+										onComplete={() =>
+											setActiveView("tokens")
+										}
+										settings={settings}
+										updateSettings={updateSettings}
+										activeTab={activeColorTab}
+										setActiveTab={setActiveColorTab}
+									/>
+								)}
+								{activeView === "typography" && (
+									<TypographyAtelier
+										baseSize={baseSize}
+										setBaseSize={setBaseSize}
+										scale={scale}
+										setScale={setScale}
+										onComplete={() =>
+											setActiveView("tokens")
+										}
+										settings={settings}
+										updateSettings={updateSettings}
+										activeTab={activeTypeTab}
+										setActiveTab={setActiveTypeTab}
+									/>
+								)}
+								{activeView === "knowledge" && (
+									<KnowledgeBase />
+								)}
+
+								{activeView === "settings" && (
+									<SettingsView
+										settings={settings}
+										updateSettings={updateSettings}
+									/>
+								)}
+								{activeView === "export" && (
+									<ExportTerminal
+										ramp={ramp}
+										secondaryRamp={secondaryRamp}
+										tertiaryRamp={tertiaryRamp}
+										neutralRamp={neutralRamp}
+										signalRamp={signalRamp}
+										alphaRamp={alphaRamp}
+										baseSize={baseSize}
+										scale={scale}
+										baseSpacing={baseSpacing}
+										baseRadius={baseRadius}
+										semanticTokens={semanticTokens}
+									/>
+								)}
+							</motion.div>
+						</AnimatePresence>
 					</div>
-				</header>
-
-				<div className="flex-1 p-8 overflow-y-auto custom-scrollbar relative">
-					{/* Ambient Background */}
-					{settings.visualFidelity === "high" && (
-						<div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[150px] pointer-events-none" />
-					)}
-
-					<AnimatePresence mode="wait">
-						<motion.div
-							key={activeView}
-							initial={{ opacity: 0, y: 20 }}
-							animate={{ opacity: 1, y: 0 }}
-							exit={{ opacity: 0, y: -20 }}
-							transition={{ duration: 0.4 }}
-							className="w-full h-full max-w-6xl mx-auto"
-						>
-							{activeView === "tokens" && (
-								<TokensView ramp={ramp} setRamp={setRamp} />
-							)}
-							{activeView === "knowledge" && <KnowledgeBase />}
-							{activeView === "export" && <ExportTerminal />}
-						</motion.div>
-					</AnimatePresence>
 				</div>
-			</main>
-		</div>
-	);
-};
 
-const TokensView = ({ ramp, setRamp }: { ramp: any[]; setRamp: any }) => {
-	const handleSync = () => {
-		const msg = {
-			pluginMessage: {
-				type: "create-variables",
-				payload: { colors: ramp },
-			},
-		};
-		parent.postMessage(msg, "*");
-	};
-
-	return (
-		<div className="grid grid-cols-12 gap-8 h-full">
-			<div className="col-span-12 lg:col-span-8 flex flex-col">
-				<div className="flex items-center gap-3 mb-6">
-					<h2 className="font-brand text-2xl text-white">
-						Color Foundations
-					</h2>
-					<span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-mono border border-primary/20">
-						EDITING: VOID RAMP
-					</span>
-				</div>
-				<div className="flex-1 bg-bg-surface/30 rounded-2xl border border-glass-stroke p-8 relative overflow-hidden backdrop-blur-sm">
-					<ColorMatrix ramp={ramp} setRamp={setRamp} />
-				</div>
-			</div>
-
-			<div className="col-span-12 lg:col-span-4 space-y-6">
-				<div className="depth-card p-6">
-					<div className="flex justify-between items-center mb-4">
-						<h4 className="font-display text-xs text-gray-400 uppercase tracking-widest">
-							Figma Variables
-						</h4>
-						<span className="w-2 h-2 rounded-full bg-accent-success shadow-[0_0_10px_#32D74B]"></span>
-					</div>
-					<p className="text-sm text-gray-500 mb-4">
-						3 primitives ready to sync.
-					</p>
-					<button
-						onClick={handleSync}
-						className="w-full py-3 rounded-lg bg-bg-void border border-glass-stroke text-white font-mono text-xs hover:border-primary hover:text-primary transition-all flex justify-center items-center gap-2 group"
-					>
-						<span>SYNC TO COLLECTION</span>
-						<ChevronRight
-							size={12}
-							className="group-hover:translate-x-1 transition-transform"
+				{/* Teacher Panel */}
+				<AnimatePresence>
+					{settings.aiLevel === "teacher" && (
+						<TeacherPanel
+							activeView={activeView}
+							activeColorStep={activeColorStep}
+							activeColorTab={activeColorTab}
+							activeTypeTab={activeTypeTab}
+							activeTokensModule={activeTokensModule}
 						/>
-					</button>
-				</div>
-			</div>
+					)}
+				</AnimatePresence>
+			</main>
 		</div>
 	);
 };

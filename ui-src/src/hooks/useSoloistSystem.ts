@@ -4,16 +4,41 @@ export type StorageType = "local" | "github" | "cloud";
 export type VisualFidelity = "performance" | "high";
 export type AILevel = "silent" | "guide" | "teacher";
 
+interface UserProfile {
+	displayName: string;
+	role: string;
+	bio: string;
+	avatarUrl?: string;
+}
+
+interface UserLibrary {
+	colors: string[]; // Hex codes
+	fonts: string[]; // Font family names
+	palettes: { name: string; colors: string[] }[];
+}
+
 interface SystemSettings {
 	storageType: StorageType;
 	visualFidelity: VisualFidelity;
 	aiLevel: AILevel;
+	userProfile: UserProfile;
+	library: UserLibrary;
 }
 
 const DEFAULT_SETTINGS: SystemSettings = {
 	storageType: "local",
 	visualFidelity: "high",
 	aiLevel: "guide",
+	userProfile: {
+		displayName: "Soloist User",
+		role: "Designer",
+		bio: "Crafting digital experiences.",
+	},
+	library: {
+		colors: [],
+		fonts: [],
+		palettes: [],
+	},
 };
 
 export const useSoloistSystem = () => {

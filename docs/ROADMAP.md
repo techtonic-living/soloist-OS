@@ -19,8 +19,8 @@
 -   [x] **Visualizer:** 3D "Monolith" columns for color ramps. **\[FUNCTIONAL\]**
 -   [x] **Contrast Math:** Local logic to check contrast ratios. **\[FUNCTIONAL\]**
 -   [x] **Figma Sync:** `code.tsx` backend to create Variables from Hex codes. **\[FUNCTIONAL\]**
--   [ ] **Ramp Generation:** Logic to auto-generate lighter/darker shades based on a seed color. **\[MOCKUP - Hardcoded Data\]**
--   [ ] **Locking:** Ability to lock a color and randomize the rest. **\[UI ONLY\]**
+-   [x] **Ramp Generation:** Logic to auto-generate lighter/darker shades based on a seed color. **\[FUNCTIONAL\]**
+-   [x] **Locking:** Ability to lock a color and randomize the rest. **\[FUNCTIONAL\]**
 
 ### 🧠 Knowledge Base
 
@@ -32,17 +32,18 @@
 ### 💻 Export Terminal
 
 -   [x] **UI Layout:** IDE-style window with syntax highlighting. **\[UI ONLY\]**
--   [x] **Code Generation:** Switch between CSS/JSON/Swift. **\[MOCKUP - Hardcoded Strings\]**
--   [ ] **Live State Connection:** Connect Export view to the actual `ramp` state from the Token Engine. **\[CRITICAL DISCONNECT\]**
+-   [x] **Code Generation:** Switch between CSS/JSON/Swift. **\[FUNCTIONAL\]**
+-   [x] **Live State Connection:** Connect Export view to the actual `ramp` state from the Token Engine. **\[FUNCTIONAL\]**
 
 ---
 
 ## 📅 Phase 3: Intelligence & Expansion (Next Up)
 
--   [ ] **State Management:** Lift color state to `App.tsx` so Export Terminal sees live changes.
--   [ ] **Real-time Color Logic:** Connect visualizer to `colord` library.
--   [ ] **Typography Module:** Build the Font Scale visualizer.
--   [ ] **Sizing Module:** Build the Spacing/Radius visualizer.
+-   [x] **State Management:** Lift color state to `App.tsx` so Export Terminal sees live changes.
+-   [x] **Real-time Color Logic:** Connect visualizer to `colord` library.
+-   [x] **Typography Module:** Build the Font Scale visualizer.
+-   [x] **Sizing Module:** Build the Spacing/Radius visualizer.
+-   [x] **Lab Consolidation:** Integrated "The Lab" tools (Generator, Contrast, Mixer) into domain-specific Ateliers.
 
 ---
 

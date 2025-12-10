@@ -5,42 +5,248 @@ import {
 	Terminal as TerminalIcon,
 	FileJson,
 	FileCode,
+	Wind,
 } from "lucide-react";
+import { SemanticToken } from "./SemanticMapper";
 
-const generateCode = (format: "css" | "json" | "swift") => {
-	if (format === "css") {
-		return `:root {
-  /* Soloist OS - Void Theme */
-  --color-void-900: #0B0D12;
-  --color-void-800: #1A1D24;
-  --color-primary-500: #3D8BFF;
-  --shadow-monolith: 0 20px 40px -10px rgba(0,0,0,0.8);
-}`;
-	}
-	if (format === "json") {
-		return `{
-  "void": {
-    "900": { "value": "#0B0D12", "type": "color" },
-    "800": { "value": "#1A1D24", "type": "color" }
-  },
-  "primary": { "500": { "value": "#3D8BFF", "type": "color" } }
-}`;
-	}
-	return `// Swift
-extension Color {
-    static let void900 = Color(hex: "0B0D12")
-    static let primary500 = Color(hex: "3D8BFF")
-}`;
+// Helper to flatten all color ramps into a single object
+const flattenColors = (props: ExportTerminalProps) => {
+	const allRamps = {
+		primary: props.ramp,
+		secondary: props.secondaryRamp,
+		tertiary: props.tertiaryRamp,
+		neutral: props.neutralRamp,
+		signal: props.signalRamp,
+		alpha: props.alphaRamp,
+	};
+	return allRamps;
 };
 
-export const ExportTerminal = () => {
-	const [format, setFormat] = useState<"css" | "json" | "swift">("css");
+// --- Generators ---
+
+const generateCSS = (props: ExportTerminalProps) => {
+	let css = `:root {\n  /* Colors */\n`;
+
+	// Colors
+	const colors = flattenColors(props);
+	Object.entries(colors).forEach(([_, tokens]) => {
+		tokens.forEach((token: any) => {
+			const name = token.name.replace("/", "-");
+			css += `  --color-${name}: ${token.hex};\n`;
+		});
+	});
+
+	// Typography
+	css += `\n  /* Typography */\n`;
+	css += `  --font-base-size: ${props.baseSize}px;\n`;
+	css += `  --font-scale-ratio: ${props.scale.ratio};\n`;
+
+	// Spacing
+	css += `\n  /* Spacing */\n`;
+	const spacingSteps = [1, 2, 4, 6, 8, 12, 16, 24, 32];
+	const stepNames = [
+		"xs",
+		"sm",
+		"md",
+		"lg",
+		"xl",
+		"2xl",
+		"3xl",
+		"4xl",
+		"5xl",
+	];
+	stepNames.forEach((name, i) => {
+		css += `  --space-${name}: ${spacingSteps[i] * props.baseSpacing}px;\n`;
+	});
+
+	// Radius
+	css += `\n  /* Radius */\n`;
+	const radiusSteps = [0.5, 1, 2, 3, 4];
+	const radiusNames = ["xs", "sm", "md", "lg", "xl"];
+	radiusNames.forEach((name, i) => {
+		css += `  --radius-${name}: ${radiusSteps[i] * props.baseRadius}px;\n`;
+	});
+	css += `  --radius-full: 9999px;\n`;
+
+	css += `}`;
+	return css;
+};
+
+const generateTailwind = (props: ExportTerminalProps) => {
+	const colors = flattenColors(props);
+	const colorConfig: any = {};
+
+	// Process colors
+	Object.entries(colors).forEach(([group, tokens]) => {
+		colorConfig[group] = {};
+		tokens.forEach((token: any) => {
+			const shade = token.name.split("/")[1];
+			colorConfig[group][shade] = token.hex;
+		});
+	});
+
+	// Spacing
+	const spacingConfig: any = {};
+	const spacingSteps = [1, 2, 4, 6, 8, 12, 16, 24, 32];
+	const stepNames = [
+		"xs",
+		"sm",
+		"md",
+		"lg",
+		"xl",
+		"2xl",
+		"3xl",
+		"4xl",
+		"5xl",
+	];
+	stepNames.forEach((name, i) => {
+		spacingConfig[name] = `${spacingSteps[i] * props.baseSpacing}px`;
+	});
+
+	// Radius
+	const radiusConfig: any = {};
+	const radiusSteps = [0.5, 1, 2, 3, 4];
+	const radiusNames = ["xs", "sm", "md", "lg", "xl"];
+	radiusNames.forEach((name, i) => {
+		radiusConfig[name] = `${radiusSteps[i] * props.baseRadius}px`;
+	});
+
+	const config = {
+		theme: {
+			extend: {
+				colors: colorConfig,
+				spacing: spacingConfig,
+				borderRadius: radiusConfig,
+				fontFamily: {
+					sans: ["Inter", "sans-serif"],
+					display: ["Outfit", "sans-serif"],
+				},
+			},
+		},
+	};
+
+	const jsonContent = JSON.stringify(config, null, 4)
+		.replace(/"([^"]+)":/g, "$1:")
+		.replace(/"/g, "'");
+
+	return `// tailwind.config.js\nmodule.exports = ${jsonContent}`;
+};
+
+const generateJSON = (props: ExportTerminalProps) => {
+	const colors = flattenColors(props);
+	const tokens: any = {
+		color: {},
+		size: {
+			font: {},
+			spacing: {},
+			radius: {},
+		},
+	};
+
+	// Colors
+	Object.entries(colors).forEach(([group, list]) => {
+		tokens.color[group] = {};
+		list.forEach((token: any) => {
+			const shade = token.name.split("/")[1];
+			tokens.color[group][shade] = { value: token.hex, type: "color" };
+		});
+	});
+
+	// Spacing
+	const spacingSteps = [1, 2, 4, 6, 8, 12, 16, 24, 32];
+	const stepNames = [
+		"xs",
+		"sm",
+		"md",
+		"lg",
+		"xl",
+		"2xl",
+		"3xl",
+		"4xl",
+		"5xl",
+	];
+	stepNames.forEach((name, i) => {
+		tokens.size.spacing[name] = {
+			value: `${spacingSteps[i] * props.baseSpacing}px`,
+			type: "dimension",
+		};
+	});
+
+	return JSON.stringify(tokens, null, 2);
+};
+
+const generateSwift = (props: ExportTerminalProps) => {
+	const colors = flattenColors(props);
+	let swift = `import SwiftUI\n\nextension Color {\n`;
+
+	Object.entries(colors).forEach(([group, list]) => {
+		list.forEach((token: any) => {
+			const shade = token.name.split("/")[1];
+			swift += `    static let ${group}${shade} = Color(hex: "${token.hex}")\n`;
+		});
+	});
+
+	swift += `}\n\nstruct Spacing {\n`;
+	const spacingSteps = [1, 2, 4, 6, 8, 12, 16, 24, 32];
+	const stepNames = [
+		"xs",
+		"sm",
+		"md",
+		"lg",
+		"xl",
+		"2xl",
+		"3xl",
+		"4xl",
+		"5xl",
+	];
+	stepNames.forEach((name, i) => {
+		swift += `    static let ${name}: CGFloat = ${
+			spacingSteps[i] * props.baseSpacing
+		}\n`;
+	});
+	swift += `}`;
+
+	return swift;
+};
+
+interface ExportTerminalProps {
+	ramp: any[];
+	secondaryRamp: any[];
+	tertiaryRamp: any[];
+	neutralRamp: any[];
+	signalRamp: any[];
+	alphaRamp: any[];
+	baseSize: number;
+	scale: { name: string; ratio: number };
+	baseSpacing: number;
+	baseRadius: number;
+	semanticTokens: SemanticToken[];
+}
+
+export const ExportTerminal = (props: ExportTerminalProps) => {
+	const [format, setFormat] = useState<"css" | "json" | "swift" | "tailwind">(
+		"css"
+	);
 	const [copied, setCopied] = useState(false);
 
 	const handleCopy = () => {
-		navigator.clipboard.writeText(generateCode(format));
+		let code = "";
+		if (format === "css") code = generateCSS(props);
+		if (format === "json") code = generateJSON(props);
+		if (format === "tailwind") code = generateTailwind(props);
+		if (format === "swift") code = generateSwift(props);
+
+		navigator.clipboard.writeText(code);
 		setCopied(true);
 		setTimeout(() => setCopied(false), 2000);
+	};
+
+	const getCode = () => {
+		if (format === "css") return generateCSS(props);
+		if (format === "json") return generateJSON(props);
+		if (format === "tailwind") return generateTailwind(props);
+		if (format === "swift") return generateSwift(props);
+		return "";
 	};
 
 	return (
@@ -58,6 +264,12 @@ export const ExportTerminal = () => {
 						onClick={() => setFormat("json")}
 						label="JSON"
 						icon={FileJson}
+					/>
+					<FormatTab
+						active={format === "tailwind"}
+						onClick={() => setFormat("tailwind")}
+						label="Tailwind"
+						icon={Wind}
 					/>
 					<FormatTab
 						active={format === "swift"}
@@ -83,11 +295,14 @@ export const ExportTerminal = () => {
 					</div>
 					<div className="ml-4 flex items-center gap-2 text-xs text-gray-500 font-mono">
 						<TerminalIcon size={12} />
-						<span>soloist-export.{format}</span>
+						<span>
+							soloist-export.
+							{format === "tailwind" ? "js" : format}
+						</span>
 					</div>
 				</div>
 				<div className="p-6 font-mono text-sm overflow-auto custom-scrollbar flex-1 relative">
-					<pre className="text-gray-300">{generateCode(format)}</pre>
+					<pre className="text-gray-300">{getCode()}</pre>
 				</div>
 			</div>
 		</div>
