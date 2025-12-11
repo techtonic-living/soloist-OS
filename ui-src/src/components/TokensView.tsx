@@ -1,4 +1,3 @@
-import {} from "react";
 import {
 	ChevronRight,
 	Palette,
@@ -11,7 +10,8 @@ import {
 import { ColorMatrix } from "./ColorMatrix";
 import { TypographyMatrix } from "./TypographyMatrix";
 import { SizingMatrix } from "./SizingMatrix";
-import { SemanticMapper, SemanticToken } from "./SemanticMapper";
+import { SemanticMapper } from "./SemanticMapper";
+import { SemanticToken } from "../data/semanticTokens";
 import { AnimatePresence, motion } from "framer-motion";
 
 export const TokensView = ({
@@ -410,34 +410,49 @@ export const TokensView = ({
 			</div>
 
 			<div className="col-span-12 lg:col-span-4 space-y-6">
-				<div className="depth-card p-6">
-					<div className="flex justify-between items-center mb-4">
-						<h4 className="font-display text-xs text-gray-400 uppercase tracking-widest">
-							Figma Variables
-						</h4>
-						<span className="w-2 h-2 rounded-full bg-accent-success shadow-[0_0_10px_#32D74B]"></span>
+				<motion.div
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ delay: 0.2 }}
+					whileHover={{
+						y: -5,
+						transition: { type: "spring", stiffness: 300 },
+					}}
+					className="depth-card p-6 border border-glass-stroke/50 hover:border-glass-stroke transition-colors relative overflow-hidden group/card"
+				>
+					{/* Glow Effect */}
+					<div className="absolute -inset-1 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity blur-xl" />
+
+					<div className="relative z-10">
+						<div className="flex justify-between items-center mb-4">
+							<h4 className="font-display text-xs text-gray-400 uppercase tracking-widest group-hover/card:text-white transition-colors">
+								Figma Variables
+							</h4>
+							<span className="w-2 h-2 rounded-full bg-accent-success shadow-[0_0_10px_#32D74B] animate-pulse"></span>
+						</div>
+						<p className="text-sm text-gray-500 mb-6 min-h-[40px]">
+							{activeModule === "colors" &&
+								`${ramp.length} primitives ready to sync.`}
+							{activeModule === "typography" &&
+								`7 text styles ready to sync.`}
+							{activeModule === "spacing" &&
+								`9 spacing tokens ready to sync.`}
+							{activeModule === "semantics" &&
+								`${semanticTokens.length} semantic tokens (modes enabled).`}
+						</p>
+						<button
+							onClick={handleSync}
+							className="w-full py-3 rounded-lg bg-bg-void border border-glass-stroke text-white font-mono text-xs hover:border-primary hover:text-primary transition-all flex justify-center items-center gap-2 group relative overflow-hidden"
+						>
+							<div className="absolute inset-0 bg-primary/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+							<span className="relative">SYNC TO COLLECTION</span>
+							<ChevronRight
+								size={12}
+								className="group-hover:translate-x-1 transition-transform relative"
+							/>
+						</button>
 					</div>
-					<p className="text-sm text-gray-500 mb-4">
-						{activeModule === "colors" &&
-							`${ramp.length} primitives ready to sync.`}
-						{activeModule === "typography" &&
-							`7 text styles ready to sync.`}
-						{activeModule === "spacing" &&
-							`9 spacing tokens ready to sync.`}
-						{activeModule === "semantics" &&
-							`${semanticTokens.length} semantic tokens (modes enabled).`}
-					</p>
-					<button
-						onClick={handleSync}
-						className="w-full py-3 rounded-lg bg-bg-void border border-glass-stroke text-white font-mono text-xs hover:border-primary hover:text-primary transition-all flex justify-center items-center gap-2 group"
-					>
-						<span>SYNC TO COLLECTION</span>
-						<ChevronRight
-							size={12}
-							className="group-hover:translate-x-1 transition-transform"
-						/>
-					</button>
-				</div>
+				</motion.div>
 			</div>
 		</div>
 	);

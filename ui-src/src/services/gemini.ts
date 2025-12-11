@@ -11,11 +11,11 @@ if (!API_KEY) {
 const genAI = new GoogleGenerativeAI(API_KEY || "");
 
 /**
- * Get the Gemini Pro model instance.
+ * Get the Gemini model instance.
  * @returns The generative model instance.
  */
 export const getGeminiModel = () => {
-	return genAI.getGenerativeModel({ model: "gemini-pro" });
+	return genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 };
 
 /**
@@ -25,12 +25,22 @@ export const getGeminiModel = () => {
  */
 export const generateText = async (prompt: string): Promise<string> => {
 	try {
+		console.log("[Gemini] Attempting to generate content...");
+		console.log("[Gemini] API Key present:", !!API_KEY);
+
 		const model = getGeminiModel();
 		const result = await model.generateContent(prompt);
 		const response = await result.response;
-		return response.text();
+		const text = response.text();
+
+		console.log("[Gemini] Successfully generated content");
+		return text;
 	} catch (error) {
-		console.error("Error generating content with Gemini:", error);
+		console.error("[Gemini] Error generating content:", error);
+		console.error("[Gemini] Error details:", {
+			message: error instanceof Error ? error.message : "Unknown error",
+			stack: error instanceof Error ? error.stack : undefined,
+		});
 		throw error;
 	}
 };

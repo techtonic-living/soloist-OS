@@ -1,6 +1,35 @@
 import { useState } from "react";
-import { Trash, Heart, Book } from "lucide-react";
+import { Trash, Heart, Book, Copy, Check } from "lucide-react";
 import { PRESET_LIBRARIES, PresetColor } from "../../data/colorPresets";
+import { colord } from "colord";
+
+// --- Helper Functions ---
+const fallbackCopy = (text: string) => {
+	const textArea = document.createElement("textarea");
+	textArea.value = text;
+	textArea.style.position = "fixed";
+	textArea.style.left = "-9999px";
+	textArea.style.top = "0";
+	document.body.appendChild(textArea);
+	textArea.focus();
+	textArea.select();
+	try {
+		document.execCommand("copy");
+	} catch (err) {
+		console.error("Fallback copy failed", err);
+	}
+	document.body.removeChild(textArea);
+};
+
+const performCopy = (text: string) => {
+	if (navigator.clipboard && navigator.clipboard.writeText) {
+		navigator.clipboard.writeText(text).catch(() => {
+			fallbackCopy(text);
+		});
+	} else {
+		fallbackCopy(text);
+	}
+};
 
 export const ColorLibrary = ({
 	library,
@@ -12,7 +41,7 @@ export const ColorLibrary = ({
 }: {
 	library: any;
 	onLoadColor: (c: string) => void;
-	onRemoveColor: (c: string) => void;
+	onRemoveColor: (c: string, metadata?: PresetColor) => void;
 	onRemovePalette: (i: number) => void;
 	onInspectColor?: (c: PresetColor) => void;
 	view?: "all" | "colors" | "palettes";
@@ -20,6 +49,16 @@ export const ColorLibrary = ({
 	const [activeSubTab, setActiveSubTab] = useState<"favorites" | "presets">(
 		"favorites"
 	);
+
+	// Toggling favorite checks if it exists in the library prop
+	const isFavorite = (color: string) => {
+		// Case insensitive check
+		if (!library || !library.colors) return false;
+		return library.colors.some((c: string | PresetColor) => {
+			const hexValue = typeof c === "string" ? c : c.value;
+			return hexValue.toUpperCase() === color.toUpperCase();
+		});
+	};
 
 	return (
 		<div className="h-full flex flex-col overflow-hidden">
@@ -44,7 +83,7 @@ export const ColorLibrary = ({
 								: "border-transparent text-gray-500 hover:text-gray-300"
 						}`}
 					>
-						Presets
+						Libraries
 					</button>
 				</div>
 			)}
@@ -132,45 +171,54 @@ export const ColorLibrary = ({
 									No saved colors yet.
 								</p>
 							) : (
-								<div className="grid grid-cols-6 gap-4">
-									{library.colors.map((color: string) => (
-										<div
-											key={color}
-											className="group relative aspect-square rounded-xl overflow-hidden border border-white/10 shadow-lg"
-										>
-											<div
-												className="w-full h-full cursor-pointer"
-												style={{
-													backgroundColor: color,
-												}}
-												onClick={() =>
-													onLoadColor(color)
-												}
-												title="Click to load as seed"
-											/>
-											<button
-												onClick={() =>
-													onRemoveColor(color)
-												}
-												className="absolute top-1 right-1 p-1 rounded-full bg-black/20 hover:bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-all"
-											>
-												<Heart
-													size={12}
-													className="fill-current text-white"
+								<div className="grid grid-cols-2 gap-3">
+									{library.colors.map(
+										(colorItem: string | PresetColor) => {
+											// Handle both legacy strings and new PresetColor objects
+											const hexValue =
+												typeof colorItem === "string"
+													? colorItem
+													: colorItem.value;
+											const displayLabel =
+												typeof colorItem === "string"
+													? colorItem.toUpperCase()
+													: colorItem.name;
+											const colorObject: PresetColor =
+												typeof colorItem === "string"
+													? {
+															name: hexValue.toUpperCase(),
+															value: hexValue,
+													  }
+													: colorItem;
+
+											return (
+												<SmartColorCard
+													key={hexValue}
+													color={hexValue}
+													label={displayLabel}
+													isFavorite={true}
+													onClick={() => {
+														onLoadColor(hexValue);
+														// Pass full color object for inspection
+														if (onInspectColor) {
+															onInspectColor(
+																colorObject
+															);
+														}
+													}}
+													onToggleFavorite={() =>
+														onRemoveColor(hexValue)
+													}
 												/>
-											</button>
-											<div className="absolute bottom-0 inset-x-0 bg-black/40 backdrop-blur-sm p-1 text-center rounded-b-xl">
-												<span className="text-[8px] font-mono text-white">
-													{color}
-												</span>
-											</div>
-										</div>
-									))}
+											);
+										}
+									)}
 								</div>
 							)}
 						</div>
 					)}
 
+					{/* Colors: Presets View */}
 					{view === "colors" && activeSubTab === "presets" && (
 						<div className="space-y-8">
 							{!PRESET_LIBRARIES ||
@@ -184,50 +232,45 @@ export const ColorLibrary = ({
 										key={preset.name}
 										className="space-y-4"
 									>
-										<div className="flex items-center gap-2 border-b border-glass-stroke pb-2">
-											<Book
-												size={14}
-												className="text-accent-cyan"
-											/>
-											<h3 className="text-sm font-brand text-white">
-												{preset.name}
-											</h3>
-											<span className="text-xs text-gray-500 ml-auto">
-												{preset.colors.length} colors
-											</span>
+										<div className="space-y-1">
+											<div className="flex items-center gap-2 border-b border-glass-stroke pb-2">
+												<Book
+													size={14}
+													className="text-accent-cyan"
+												/>
+												<h3 className="text-sm font-brand text-white">
+													{preset.name}
+												</h3>
+												<span className="text-xs text-gray-500 ml-auto">
+													{preset.colors.length}{" "}
+													colors
+												</span>
+											</div>
+											<p className="text-xs text-gray-500 italic pb-2">
+												{preset.description}
+											</p>
 										</div>
-										<p className="text-xs text-gray-500 italic">
-											{preset.description}
-										</p>
-										<div className="grid grid-cols-6 gap-3">
+										<div className="grid grid-cols-2 gap-3">
 											{preset.colors.map((c) => (
-												<div
+												<SmartColorCard
 													key={c.value}
-													className="group relative aspect-square rounded-xl overflow-hidden border border-white/20 hover:border-white/50 transition-all cursor-pointer"
+													color={c.value}
+													label={c.name}
+													isFavorite={isFavorite(
+														c.value
+													)}
 													onClick={() => {
 														onLoadColor(c.value);
-														if (onInspectColor) {
+														if (onInspectColor)
 															onInspectColor(c);
-														}
 													}}
-												>
-													<div
-														className="w-full h-full ring-1 ring-inset ring-black/10"
-														style={{
-															backgroundColor:
-																c.value,
-														}}
-														title={`Load ${c.name}`}
-													/>
-													<div className="absolute bottom-0 inset-x-0 bg-black/50 backdrop-blur-sm p-1 rounded-b-xl">
-														<div className="text-[9px] font-bold text-white text-center truncate">
-															{c.name}
-														</div>
-														<div className="text-[7px] font-mono text-gray-300 text-center uppercase">
-															{c.value}
-														</div>
-													</div>
-												</div>
+													onToggleFavorite={() =>
+														onRemoveColor(
+															c.value,
+															c
+														)
+													}
+												/>
 											))}
 										</div>
 									</div>
@@ -236,6 +279,111 @@ export const ColorLibrary = ({
 						</div>
 					)}
 				</div>
+			</div>
+		</div>
+	);
+};
+
+// --- Subcomponents ---
+
+const SmartColorCard = ({
+	color,
+	label,
+	name,
+	isFavorite,
+	onClick,
+	onToggleFavorite,
+}: {
+	color: string;
+	label: string;
+	name?: string;
+	isFavorite: boolean;
+	onClick: () => void;
+	onToggleFavorite: () => void;
+}) => {
+	const [copied, setCopied] = useState(false);
+	const isDark = colord(color).isDark();
+
+	const handleCopy = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		performCopy(color.toUpperCase());
+		setCopied(true);
+		setTimeout(() => setCopied(false), 2000);
+	};
+
+	return (
+		<div
+			className={`relative rounded-xl overflow-hidden aspect-[4/3] shadow-sm transition-all hover:shadow-lg group/minicard ${
+				isDark ? "border border-white/40" : "border border-black/20"
+			}`}
+		>
+			{/* Interactive Color Body */}
+			<div
+				className="absolute inset-0 cursor-pointer"
+				onClick={onClick}
+				title={`Click to load ${name}`}
+			>
+				<div
+					className="absolute inset-0 z-0"
+					style={{ backgroundColor: color }}
+				/>
+
+				{/* Actions Row (Top Right) - No Swap Button */}
+				<div
+					className={`absolute top-1 right-1 flex items-center gap-0.5 z-10 ${
+						isDark ? "text-white" : "text-black/60"
+					}`}
+				>
+					<button
+						onClick={handleCopy}
+						className="p-1.5 rounded-full hover:bg-black/10 transition-colors"
+						title="Copy Hex"
+					>
+						{copied ? (
+							<Check size={14} className="text-green-500" />
+						) : (
+							<Copy size={14} />
+						)}
+					</button>
+					<button
+						onClick={(e) => {
+							e.stopPropagation();
+							onToggleFavorite();
+						}}
+						className="p-1.5 rounded-full hover:bg-black/10 transition-colors"
+						title={
+							isFavorite
+								? "Remove from Favorites"
+								: "Save to Favorites"
+						}
+					>
+						<Heart
+							size={14}
+							className={
+								isFavorite ? "fill-red-500 scale-110" : ""
+							}
+						/>
+					</button>
+				</div>
+			</div>
+
+			{/* Static Label (Always Visible) */}
+			<div
+				className={`absolute inset-0 p-2 flex flex-col justify-end pointer-events-none ${
+					isDark ? "text-white/90" : "text-black/80"
+				}`}
+			>
+				<span className="text-[10px] font-bold uppercase opacity-60 tracking-wider mb-0.5">
+					{label}
+				</span>
+				{name && (
+					<span className="text-[10px] font-mono opacity-90 truncate font-medium">
+						{name}
+					</span>
+				)}
+				<span className="text-[9px] font-mono opacity-75">
+					{color.toUpperCase()}
+				</span>
 			</div>
 		</div>
 	);

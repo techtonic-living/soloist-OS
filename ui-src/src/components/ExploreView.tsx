@@ -1,60 +1,107 @@
-import { Palette, Pipette, Grid, Sparkles } from "lucide-react";
+import { Palette, Pipette, Grid, Wand2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ColorCreator } from "./lab/ColorCreator";
 import { PaletteGenerator } from "./lab/PaletteGenerator";
 import { ColorLibrary } from "./lab/ColorLibrary";
 import { PresetColor } from "../data/colorPresets";
+import { findOrGenerateMetadata } from "../services/colorMetadata";
+
+import { useSoloist } from "../context/SoloistContext";
 
 interface ExploreViewProps {
-	seedColor?: string;
-	setSeedColor?: (color: string) => void;
-	// Harmony props (optional for now, can be local if not syncing yet)
-	secondaryColor?: string;
-	setSecondaryColor?: (color: string) => void;
-	tertiaryColor?: string;
-	setTertiaryColor?: (color: string) => void;
-
-	settings?: any;
-	updateSettings?: (s: any) => void;
+	activeTab: "colors" | "palettes" | "studio" | "remix";
+	setActiveTab: (tab: "colors" | "palettes" | "studio" | "remix") => void;
 	onInspectColor?: (color: PresetColor | null) => void;
 }
 
 export const ExploreView = ({
-	seedColor = "#3D8BFF",
-	setSeedColor = () => {},
-	secondaryColor = "#000000",
-	setSecondaryColor = () => {},
-	tertiaryColor = "#000000",
-	setTertiaryColor = () => {},
-	activeTab = "colors",
-	setActiveTab = () => {},
-	settings = {},
-	updateSettings = () => {},
+	activeTab,
+	setActiveTab,
 	onInspectColor = () => {},
-	harmonyMode = "complementary",
-	setHarmonyMode = () => {},
-}: ExploreViewProps & {
-	activeTab?: "colors" | "palettes" | "create" | "generator";
-	setActiveTab?: (
-		tab: "colors" | "palettes" | "create" | "generator"
-	) => void;
-	harmonyMode?: "complementary" | "analogous" | "triadic" | "manual";
-	setHarmonyMode?: (
-		mode: "complementary" | "analogous" | "triadic" | "manual"
-	) => void;
-}) => {
-	// Favorites Logic
-	const toggleFavoriteColor = (color: string) => {
+}: ExploreViewProps) => {
+	const {
+		seedColor,
+		setSeedColor,
+		secondaryRamp,
+		tertiaryRamp,
+		harmonyMode,
+		setHarmonyMode,
+		setSecondaryColor,
+		setTertiaryColor,
+		settings,
+		updateSettings,
+	} = useSoloist();
+
+	// Derived colors for ColorCreator
+	const secondaryColor = secondaryRamp[5]?.hex || "#000000";
+	const tertiaryColor = tertiaryRamp[5]?.hex || "#000000";
+
+	// Favorites Logic with Smart Metadata Sourcing
+	const toggleFavoriteColor = async (
+		color: string,
+		existingMetadata?: PresetColor
+	) => {
 		const library = settings.library || {
 			colors: [],
 			fonts: [],
 			palettes: [],
+			colorCache: [],
 		};
-		const exists = library.colors.includes(color);
-		const newColors = exists
-			? library.colors.filter((c: string) => c !== color)
-			: [...library.colors, color];
-		updateSettings({ library: { ...library, colors: newColors } });
+
+		// Check if color exists (handle both string and PresetColor)
+		const exists = library.colors.some((c) =>
+			typeof c === "string" ? c === color : c.value === color
+		);
+
+		if (exists) {
+			// Remove color
+			const newColors = library.colors.filter((c) =>
+				typeof c === "string" ? c !== color : c.value !== color
+			);
+			updateSettings({ library: { ...library, colors: newColors } });
+		} else {
+			// Add color with metadata
+			try {
+				let colorWithMetadata: PresetColor;
+
+				if (existingMetadata) {
+					// Use provided metadata (from Library colors)
+					console.log(
+						`Using existing metadata for ${color}: ${existingMetadata.name}`
+					);
+					colorWithMetadata = existingMetadata;
+				} else {
+					// Smart lookup: presets → cache → AI generation
+					colorWithMetadata = await findOrGenerateMetadata(
+						color,
+						library.colorCache || []
+					);
+
+					// Update cache if this was a new AI generation
+					const wasGenerated = !library.colorCache?.some(
+						(c) => c.value.toUpperCase() === color.toUpperCase()
+					);
+					if (wasGenerated) {
+						const newCache = [
+							...(library.colorCache || []),
+							colorWithMetadata,
+						];
+						// Update cache for future use
+						updateSettings({
+							library: { ...library, colorCache: newCache },
+						});
+					}
+				}
+
+				const newColors = [...library.colors, colorWithMetadata];
+				updateSettings({ library: { ...library, colors: newColors } });
+			} catch (error) {
+				console.error("Failed to get color metadata:", error);
+				// Fallback: save as string if everything fails
+				const newColors = [...library.colors, color];
+				updateSettings({ library: { ...library, colors: newColors } });
+			}
+		}
 	};
 
 	const savePalette = (colors: string[]) => {
@@ -104,16 +151,16 @@ export const ExploreView = ({
 						label="Palettes"
 					/>
 					<TabButton
-						active={activeTab === "create"}
-						onClick={() => setActiveTab("create")}
+						active={activeTab === "studio"}
+						onClick={() => setActiveTab("studio")}
 						icon={Pipette}
-						label="Create"
+						label="Studio"
 					/>
 					<TabButton
-						active={activeTab === "generator"}
-						onClick={() => setActiveTab("generator")}
-						icon={Sparkles}
-						label="Generator"
+						active={activeTab === "remix"}
+						onClick={() => setActiveTab("remix")}
+						icon={Wand2}
+						label="Remix"
 					/>
 				</div>
 			</div>
@@ -171,10 +218,10 @@ export const ExploreView = ({
 						</motion.div>
 					)}
 
-					{/* CREATE TAB (Unified Wheel + Picker) */}
-					{activeTab === "create" && (
+					{/* STUDIO TAB (Unified Wheel + Picker) */}
+					{activeTab === "studio" && (
 						<motion.div
-							key="create"
+							key="studio"
 							initial={{ opacity: 0, y: 10 }}
 							animate={{ opacity: 1, y: 0 }}
 							exit={{ opacity: 0, y: -10 }}
@@ -194,10 +241,10 @@ export const ExploreView = ({
 						</motion.div>
 					)}
 
-					{/* GENERATOR TAB */}
-					{activeTab === "generator" && (
+					{/* REMIX TAB */}
+					{activeTab === "remix" && (
 						<motion.div
-							key="generator"
+							key="remix"
 							initial={{ opacity: 0, y: 10 }}
 							animate={{ opacity: 1, y: 0 }}
 							exit={{ opacity: 0, y: -10 }}

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Folder, Plus, Trash, Layers } from "lucide-react";
+import { useSoloist } from "../context/SoloistContext";
 
-export const OrganizeView = ({ settings, updateSettings }: any) => {
+export const OrganizeView = () => {
+	const { settings, updateSettings } = useSoloist();
 	const [selectedCollectionId, setSelectedCollectionId] = useState<
 		string | null
 	>(null);
@@ -99,25 +101,31 @@ export const OrganizeView = ({ settings, updateSettings }: any) => {
 			<div className="mb-6">
 				<h4 className="text-xs text-white mb-2">Colors</h4>
 				<div className="grid grid-cols-4 gap-2">
-					{library.colors.map((c: string) => (
-						<div
-							key={c}
-							className="w-full aspect-square rounded-md cursor-pointer hover:scale-105 transition-transform border border-white/10"
-							style={{ backgroundColor: c }}
-							onClick={() =>
-								selectedCollectionId &&
-								addItemToCollection(selectedCollectionId, {
-									type: "color",
-									value: c,
-								})
-							}
-							title={
-								selectedCollectionId
-									? "Click to add to selected collection"
-									: "Select a collection to add"
-							}
-						/>
-					))}
+					{library.colors.map((colorItem) => {
+						const hexValue =
+							typeof colorItem === "string"
+								? colorItem
+								: colorItem.value;
+						return (
+							<div
+								key={hexValue}
+								className="w-full aspect-square rounded-md cursor-pointer hover:scale-105 transition-transform border border-white/10"
+								style={{ backgroundColor: hexValue }}
+								onClick={() =>
+									selectedCollectionId &&
+									addItemToCollection(selectedCollectionId, {
+										type: "color",
+										value: hexValue,
+									})
+								}
+								title={
+									selectedCollectionId
+										? "Click to add to selected collection"
+										: "Select a collection to add"
+								}
+							/>
+						);
+					})}
 					{library.colors.length === 0 && (
 						<span className="text-gray-600 text-xs italic col-span-4">
 							No favorites yet.

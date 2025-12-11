@@ -29,10 +29,14 @@ class ErrorBoundary extends React.Component<
 	}
 }
 
+import { SoloistProvider } from "./context/SoloistContext";
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
 	<React.StrictMode>
 		<ErrorBoundary>
-			<App />
+			<SoloistProvider>
+				<App />
+			</SoloistProvider>
 		</ErrorBoundary>
 	</React.StrictMode>
 );

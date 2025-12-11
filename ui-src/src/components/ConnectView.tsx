@@ -190,7 +190,16 @@ const generateSwift = (props: any) => {
 
 // --- Component ---
 
-export const ConnectView = (props: any) => {
+import { useSoloist } from "../context/SoloistContext";
+
+// ... imports
+
+// Generators stay same, they just take "context" object now which is compatible with "props" object shape conceptually.
+
+// --- Component ---
+
+export const ConnectView = () => {
+	const ctx = useSoloist(); // Get everything
 	const [activeTab, setActiveTab] = useState<"sync" | "export">("sync");
 	const [format, setFormat] = useState<"css" | "json" | "swift" | "tailwind">(
 		"css"
@@ -202,20 +211,20 @@ export const ConnectView = (props: any) => {
 
 	const handleCopy = () => {
 		let code = "";
-		if (format === "css") code = generateCSS(props);
-		if (format === "json") code = generateJSON(props);
-		if (format === "tailwind") code = generateTailwind(props);
-		if (format === "swift") code = generateSwift(props);
+		if (format === "css") code = generateCSS(ctx);
+		if (format === "json") code = generateJSON(ctx);
+		if (format === "tailwind") code = generateTailwind(ctx);
+		if (format === "swift") code = generateSwift(ctx);
 		navigator.clipboard.writeText(code);
 		setCopied(true);
 		setTimeout(() => setCopied(false), 2000);
 	};
 
 	const getCode = () => {
-		if (format === "css") return generateCSS(props);
-		if (format === "json") return generateJSON(props);
-		if (format === "tailwind") return generateTailwind(props);
-		if (format === "swift") return generateSwift(props);
+		if (format === "css") return generateCSS(ctx);
+		if (format === "json") return generateJSON(ctx);
+		if (format === "tailwind") return generateTailwind(ctx);
+		if (format === "swift") return generateSwift(ctx);
 		return "";
 	};
 
@@ -330,17 +339,17 @@ export const ConnectView = (props: any) => {
 									<li className="flex items-center gap-2">
 										<div className="w-1.5 h-1.5 bg-accent-cyan rounded-full" />{" "}
 										Typography Scale (
-										{props.scale?.name || "Scale"})
+										{ctx.scale?.name || "Scale"})
 									</li>
 									<li className="flex items-center gap-2">
 										<div className="w-1.5 h-1.5 bg-accent-cyan rounded-full" />{" "}
-										Spacing System (Base:{" "}
-										{props.baseSpacing}px)
+										Spacing System (Base: {ctx.baseSpacing}
+										px)
 									</li>
 									{/* Placeholder for future collection support */}
 									<li className="flex items-center gap-2">
 										<div className="w-1.5 h-1.5 bg-gray-600 rounded-full" />{" "}
-										{props.settings?.library?.collections
+										{ctx.settings?.library?.collections
 											?.length || 0}{" "}
 										Custom Collections
 									</li>

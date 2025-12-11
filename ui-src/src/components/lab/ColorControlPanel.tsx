@@ -10,6 +10,7 @@ interface ColorControlPanelProps {
 	harmonyMode?: string;
 	settings?: any; // Todo: Import proper type
 	updateSettings?: (settings: any) => void;
+	toggleFavorite?: (color: string) => Promise<void>;
 }
 
 // --- Shared Helpers ---
@@ -50,6 +51,7 @@ export const ColorControlPanel = ({
 	harmonyMode,
 	settings = { library: { colors: [], palettes: [] } },
 	updateSettings = () => {},
+	toggleFavorite: toggleFavoriteProp,
 }: ColorControlPanelProps) => {
 	const [copiedHex, setCopiedHex] = useState(false);
 	const [copiedRgb, setCopiedRgb] = useState(false);
@@ -83,23 +85,34 @@ export const ColorControlPanel = ({
 		setTimeout(() => setToast(null), 3000);
 	};
 
-	const toggleFavorite = (colorHex: string) => {
+	const toggleFavorite = async (colorHex: string) => {
+		// Use the prop function if provided (with AI metadata), fallback to simple toggle
+		if (toggleFavoriteProp) {
+			await toggleFavoriteProp(colorHex);
+			return;
+		}
+
+		// Fallback for when prop not provided
 		const currentLib = settings.library || { colors: [], palettes: [] };
-		const isFav = currentLib.colors.includes(colorHex);
+		const isFav = currentLib.colors.some((c: any) =>
+			typeof c === "string" ? c === colorHex : c.value === colorHex
+		);
 
 		if (isFav) {
 			// Remove
 			updateSettings({
 				library: {
 					...currentLib,
-					colors: currentLib.colors.filter(
-						(c: string) => c !== colorHex
+					colors: currentLib.colors.filter((c: any) =>
+						typeof c === "string"
+							? c !== colorHex
+							: c.value !== colorHex
 					),
 				},
 			});
 			showToast("Removed from Favorites");
 		} else {
-			// Add
+			// Add as simple string (no metadata generation in fallback)
 			updateSettings({
 				library: {
 					...currentLib,
@@ -218,7 +231,13 @@ export const ColorControlPanel = ({
 
 			<div className="flex flex-col space-y-6">
 				{/* PRIMARY SWATCH CONTAINER */}
-				<div className="relative group w-full aspect-[4/3] rounded-2xl shadow-2xl overflow-hidden border border-white/10 transition-transform active:scale-[0.98]">
+				<div
+					className={`relative group w-full aspect-[4/3] rounded-2xl shadow-2xl overflow-hidden transition-transform active:scale-[0.98] ${
+						isDark
+							? "border border-white/40"
+							: "border border-black/20"
+					}`}
+				>
 					{/* Background */}
 					<div
 						className="absolute inset-0 z-0 bg-transparent"
@@ -252,7 +271,7 @@ export const ColorControlPanel = ({
 									size={16}
 									className={`transition-all ${
 										isPrimaryFavorite
-											? "fill-current text-red-500 scale-110"
+											? "fill-red-500 scale-110"
 											: "group-hover/heart:scale-110"
 									}`}
 								/>
@@ -418,7 +437,7 @@ export const ColorControlPanel = ({
 				{/* PALETTE ACTION */}
 				{harmonyMode !== "manual" && (
 					<div className="pt-2 animate-in fade-in slide-in-from-top-4 duration-500 delay-100">
-						<div className="w-full relative aspect-[8/3] rounded-xl overflow-hidden border border-white/10 shadow-sm transition-all hover:shadow-lg group">
+						<div className="w-full relative aspect-[8/3] rounded-xl overflow-hidden border border-white/30 shadow-sm transition-all hover:shadow-lg group">
 							{/* Color Bars */}
 							<div className="absolute inset-0 flex">
 								{[
@@ -465,7 +484,11 @@ export const ColorControlPanel = ({
 									e.stopPropagation();
 									savePalette();
 								}}
-								className="absolute top-1 right-1 p-2 rounded-full hover:bg-black/10 text-white transition-colors"
+								className={`absolute top-1 right-1 p-2 rounded-full hover:bg-black/10 transition-colors ${
+									colord(tertiaryColor).isDark()
+										? "text-white"
+										: "text-black/60"
+								}`}
 								title={
 									isPaletteFavorite
 										? "Remove Palette"
@@ -476,8 +499,8 @@ export const ColorControlPanel = ({
 									size={14}
 									className={
 										isPaletteFavorite
-											? "fill-red-500 text-red-500"
-											: "text-white/70 hover:text-white"
+											? "fill-red-500"
+											: "fill-transparent"
 									}
 								/>
 							</button>
@@ -518,7 +541,11 @@ const MiniColorCard = ({
 	};
 
 	return (
-		<div className="relative rounded-xl overflow-hidden aspect-[4/3] border border-white/10 shadow-sm transition-all hover:shadow-lg group/minicard">
+		<div
+			className={`relative rounded-xl overflow-hidden aspect-[4/3] shadow-sm transition-all hover:shadow-lg group/minicard ${
+				isDark ? "border border-white/40" : "border border-black/20"
+			}`}
+		>
 			{/* Interactive Color Area */}
 			<div className="absolute inset-0 cursor-pointer">
 				<div
@@ -557,9 +584,7 @@ const MiniColorCard = ({
 					>
 						<Heart
 							size={14}
-							className={
-								isFavorite ? "fill-red-500 text-red-500" : ""
-							}
+							className={isFavorite ? "fill-red-500" : ""}
 						/>
 					</button>
 				</div>
@@ -833,7 +858,7 @@ const SmartColorInput = ({
 		// COMPONENT Mode (Read-only view with clickable parts)
 		return (
 			<div
-				className={`flex items-center justify-center gap-1 w-32 h-6 text-xs font-mono transition-all duration-300 ${
+				className={`flex items-center justify-end gap-1 flex-1 text-xs font-mono transition-all duration-300 ${
 					disabled
 						? "opacity-30 blur-[1px] pointer-events-none"
 						: "opacity-80 cursor-default"
@@ -861,13 +886,13 @@ const SmartColorInput = ({
 
 	return (
 		<div
-			className={`flex items-center gap-2 group/field w-full justify-center relative ${
+			className={`flex items-center justify-between px-12 gap-2 group/field w-full relative h-7 ${
 				disabled ? "pointer-events-none" : ""
 			}`}
 		>
 			{label && (
 				<span
-					className={`text-[9px] font-mono absolute left-8 w-6 text-right transition-all duration-300 ${
+					className={`text-[9px] font-mono w-8 text-left transition-all duration-300 ${
 						disabled ? "opacity-10" : "opacity-40"
 					}`}
 				>

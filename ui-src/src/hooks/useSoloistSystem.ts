@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { PresetColor } from "../data/colorPresets";
 
 export type StorageType = "local" | "github" | "cloud";
 export type VisualFidelity = "performance" | "high";
@@ -28,15 +29,16 @@ export interface Project {
 	collectionIds: string[];
 }
 
-interface UserLibrary {
-	colors: string[]; // Hex codes
+export interface UserLibrary {
+	colors: (string | PresetColor)[]; // Hex codes or full PresetColor objects
 	fonts: string[]; // Font family names
 	palettes: { name: string; colors: string[] }[];
 	collections: Collection[];
+	colorCache?: PresetColor[]; // AI-generated metadata cache for reuse
 	projects: Project[];
 }
 
-interface SystemSettings {
+export interface SystemSettings {
 	storageType: StorageType;
 	visualFidelity: VisualFidelity;
 	aiLevel: AILevel;

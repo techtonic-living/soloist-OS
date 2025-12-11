@@ -4,22 +4,11 @@ import { ChevronLeft, Check, Sparkles, User, ArrowRight } from "lucide-react";
 import { ColorMatrix } from "./ColorMatrix";
 import { TypographyMatrix } from "./TypographyMatrix";
 import { SizingMatrix } from "./SizingMatrix";
-import { SemanticMapper, SemanticToken } from "./SemanticMapper";
+import { SemanticMapper } from "./SemanticMapper";
+import { useSoloist } from "../context/SoloistContext";
 
+// Removed prop interface for state, keeping only callback
 interface OnboardingWizardProps {
-	ramp: any[];
-	setRamp: any;
-	setSeedColor: (color: string) => void;
-	baseSize: number;
-	setBaseSize: (size: number) => void;
-	scale: any;
-	setScale: (scale: any) => void;
-	baseSpacing: number;
-	setBaseSpacing: (val: number) => void;
-	baseRadius: number;
-	setBaseRadius: (val: number) => void;
-	semanticTokens: SemanticToken[];
-	setSemanticTokens: (tokens: SemanticToken[]) => void;
 	onComplete: () => void;
 }
 
@@ -72,22 +61,35 @@ function LayersIcon(props: any) {
 	return <span {...props}>L</span>;
 }
 
-export const OnboardingWizard = ({
-	ramp,
-	setRamp,
-	setSeedColor,
-	baseSize,
-	setBaseSize,
-	scale,
-	setScale,
-	baseSpacing,
-	setBaseSpacing,
-	baseRadius,
-	setBaseRadius,
-	semanticTokens,
-	setSemanticTokens,
-	onComplete,
-}: OnboardingWizardProps) => {
+export const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
+	const {
+		ramp,
+		setRamp,
+		setSeedColor,
+		baseSize,
+		setBaseSize,
+		scale,
+		setScale,
+		baseSpacing,
+		setBaseSpacing,
+		baseRadius,
+		setBaseRadius,
+		semanticTokens,
+		setSemanticTokens,
+		// SemanticMapper also needs other ramps for dropdowns usually?
+		// Checking SemanticMapper props in previous step... yes it takes tokens and setTokens.
+		// Wait, does it need the ramps to pick colors FROM?
+		// In Step 179 TokensView passes: ramp, secondaryRamp, tertiaryRamp, neutralRamp, signalRamp, alphaRamp
+		// But in OnboardingWizard existing code (Step 219), it ONLY passes `ramp`!
+		// This means the Wizard's SemanticMapper might be incomplete compared to TokensView.
+		// I should probably pass all ramps to it if I can.
+		secondaryRamp,
+		tertiaryRamp,
+		neutralRamp,
+		signalRamp,
+		alphaRamp,
+	} = useSoloist();
+
 	const [currentStep, setCurrentStep] = useState(0);
 
 	const handleNext = () => {
@@ -197,6 +199,11 @@ export const OnboardingWizard = ({
 							{stepData.id === "logic" && (
 								<SemanticMapper
 									ramp={ramp}
+									secondaryRamp={secondaryRamp}
+									tertiaryRamp={tertiaryRamp}
+									neutralRamp={neutralRamp}
+									signalRamp={signalRamp}
+									alphaRamp={alphaRamp}
 									tokens={semanticTokens}
 									setTokens={setSemanticTokens}
 								/>
