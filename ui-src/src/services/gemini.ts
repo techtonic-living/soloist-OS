@@ -15,7 +15,10 @@ const genAI = new GoogleGenerativeAI(API_KEY || "");
  * @returns The generative model instance.
  */
 export const getGeminiModel = () => {
-	return genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+	return genAI.getGenerativeModel(
+		{ model: "gemini-2.5-flash-lite" },
+		{ apiVersion: "v1beta" }
+	);
 };
 
 /**
@@ -41,6 +44,19 @@ export const generateText = async (prompt: string): Promise<string> => {
 			message: error instanceof Error ? error.message : "Unknown error",
 			stack: error instanceof Error ? error.stack : undefined,
 		});
+
+		// Attempt to list available models for debugging
+		try {
+			console.log("[Gemini] Listing available models...");
+			const response = await fetch(
+				`https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`
+			);
+			const data = await response.json();
+			console.log("[Gemini] Available models:", data);
+		} catch (listError) {
+			console.error("[Gemini] Failed to list models:", listError);
+		}
+
 		throw error;
 	}
 };

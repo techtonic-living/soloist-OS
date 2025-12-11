@@ -197,15 +197,17 @@ export const ColorControlPanel = ({
 		}
 	};
 
-	const isPrimaryFavorite = settings.library?.colors.includes(
-		seedColor.toUpperCase()
-	); // Check Favorites (Case-insensitive)
-	const isSecondaryFavorite = settings.library?.colors.includes(
-		secondaryColor.toUpperCase()
-	);
-	const isTertiaryFavorite = settings.library?.colors.includes(
-		tertiaryColor.toUpperCase()
-	);
+	// Helper to check if a color is in favorites (handles both strings and objects)
+	const checkIsFavorite = (colorHex: string) => {
+		return settings.library?.colors.some((c: any) => {
+			const storedHex = typeof c === "string" ? c : c.value;
+			return storedHex.toUpperCase() === colorHex.toUpperCase();
+		});
+	};
+
+	const isPrimaryFavorite = checkIsFavorite(seedColor);
+	const isSecondaryFavorite = checkIsFavorite(secondaryColor);
+	const isTertiaryFavorite = checkIsFavorite(tertiaryColor);
 
 	return (
 		<div className="relative">
