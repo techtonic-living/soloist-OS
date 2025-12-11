@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { colord } from "colord";
-import { Copy, Check, Heart, ArrowUpDown, Undo2 } from "lucide-react";
+import { Copy, Check, Heart, ArrowUpDown, X } from "lucide-react";
 
 interface ColorControlPanelProps {
 	seedColor: string;
@@ -210,35 +210,33 @@ export const ColorControlPanel = ({
 	const isTertiaryFavorite = checkIsFavorite(tertiaryColor);
 
 	return (
-		<div className="relative">
-			{/* TOAST NOTIFICATION - ABSOLUTE OVERLAY */}
-			{toast && (
-				<div className="fixed bottom-4 right-4 z-[100] animate-in fade-in duration-300 pointer-events-none">
-					<div className="bg-zinc-900 border border-white/20 px-3 py-2 rounded-lg shadow-xl flex items-center gap-2 text-xs font-bold text-white pointer-events-auto">
-						<Heart
-							size={12}
-							className={
-								toast.message.includes("Saved")
-									? "fill-red-500 text-red-500"
-									: "text-gray-400 hidden"
-							}
-						/>
-						{toast.message.includes("Copied") && (
-							<Copy size={12} className="text-gray-400" />
-						)}
-						<span>{toast.message}</span>
-					</div>
+		<div className="flex flex-col gap-4 relative">
+			{/* Centralized Interaction Locks */}
+			{activeEditorId !== null && (
+				<>
+					{/* Global Lock (Main App) */}
+					<div className="fixed inset-0 z-[50] bg-black/20 cursor-default" />
+					{/* Local Lock (Panel Content) */}
+					<div className="absolute inset-0 z-[90] bg-transparent cursor-default" />
+				</>
+			)}
+
+			{/* Toast */}
+			{toast?.visible && (
+				<div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[1000] px-3 py-1.5 bg-black/80 backdrop-blur-md text-white/90 text-[10px] font-bold tracking-wider uppercase rounded-full border border-white/10 animate-in fade-in slide-in-from-bottom-2">
+					{toast.message}
 				</div>
 			)}
 
-			<div className="flex flex-col space-y-6">
+			{/* PRIMARY COLOR CONTROLS */}
+			<div className="relative">
 				{/* PRIMARY SWATCH CONTAINER */}
 				<div
 					className={`relative group w-full aspect-[4/3] rounded-2xl shadow-2xl overflow-hidden transition-transform active:scale-[0.98] ${
 						isDark
 							? "border border-white/40"
 							: "border border-black/20"
-					}`}
+					} ${activeEditorId ? "z-[100]" : ""}`}
 				>
 					{/* Background */}
 					<div
@@ -252,36 +250,67 @@ export const ColorControlPanel = ({
 							isDark ? "text-white" : "text-black/80"
 						}`}
 					>
-						{/* Header: Label + Save */}
-						<div className="flex justify-between items-start pointer-events-auto">
+						<div
+							className={`flex justify-between items-start transition-opacity duration-300 ${
+								activeEditorId
+									? "pointer-events-none opacity-20"
+									: "pointer-events-auto"
+							}`}
+						>
 							<span className="text-[10px] font-bold tracking-widest uppercase opacity-60">
 								Primary
 							</span>
-							<button
-								onClick={(e) => {
-									e.stopPropagation();
-									toggleFavorite(seedColor.toUpperCase());
-								}}
-								className="p-2 -mr-2 -mt-2 hover:bg-black/10 rounded-full transition-colors group/heart"
-								title={
-									isPrimaryFavorite
-										? "Remove from Favorites"
-										: "Save to Favorites"
-								}
-							>
-								<Heart
-									size={16}
-									className={`transition-all ${
+							<div className="flex items-center gap-1 -mr-2 -mt-2">
+								<button
+									onClick={(e) => {
+										e.stopPropagation();
+										copyToClipboard(
+											seedColor.toUpperCase(),
+											setCopiedHex
+										);
+									}}
+									className="p-2 hover:bg-black/10 rounded-full transition-colors group/copy"
+									title="Copy Hex"
+								>
+									{copiedHex ? (
+										<Check
+											size={16}
+											className="text-green-500"
+										/>
+									) : (
+										<Copy size={16} />
+									)}
+								</button>
+								<button
+									onClick={(e) => {
+										e.stopPropagation();
+										toggleFavorite(seedColor.toUpperCase());
+									}}
+									className="p-2 hover:bg-black/10 rounded-full transition-colors group/heart"
+									title={
 										isPrimaryFavorite
-											? "fill-red-500 scale-110"
-											: "group-hover/heart:scale-110"
-									}`}
-								/>
-							</button>
+											? "Remove from Favorites"
+											: "Save to Favorites"
+									}
+								>
+									<Heart
+										size={16}
+										className={`transition-all ${
+											isPrimaryFavorite
+												? "fill-red-500 scale-110"
+												: "group-hover/heart:scale-110"
+										}`}
+									/>
+								</button>
+							</div>
 						</div>
 
 						{/* Center: Stacked Editable Inputs */}
-						<div className="space-y-1 w-full flex flex-col items-center relative z-20 pointer-events-auto">
+						<div
+							className={`space-y-1 w-full flex flex-col items-center relative pointer-events-auto transition-all ${
+								activeEditorId ? "z-[100]" : "z-20"
+							}`}
+						>
 							{/* HEX Input */}
 							<SmartColorInput
 								id="hex"
@@ -305,6 +334,7 @@ export const ColorControlPanel = ({
 									)
 								}
 								isCopied={copiedHex}
+								hideCopy={true}
 							/>
 
 							{/* RGB Input */}
@@ -313,7 +343,7 @@ export const ColorControlPanel = ({
 								value={`${rgba.r}, ${rgba.g}, ${rgba.b}`}
 								type="rgb"
 								label="RGB"
-								editable={false}
+								editable={true}
 								disabled={
 									activeEditorId !== null &&
 									activeEditorId !== "rgb"
@@ -340,7 +370,7 @@ export const ColorControlPanel = ({
 								)}%, ${Math.round(hsla.l)}%`}
 								type="hsl"
 								label="HSL"
-								editable={false}
+								editable={true}
 								disabled={
 									activeEditorId !== null &&
 									activeEditorId !== "hsl"
@@ -371,7 +401,7 @@ export const ColorControlPanel = ({
 								)}%, ${Math.round(hsva.v)}%`}
 								type="hsb"
 								label="HSB"
-								editable={false}
+								editable={true}
 								disabled={
 									activeEditorId !== null &&
 									activeEditorId !== "hsb"
@@ -409,107 +439,105 @@ export const ColorControlPanel = ({
 						className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-0"
 					/>
 				</div>
-
-				{/* SECONDARY & TERTIARY CARDS */}
-				{harmonyMode !== "manual" && (
-					<div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-4 duration-500 delay-75">
-						<MiniColorCard
-							label="Secondary"
-							color={secondaryColor}
-							isFavorite={isSecondaryFavorite}
-							onMakePrimary={() => setSeedColor(secondaryColor)}
-							onToggleFavorite={() =>
-								toggleFavorite(secondaryColor.toUpperCase())
-							}
-							onCopy={() => showToast("Copied to clipboard")}
-						/>
-						<MiniColorCard
-							label="Tertiary"
-							color={tertiaryColor}
-							isFavorite={isTertiaryFavorite}
-							onMakePrimary={() => setSeedColor(tertiaryColor)}
-							onToggleFavorite={() =>
-								toggleFavorite(tertiaryColor.toUpperCase())
-							}
-							onCopy={() => showToast("Copied to clipboard")}
-						/>
-					</div>
-				)}
-
-				{/* PALETTE ACTION */}
-				{harmonyMode !== "manual" && (
-					<div className="pt-2 animate-in fade-in slide-in-from-top-4 duration-500 delay-100">
-						<div className="w-full relative aspect-[8/3] rounded-xl overflow-hidden border border-white/30 shadow-sm transition-all hover:shadow-lg group">
-							{/* Color Bars */}
-							<div className="absolute inset-0 flex">
-								{[
-									{ color: seedColor, label: "Primary" },
-									{
-										color: secondaryColor,
-										label: "Secondary",
-									},
-									{ color: tertiaryColor, label: "Tertiary" },
-								].map((item, idx) => {
-									const isItemDark = colord(
-										item.color
-									).isDark();
-									return (
-										<div
-											key={idx}
-											className="flex-1 h-full relative"
-											style={{
-												backgroundColor: item.color,
-											}}
-										>
-											<div
-												className={`absolute inset-0 p-2 flex flex-col justify-end ${
-													isItemDark
-														? "text-white/90"
-														: "text-black/80"
-												}`}
-											>
-												<span className="text-[10px] font-bold uppercase opacity-60 tracking-wider mb-0.5">
-													{item.label}
-												</span>
-												<span className="text-[10px] font-mono opacity-90">
-													{item.color.toUpperCase()}
-												</span>
-											</div>
-										</div>
-									);
-								})}
-							</div>
-
-							{/* Save Toggle */}
-							<button
-								onClick={(e) => {
-									e.stopPropagation();
-									savePalette();
-								}}
-								className={`absolute top-1 right-1 p-2 rounded-full hover:bg-black/10 transition-colors ${
-									colord(tertiaryColor).isDark()
-										? "text-white"
-										: "text-black/60"
-								}`}
-								title={
-									isPaletteFavorite
-										? "Remove Palette"
-										: "Save Palette"
-								}
-							>
-								<Heart
-									size={14}
-									className={
-										isPaletteFavorite
-											? "fill-red-500"
-											: "fill-transparent"
-									}
-								/>
-							</button>
-						</div>
-					</div>
-				)}
 			</div>
+
+			{/* SECONDARY & TERTIARY CARDS */}
+			{harmonyMode !== "manual" && (
+				<div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-4 duration-500 delay-75">
+					<MiniColorCard
+						label="Secondary"
+						color={secondaryColor}
+						isFavorite={isSecondaryFavorite}
+						onMakePrimary={() => setSeedColor(secondaryColor)}
+						onToggleFavorite={() =>
+							toggleFavorite(secondaryColor.toUpperCase())
+						}
+						onCopy={() => showToast("Copied to clipboard")}
+					/>
+					<MiniColorCard
+						label="Tertiary"
+						color={tertiaryColor}
+						isFavorite={isTertiaryFavorite}
+						onMakePrimary={() => setSeedColor(tertiaryColor)}
+						onToggleFavorite={() =>
+							toggleFavorite(tertiaryColor.toUpperCase())
+						}
+						onCopy={() => showToast("Copied to clipboard")}
+					/>
+				</div>
+			)}
+
+			{/* PALETTE ACTION */}
+			{harmonyMode !== "manual" && (
+				<div className="pt-2 animate-in fade-in slide-in-from-top-4 duration-500 delay-100">
+					<div className="w-full relative aspect-[8/3] rounded-xl overflow-hidden border border-white/30 shadow-sm transition-all hover:shadow-lg group">
+						{/* Color Bars */}
+						<div className="absolute inset-0 flex">
+							{[
+								{ color: seedColor, label: "Primary" },
+								{
+									color: secondaryColor,
+									label: "Secondary",
+								},
+								{ color: tertiaryColor, label: "Tertiary" },
+							].map((item, idx) => {
+								const isItemDark = colord(item.color).isDark();
+								return (
+									<div
+										key={idx}
+										className="flex-1 h-full relative"
+										style={{
+											backgroundColor: item.color,
+										}}
+									>
+										<div
+											className={`absolute inset-0 p-2 flex flex-col justify-end ${
+												isItemDark
+													? "text-white/90"
+													: "text-black/80"
+											}`}
+										>
+											<span className="text-[10px] font-bold uppercase opacity-60 tracking-wider mb-0.5">
+												{item.label}
+											</span>
+											<span className="text-[10px] font-mono opacity-90">
+												{item.color.toUpperCase()}
+											</span>
+										</div>
+									</div>
+								);
+							})}
+						</div>
+
+						{/* Save Toggle */}
+						<button
+							onClick={(e) => {
+								e.stopPropagation();
+								savePalette();
+							}}
+							className={`absolute top-1 right-1 p-2 rounded-full hover:bg-black/10 transition-colors ${
+								colord(tertiaryColor).isDark()
+									? "text-white"
+									: "text-black/60"
+							}`}
+							title={
+								isPaletteFavorite
+									? "Remove Palette"
+									: "Save Palette"
+							}
+						>
+							<Heart
+								size={14}
+								className={
+									isPaletteFavorite
+										? "fill-red-500"
+										: "fill-transparent"
+								}
+							/>
+						</button>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 };
@@ -622,6 +650,7 @@ const SmartColorInput = ({
 	disabled = false,
 	onEditStart,
 	onEditEnd,
+	hideCopy = false,
 }: {
 	id: string;
 	value: string;
@@ -634,6 +663,7 @@ const SmartColorInput = ({
 	disabled?: boolean;
 	onEditStart: (id: string) => void;
 	onEditEnd: () => void;
+	hideCopy?: boolean;
 }) => {
 	// Local state
 	const [localValue, setLocalValue] = useState(value);
@@ -643,14 +673,16 @@ const SmartColorInput = ({
 	const [activeComponent, setActiveComponent] = useState<number | null>(null);
 	const [initialValue, setInitialValue] = useState<string | null>(null);
 
-	// Update local value when prop changes
+	// Sync local value when prop changes (if not editing)
 	useEffect(() => {
 		if (!isEditing && activeComponent === null) {
 			setLocalValue(value);
 		}
 	}, [value, isEditing, activeComponent]);
 
-	// Parse values for slider
+	// ---------------------------
+	// Slider Logic
+	// ---------------------------
 	const getComponentValues = () => {
 		if (type === "hex") return [];
 		return localValue
@@ -709,148 +741,162 @@ const SmartColorInput = ({
 		onEditEnd();
 	};
 
-	// Text Input Handlers (Hex only)
+	// ---------------------------
+	// Text Input Logic (Hex)
+	// ---------------------------
+	const handleSave = () => {
+		if (onCommit) {
+			onCommit(localValue);
+		}
+		setIsEditing(false);
+		onEditEnd();
+	};
+
+	const handleCancel = () => {
+		setLocalValue(value);
+		setIsEditing(false);
+		onEditEnd();
+	};
+
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-		if (!editable || disabled) return;
 		if (e.key === "Enter") {
 			e.preventDefault();
-			e.stopPropagation();
-			if (isValidInput(localValue, type) && onCommit) {
-				onCommit(localValue);
-				(e.target as HTMLInputElement).blur();
-			} else {
-				setLocalValue(value);
-				(e.target as HTMLInputElement).blur();
-			}
+			handleSave();
 		} else if (e.key === "Escape") {
-			setLocalValue(value);
-			(e.target as HTMLInputElement).blur();
+			e.preventDefault();
+			handleCancel();
 		}
 	};
 
-	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		if (!editable || disabled) return;
-		setLocalValue(e.target.value);
-	};
-
-	const isValidInput = (val: string, type: string) => {
-		if (type === "hex") {
-			const clean = val.replace("#", "");
-			return /^[0-9A-Fa-f]{6}$/.test(clean);
-		}
-		return true;
-	};
-
+	// ---------------------------
+	// Render
+	// ---------------------------
 	const renderContent = () => {
-		// HEX Mode: Text Input
+		// HEX Mode: Text Input (Keep the unified style for Hex)
 		if (type === "hex") {
-			return (
-				<input
-					type="text"
-					value={localValue.toUpperCase()}
-					onChange={handleChange}
-					onKeyDown={handleKeyDown}
-					onFocus={(e) => {
-						if (editable && !disabled) {
-							setIsEditing(true);
-							e.target.select();
-							onEditStart(id);
-						}
-					}}
-					onBlur={() => {
-						if (editable) {
-							setIsEditing(false);
-							setLocalValue(value);
-							onEditEnd();
-						}
-					}}
-					onClick={(e) => e.stopPropagation()}
-					readOnly={!editable || disabled}
-					disabled={disabled}
-					className={`
-                        bg-transparent text-center border-b border-transparent
-                        transition-all duration-300 text-3xl font-brand font-bold w-40
-                        ${
-							editable && !disabled
-								? "hover:border-white/20 focus:border-white/50 focus:outline-none cursor-text"
-								: "cursor-default select-none border-none"
-						}
-                        ${disabled ? "opacity-30 blur-[1px]" : "opacity-100"}
-                    `}
-				/>
-			);
+			if (isEditing) {
+				return (
+					<div className="relative z-[100] flex items-center gap-2 flex-1 min-w-0">
+						<input
+							autoFocus
+							type="text"
+							value={localValue.toUpperCase()}
+							onChange={(e) => setLocalValue(e.target.value)}
+							onKeyDown={handleKeyDown}
+							className="flex-1 min-w-0 bg-black/40 backdrop-blur-md border border-white/20 rounded px-2 py-1 text-xs font-bold font-mono text-white text-center focus:outline-none focus:border-accent-cyan"
+						/>
+						<div className="flex items-center gap-1 shrink-0">
+							<button
+								onClick={handleCancel}
+								className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors backdrop-blur-sm"
+								title="Cancel"
+							>
+								<X size={12} />
+							</button>
+							<button
+								onClick={handleSave}
+								className="p-1.5 rounded-full bg-green-500/80 hover:bg-green-500 text-white transition-colors backdrop-blur-sm"
+								title="Save"
+							>
+								<Check size={12} />
+							</button>
+						</div>
+					</div>
+				);
+			} else {
+				return (
+					<button
+						onClick={() => {
+							if (editable && !disabled) {
+								setIsEditing(true);
+								onEditStart(id);
+							}
+						}}
+						disabled={!editable || disabled}
+						className={`
+                            flex-1 text-center transition-all duration-300 font-bold text-3xl font-brand
+                            ${
+								editable && !disabled
+									? "cursor-text hover:text-white"
+									: "cursor-default select-none"
+							}
+                            ${
+								disabled
+									? "opacity-30 blur-[1px]"
+									: "opacity-80 text-white/90"
+							}
+                        `}
+					>
+						{value.toUpperCase()}
+					</button>
+				);
+			}
 		}
 
 		// SLIDER Mode (Active)
 		if (activeComponent !== null) {
 			const config = getSliderConfig(activeComponent);
-			const hasChanged =
-				initialValue !== null && localValue !== initialValue;
-
 			return (
-				<div
-					className="flex items-center gap-1.5 w-[150px] h-7 bg-black/40 rounded-full px-2 animate-in fade-in zoom-in-95 duration-200 border border-white/10 shadow-lg backdrop-blur-md"
-					onClick={(e) => e.stopPropagation()}
-				>
-					{/* Component Label */}
-					<span className="text-[10px] font-mono opacity-60 w-3 text-right shrink-0">
-						{activeComponent === 0
-							? type === "rgb"
-								? "R"
-								: "H"
-							: activeComponent === 1
-							? type === "rgb"
-								? "G"
-								: "S"
-							: type === "rgb"
-							? "B"
-							: type === "hsl"
-							? "L"
-							: "B"}
-					</span>
+				<div className="relative z-[100] flex items-center gap-2 flex-1 min-w-0">
+					<div
+						className="flex items-center gap-1.5 w-[120px] bg-black/40 rounded px-2 py-0.5 animate-in fade-in zoom-in-95 duration-200 border border-accent-cyan backdrop-blur-md"
+						onClick={(e) => e.stopPropagation()}
+					>
+						{/* Component Label */}
+						<span className="text-[10px] font-mono opacity-60 w-3 text-right shrink-0">
+							{activeComponent === 0
+								? type === "rgb"
+									? "R"
+									: "H"
+								: activeComponent === 1
+								? type === "rgb"
+									? "G"
+									: "S"
+								: type === "rgb"
+								? "B"
+								: type === "hsl"
+								? "L"
+								: "B"}
+						</span>
 
-					{/* Slider */}
-					<input
-						type="range"
-						min={config.min}
-						max={config.max}
-						value={componentValues[activeComponent]}
-						onChange={handleSliderChange}
-						autoFocus
-						className="flex-1 h-1 bg-white/20 rounded-full appearance-none cursor-pointer accent-white hover:accent-white/80 min-w-0"
-					/>
+						{/* Slider */}
+						<input
+							type="range"
+							min={config.min}
+							max={config.max}
+							value={componentValues[activeComponent]}
+							onChange={handleSliderChange}
+							autoFocus
+							className="flex-1 h-1 bg-white/20 rounded-full appearance-none cursor-pointer accent-accent-cyan hover:accent-accent-cyan/80 min-w-0"
+						/>
 
-					{/* Value Readout */}
-					<span className="text-[10px] font-mono font-bold w-6 text-left shrink-0">
-						{componentValues[activeComponent]}
-					</span>
+						{/* Value Readout */}
+						<span className="text-[10px] font-mono font-bold w-6 text-left shrink-0">
+							{componentValues[activeComponent]}
+						</span>
+					</div>
 
-					{/* Actions: Revert & Commit */}
-					<div className="flex items-center gap-0.5 pl-1 border-l border-white/10 ml-0.5 shrink-0">
+					{/* Actions: Revert & Commit (Outside, aligned with Hex) */}
+					<div className="flex items-center gap-1 shrink-0">
 						<button
 							onClick={(e) => {
 								e.stopPropagation();
 								revertSlider();
 							}}
-							disabled={!hasChanged}
-							className={`p-1 rounded-full transition-all ${
-								hasChanged
-									? "text-white/70 hover:text-white hover:bg-white/10"
-									: "text-white/10 cursor-not-allowed"
-							}`}
-							title="Revert"
+							className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors backdrop-blur-sm"
+							title="Cancel"
 						>
-							<Undo2 size={10} strokeWidth={2.5} />
+							<X size={12} />
 						</button>
 						<button
 							onClick={(e) => {
 								e.stopPropagation();
 								commitSlider();
 							}}
-							className="p-1 text-green-400 hover:text-green-300 hover:bg-green-400/10 rounded-full transition-all"
+							className="p-1.5 rounded-full bg-green-500/80 hover:bg-green-500 text-white transition-colors backdrop-blur-sm"
 							title="Commit"
 						>
-							<Check size={10} strokeWidth={3} />
+							<Check size={12} />
 						</button>
 					</div>
 				</div>
@@ -860,7 +906,7 @@ const SmartColorInput = ({
 		// COMPONENT Mode (Read-only view with clickable parts)
 		return (
 			<div
-				className={`flex items-center justify-end gap-1 flex-1 text-xs font-mono transition-all duration-300 ${
+				className={`grid grid-cols-3 gap-2 flex-1 text-xs font-mono transition-all duration-300 ${
 					disabled
 						? "opacity-30 blur-[1px] pointer-events-none"
 						: "opacity-80 cursor-default"
@@ -873,13 +919,15 @@ const SmartColorInput = ({
 							e.stopPropagation();
 							startSlider(idx);
 						}}
-						className="hover:bg-white/10 hover:text-white px-1 py-0.5 rounded transition-colors"
+						className="hover:bg-white/10 hover:text-white px-0.5 rounded transition-colors text-right w-full"
 						title={`Adjust ${type.toUpperCase()} value`}
 						disabled={disabled}
 					>
 						{val}
 						{type !== "rgb" && idx > 0 ? "%" : ""}
-						{idx < 2 ? "," : ""}
+						<span className="opacity-30 ml-px">
+							{idx < 2 ? "," : ""}
+						</span>
 					</button>
 				))}
 			</div>
@@ -888,14 +936,22 @@ const SmartColorInput = ({
 
 	return (
 		<div
-			className={`flex items-center justify-between px-12 gap-2 group/field w-full relative h-7 ${
+			className={`flex items-center ${
+				type === "hex" || isEditing || activeComponent !== null
+					? "justify-center"
+					: "justify-between"
+			} px-12 gap-2 group/field w-full relative h-7 ${
 				disabled ? "pointer-events-none" : ""
-			}`}
+			} ${isEditing || activeComponent !== null ? "z-[100]" : "z-auto"}`}
 		>
 			{label && (
 				<span
 					className={`text-[9px] font-mono w-8 text-left transition-all duration-300 ${
 						disabled ? "opacity-10" : "opacity-40"
+					} ${
+						isEditing || activeComponent !== null
+							? "absolute left-2"
+							: ""
 					}`}
 				>
 					{label}
@@ -904,8 +960,8 @@ const SmartColorInput = ({
 
 			{renderContent()}
 
-			{/* Copy Button (Only if NOT active slider) */}
-			{activeComponent === null && (
+			{/* Copy Button (Only if NOT active slider/editing AND not hidden) */}
+			{!isEditing && activeComponent === null && !hideCopy && (
 				<button
 					onClick={(e) => {
 						e.stopPropagation();

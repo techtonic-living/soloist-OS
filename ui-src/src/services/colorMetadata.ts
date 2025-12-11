@@ -2,6 +2,11 @@ import { generateText } from "./gemini";
 import { PresetColor, PRESET_LIBRARIES } from "../data/colorPresets";
 import { colord } from "colord";
 
+export interface MetadataOptions {
+	avoidNames?: string[];
+	maxAttempts?: number;
+}
+
 /**
  * Search all preset libraries for a color with matching hex value
  * @param hexValue The hex color to search for
@@ -30,9 +35,14 @@ export const findColorInPresets = (hexValue: string): PresetColor | null => {
  */
 export const findOrGenerateMetadata = async (
 	hexValue: string,
-	cache?: PresetColor[]
+	cache?: PresetColor[],
+	options: MetadataOptions = {}
 ): Promise<PresetColor> => {
 	const normalizedHex = hexValue.toUpperCase();
+	const avoid = new Set(
+		(options.avoidNames || []).map((n) => n.toUpperCase())
+	);
+	const maxAttempts = options.maxAttempts ?? 3;
 
 	// Step 1: Check preset libraries
 	const presetMatch = findColorInPresets(normalizedHex);
@@ -52,9 +62,33 @@ export const findOrGenerateMetadata = async (
 		}
 	}
 
-	// Step 3: Generate with AI
+	// Step 3: Generate with AI, ensuring unique name vs avoid list
 	console.log(`Generating new metadata for ${normalizedHex}`);
-	return await generateColorMetadata(hexValue);
+	let lastMetadata = await generateColorMetadata(hexValue, options);
+	let attempts = 1;
+
+	while (
+		attempts < maxAttempts &&
+		lastMetadata.name &&
+		avoid.has(lastMetadata.name.toUpperCase())
+	) {
+		avoid.add(lastMetadata.name.toUpperCase());
+		lastMetadata = await generateColorMetadata(hexValue, {
+			...options,
+			avoidNames: Array.from(avoid),
+		});
+		attempts += 1;
+	}
+
+	// Final safety: if still duplicated, append hex to make unique
+	if (lastMetadata.name && avoid.has(lastMetadata.name.toUpperCase())) {
+		lastMetadata = {
+			...lastMetadata,
+			name: `${lastMetadata.name} ${normalizedHex}`,
+		};
+	}
+
+	return lastMetadata;
 };
 
 /**
@@ -63,19 +97,25 @@ export const findOrGenerateMetadata = async (
  * @returns Promise<PresetColor> with generated metadata
  */
 export const generateColorMetadata = async (
-	hexColor: string
+	hexColor: string,
+	options: MetadataOptions = {}
 ): Promise<PresetColor> => {
 	try {
 		// Parse color for basic info
 		const color = colord(hexColor);
 		const hsl = color.toHsl();
 		const isDark = color.isDark();
+		const avoidNames = options.avoidNames || [];
 
 		// Create prompt for Gemini
 		const prompt = `Analyze this color: ${hexColor}
 
 HSL: H=${Math.round(hsl.h)}° S=${Math.round(hsl.s)}% L=${Math.round(hsl.l)}%
 Brightness: ${isDark ? "Dark" : "Light"}
+
+Existing favorite names to avoid (case-insensitive): ${
+			avoidNames.length > 0 ? avoidNames.join(", ") : "None"
+		}
 
 Generate creative metadata in this EXACT JSON format (no markdown, just raw JSON):
 {

@@ -266,7 +266,7 @@ export const PRESET_LIBRARIES: PresetLibrary[] = [
 				usage: "Primary Buttons, Links, Info States",
 			},
 			{
-				name: "Aurora Red",
+				name: "Valhalla Red",
 				value: "#BF616A",
 				description:
 					"A soft, muted red inspired by the northern lights.",
@@ -274,21 +274,21 @@ export const PRESET_LIBRARIES: PresetLibrary[] = [
 				usage: "Errors, Deletions, Negative States",
 			},
 			{
-				name: "Aurora Green",
+				name: "Boreal Green",
 				value: "#A3BE8C",
 				description: "A natural, forest green. Gentle on the eyes.",
 				meaning: "Growth, Success, Harmony",
 				usage: "Success States, Additions",
 			},
 			{
-				name: "Aurora Yellow",
+				name: "Luminous Gold",
 				value: "#EBCB8B",
 				description: "Muted gold reminiscent of aurora borealis.",
 				meaning: "Warning, Attention, Warmth",
 				usage: "Warnings, Modified States",
 			},
 			{
-				name: "Aurora Purple",
+				name: "Mystic Violet",
 				value: "#B48EAD",
 				description: "Soft lavender from the northern lights.",
 				meaning: "Magic, Keywords, Special States",
@@ -310,7 +310,7 @@ export const PRESET_LIBRARIES: PresetLibrary[] = [
 				usage: "Terminal Text, Glitch Effects, Highlights",
 			},
 			{
-				name: "Neon Pink",
+				name: "Flux Pink",
 				value: "#FF00FF",
 				description: "Pure magenta. The color of retro-future sunsets.",
 				meaning: "Fantasy, Rebellion, Artificiality",
@@ -332,7 +332,7 @@ export const PRESET_LIBRARIES: PresetLibrary[] = [
 				usage: "Holograms, Links, Tech Accents",
 			},
 			{
-				name: "Neon Orange",
+				name: "Plasma Orange",
 				value: "#FF3C00",
 				description: "Burning hot orange with maximum saturation.",
 				meaning: "Heat, Danger, Urgency",
@@ -520,7 +520,7 @@ export const PRESET_LIBRARIES: PresetLibrary[] = [
 				usage: "App Backgrounds, Headers",
 			},
 			{
-				name: "Deep Forest",
+				name: "Evergreen Shadow",
 				value: "#004B49",
 				description: "A dark, lush green. Calming and rich.",
 				meaning: "Nature, Stability, Finance",
@@ -548,7 +548,7 @@ export const PRESET_LIBRARIES: PresetLibrary[] = [
 				usage: "Card Backgrounds, Panels",
 			},
 			{
-				name: "Deep Burgundy",
+				name: "Velvet Merlot",
 				value: "#3D0C02",
 				description: "Almost black red. Rich and sophisticated.",
 				meaning: "Luxury, Passion, Depth",
@@ -695,14 +695,14 @@ export const PRESET_LIBRARIES: PresetLibrary[] = [
 				usage: "XP Bars, Level Ups",
 			},
 			{
-				name: "Team Red",
+				name: "Red Force",
 				value: "#E74C3C",
 				description: "Bold team color. Competitive and energetic.",
 				meaning: "Competition, Team, Energy",
 				usage: "Team Indicators, PvP Elements",
 			},
 			{
-				name: "Team Blue",
+				name: "Tactical Blue",
 				value: "#3498DB",
 				description: "Cool team color. Strategic and calm.",
 				meaning: "Strategy, Team, Cool",
@@ -736,14 +736,14 @@ export const PRESET_LIBRARIES: PresetLibrary[] = [
 				usage: "Hyperlinks, Accessible Links",
 			},
 			{
-				name: "Safe Red",
+				name: "Mandatory Stop",
 				value: "#CC0000",
 				description: "Dark red that meets contrast requirements.",
 				meaning: "Error, Stop, Alert",
 				usage: "Error Messages, Required Fields",
 			},
 			{
-				name: "Safe Green",
+				name: "Verified Go",
 				value: "#008000",
 				description: "Dark green for accessibility compliance.",
 				meaning: "Success, Safe, Go",

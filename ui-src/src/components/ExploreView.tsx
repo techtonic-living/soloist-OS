@@ -4,7 +4,7 @@ import { ColorCreator } from "./lab/ColorCreator";
 import { PaletteGenerator } from "./lab/PaletteGenerator";
 import { ColorLibrary } from "./lab/ColorLibrary";
 import { PresetColor } from "../data/colorPresets";
-import { findOrGenerateMetadata } from "../services/colorMetadata";
+import { toggleFavoriteWithMetadata } from "../utils/favorites";
 
 import { useSoloist } from "../context/SoloistContext";
 
@@ -36,74 +36,152 @@ export const ExploreView = ({
 	const secondaryColor = secondaryRamp[5]?.hex || "#000000";
 	const tertiaryColor = tertiaryRamp[5]?.hex || "#000000";
 
-	// Favorites Logic with Smart Metadata Sourcing
-	const toggleFavoriteColor = async (
+	// Favorites Logic with shared helper (handles presets, cache, AI)
+	const toggleFavoriteColor = (
 		color: string,
 		existingMetadata?: PresetColor
-	) => {
+	) =>
+		toggleFavoriteWithMetadata({
+			color,
+			existingMetadata,
+			settings,
+			updateSettings,
+		});
+
+	// Bulk add colors to library
+	const bulkAddColors = (colors: PresetColor[]) => {
 		const library = settings.library || {
 			colors: [],
 			fonts: [],
 			palettes: [],
-			colorCache: [],
 		};
 
-		// Check if color exists (handle both string and PresetColor)
-		const exists = library.colors.some((c) =>
-			typeof c === "string" ? c === color : c.value === color
-		);
+		// Merge new colors with existing ones
+		const updatedColors = [...library.colors, ...colors];
 
-		if (exists) {
-			// Remove color
-			const newColors = library.colors.filter((c) =>
-				typeof c === "string" ? c !== color : c.value !== color
-			);
-			updateSettings({ library: { ...library, colors: newColors } });
-		} else {
-			// Add color with metadata
-			try {
-				let colorWithMetadata: PresetColor;
-
-				if (existingMetadata) {
-					// Use provided metadata (from Library colors)
-					console.log(
-						`Using existing metadata for ${color}: ${existingMetadata.name}`
-					);
-					colorWithMetadata = existingMetadata;
-				} else {
-					// Smart lookup: presets → cache → AI generation
-					colorWithMetadata = await findOrGenerateMetadata(
-						color,
-						library.colorCache || []
-					);
-
-					// Update cache if this was a new AI generation
-					const wasGenerated = !library.colorCache?.some(
-						(c) => c.value.toUpperCase() === color.toUpperCase()
-					);
-					if (wasGenerated) {
-						const newCache = [
-							...(library.colorCache || []),
-							colorWithMetadata,
-						];
-						// Update cache for future use
-						updateSettings({
-							library: { ...library, colorCache: newCache },
-						});
-					}
-				}
-
-				const newColors = [...library.colors, colorWithMetadata];
-				updateSettings({ library: { ...library, colors: newColors } });
-			} catch (error) {
-				console.error("Failed to get color metadata:", error);
-				// Fallback: save as string if everything fails
-				const newColors = [...library.colors, color];
-				updateSettings({ library: { ...library, colors: newColors } });
-			}
-		}
+		updateSettings({
+			library: {
+				...library,
+				colors: updatedColors,
+			},
+		});
 	};
 
+	// Bulk remove colors from library
+	const bulkRemoveColors = (colorsToRemove: PresetColor[]) => {
+		const library = settings.library || {
+			colors: [],
+			fonts: [],
+			palettes: [],
+		};
+
+		// Create set of hex values to remove for O(1) lookup
+		const hexesToRemove = new Set(
+			colorsToRemove.map((c) => c.value.toUpperCase())
+		);
+
+		const updatedColors = library.colors.filter(
+			(c: string | PresetColor) => {
+				const hex = typeof c === "string" ? c : c.value;
+				return !hexesToRemove.has(hex.toUpperCase());
+			}
+		);
+
+		updateSettings({
+			library: {
+				...library,
+				colors: updatedColors,
+			},
+		});
+	};
+
+	// Group Management
+	const createGroup = (name: string, description: string) => {
+		const library = settings.library || {
+			colors: [],
+			colorGroups: [],
+			fonts: [],
+			palettes: [],
+		};
+		const newGroup = {
+			id: `group-${Date.now()}-${Math.random()
+				.toString(36)
+				.substr(2, 9)}`,
+			name,
+			description,
+			colorIds: [],
+			isActive: true,
+			isHidden: false,
+		};
+		updateSettings({
+			library: {
+				...library,
+				colorGroups: [...(library.colorGroups || []), newGroup],
+			},
+		});
+	};
+
+	const updateGroup = (id: string, updates: Partial<any>) => {
+		const library = settings.library;
+		if (!library || !library.colorGroups) return;
+		const updatedGroups = library.colorGroups.map((g) =>
+			g.id === id ? { ...g, ...updates } : g
+		);
+		updateSettings({
+			library: { ...library, colorGroups: updatedGroups },
+		});
+	};
+
+	const deleteGroup = (id: string) => {
+		const library = settings.library;
+		if (!library || !library.colorGroups) return;
+		// Colors are just removed from the group, they logically fall back to "My Favorites" (unassigned)
+		// No need to explicitly "move" them as they exist in library.colors
+		const updatedGroups = library.colorGroups.filter((g) => g.id !== id);
+		updateSettings({
+			library: { ...library, colorGroups: updatedGroups },
+		});
+	};
+
+	const moveColor = (colorHex: string, targetGroupId: string | null) => {
+		const library = settings.library;
+		if (!library || !library.colorGroups) return;
+
+		// 1. Remove from all groups first (disjoint ownership)
+		let updatedGroups = library.colorGroups.map((g) => ({
+			...g,
+			colorIds: g.colorIds.filter(
+				(c) => c.toUpperCase() !== colorHex.toUpperCase()
+			),
+		}));
+
+		// 2. Add to target group if specified
+		if (targetGroupId) {
+			updatedGroups = updatedGroups.map((g) => {
+				if (g.id === targetGroupId) {
+					return {
+						...g,
+						colorIds: [...g.colorIds, colorHex],
+					};
+				}
+				return g;
+			});
+		}
+
+		updateSettings({
+			library: { ...library, colorGroups: updatedGroups },
+		});
+	};
+
+	const reorderGroups = (newOrder: any[]) => {
+		const library = settings.library;
+		if (!library) return;
+		updateSettings({
+			library: { ...library, colorGroups: newOrder },
+		});
+	};
+
+	// Save Palette
 	const savePalette = (colors: string[]) => {
 		const library = settings.library || {
 			colors: [],
@@ -189,6 +267,13 @@ export const ExploreView = ({
 								onInspectColor={onInspectColor}
 								onRemoveColor={toggleFavoriteColor}
 								onRemovePalette={() => {}}
+								onAddColors={bulkAddColors}
+								onRemoveColors={bulkRemoveColors}
+								onCreateGroup={createGroup}
+								onUpdateGroup={updateGroup}
+								onDeleteGroup={deleteGroup}
+								onMoveColor={moveColor}
+								onReorderGroups={reorderGroups}
 							/>
 						</motion.div>
 					)}

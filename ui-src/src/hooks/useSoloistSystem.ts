@@ -5,6 +5,13 @@ export type StorageType = "local" | "github" | "cloud";
 export type VisualFidelity = "performance" | "high";
 export type AILevel = "silent" | "guide" | "teacher";
 
+export interface UiPreferences {
+	colorGridDensity: {
+		favorites: number;
+		presets: number;
+	};
+}
+
 interface UserProfile {
 	displayName: string;
 	role: string;
@@ -29,8 +36,19 @@ export interface Project {
 	collectionIds: string[];
 }
 
+export interface ColorGroup {
+	id: string;
+	name: string;
+	description: string;
+	colorIds: string[]; // Values (Hex)
+	isActive: boolean;
+	isHidden: boolean;
+	collapsed?: boolean;
+}
+
 export interface UserLibrary {
 	colors: (string | PresetColor)[]; // Hex codes or full PresetColor objects
+	colorGroups?: ColorGroup[]; // Custom user groups
 	fonts: string[]; // Font family names
 	palettes: { name: string; colors: string[] }[];
 	collections: Collection[];
@@ -44,6 +62,7 @@ export interface SystemSettings {
 	aiLevel: AILevel;
 	userProfile: UserProfile;
 	library: UserLibrary;
+	uiPreferences: UiPreferences;
 }
 
 const DEFAULT_SETTINGS: SystemSettings = {
@@ -57,10 +76,17 @@ const DEFAULT_SETTINGS: SystemSettings = {
 	},
 	library: {
 		colors: [],
+		colorGroups: [],
 		fonts: [],
 		palettes: [],
 		collections: [],
 		projects: [],
+	},
+	uiPreferences: {
+		colorGridDensity: {
+			favorites: 2,
+			presets: 2,
+		},
 	},
 };
 

@@ -1,8 +1,10 @@
 import { Lightbulb, BookOpen, Ghost, Cpu, Zap } from "lucide-react";
 import { ColorControlPanel } from "./lab/ColorControlPanel";
 import { colord } from "colord";
-import { findOrGenerateMetadata } from "../services/colorMetadata";
+import { toggleFavoriteWithMetadata } from "../utils/favorites";
 import { PresetColor } from "../data/colorPresets";
+import { useState, useEffect } from "react";
+import { Check, X, Pencil, Copy, Heart } from "lucide-react";
 
 import { useSoloist } from "../context/SoloistContext";
 
@@ -40,60 +42,61 @@ export const AssistantPanel = ({
 	const secondaryColor = secondaryRamp[5]?.hex || "#000000";
 	const tertiaryColor = tertiaryRamp[5]?.hex || "#000000";
 
-	// Toggle Favorite with AI metadata generation
-	const toggleFavoriteColor = async (color: string) => {
+	// Lifted State for Interaction Lock
+	const [isEditing, setIsEditing] = useState(false);
+
+	// Toggle Favorite with shared metadata-aware helper
+	const toggleFavoriteColor = async (color: string) =>
+		toggleFavoriteWithMetadata({
+			color,
+			settings,
+			updateSettings,
+		});
+
+	// Update Favorite Color Logic (Name & Description)
+	const updateFavoriteColor = (
+		color: string,
+		newName: string,
+		newDescription: string,
+		newMeaning?: string,
+		newUsage?: string
+	) => {
 		const library = settings.library || {
 			colors: [],
 			fonts: [],
 			palettes: [],
-			colorCache: [],
 		};
 
-		// Check if color exists (handle both string and PresetColor)
-		const exists = library.colors.some((c: any) =>
-			typeof c === "string" ? c === color : c.value === color
-		);
-
-		if (exists) {
-			// Remove color
-			const newColors = library.colors.filter((c: any) =>
-				typeof c === "string" ? c !== color : c.value !== color
-			);
-			updateSettings({ library: { ...library, colors: newColors } });
-		} else {
-			// Add color with metadata
-			try {
-				// Smart lookup: presets → cache → AI generation
-				const colorWithMetadata = await findOrGenerateMetadata(
-					color,
-					library.colorCache || []
-				);
-
-				// Update cache if this was a new AI generation
-				const wasGenerated = !library.colorCache?.some(
-					(c: PresetColor) =>
-						c.value.toUpperCase() === color.toUpperCase()
-				);
-				if (wasGenerated) {
-					const newCache = [
-						...(library.colorCache || []),
-						colorWithMetadata,
-					];
-					// Update cache for future use
-					updateSettings({
-						library: { ...library, colorCache: newCache },
-					});
+		const updatedColors = library.colors.map((c: string | PresetColor) => {
+			const hexValue = typeof c === "string" ? c : c.value;
+			if (hexValue.toUpperCase() === color.toUpperCase()) {
+				if (typeof c === "string") {
+					return {
+						name: newName,
+						value: c, // Original value
+						description: newDescription,
+						meaning: newMeaning,
+						usage: newUsage,
+					};
+				} else {
+					return {
+						...c,
+						name: newName,
+						description: newDescription,
+						meaning: newMeaning,
+						usage: newUsage,
+					};
 				}
-
-				const newColors = [...library.colors, colorWithMetadata];
-				updateSettings({ library: { ...library, colors: newColors } });
-			} catch (error) {
-				console.error("Failed to get color metadata:", error);
-				// Fallback: save as string if everything fails
-				const newColors = [...library.colors, color];
-				updateSettings({ library: { ...library, colors: newColors } });
 			}
-		}
+			return c;
+		});
+
+		updateSettings({
+			library: {
+				...library,
+				colors: updatedColors,
+			},
+		});
 	};
 
 	// Content Mapping
@@ -120,9 +123,26 @@ export const AssistantPanel = ({
 	const showConcepts = aiLevel === "teacher";
 
 	return (
-		<div className="h-full w-[320px] border-l border-glass-stroke bg-bg-void/50 backdrop-blur-md flex flex-col overflow-hidden relative z-40">
+		<div
+			className={`h-full w-[320px] border-l border-glass-stroke flex flex-col overflow-hidden relative transition-all duration-200 ${
+				isEditing ? "z-[100]" : "z-40"
+			}`}
+		>
+			{/* Detached Background Layer (avoids trapping fixed children) */}
+			<div className="absolute inset-0 bg-bg-void/50 backdrop-blur-md -z-10" />
+
+			{/* Global Interaction Lock (Covers Main App) - Escapes to Viewport */}
+			{isEditing && (
+				<div className="fixed inset-0 z-[50] bg-black/20 cursor-default" />
+			)}
+
+			{/* Local Interaction Lock (Covers Inactive Sidebar) */}
+			{isEditing && (
+				<div className="absolute inset-0 z-[90] bg-transparent cursor-default" />
+			)}
+
 			{/* Header / Mode Indicator */}
-			<div className="flex-shrink-0 p-4 border-b border-glass-stroke flex items-center justify-between bg-accent-cyan/5 h-16">
+			<div className="flex-shrink-0 p-4 border-b border-glass-stroke flex items-center justify-between bg-accent-cyan/5 h-16 relative z-0">
 				<div className="flex items-center gap-3">
 					<div
 						className={`p-2 rounded-lg ${
@@ -165,7 +185,46 @@ export const AssistantPanel = ({
 				{/* 2. INSPECTED COLOR CARD (Libraries) */}
 				{selectedInsightColor && (
 					<div className="pt-4 border-t border-white/5">
-						<InspectedColorCard color={selectedInsightColor} />
+						<div className="pt-4 border-t border-white/5">
+							<InspectedColorCard
+								color={
+									settings.library?.colors?.find(
+										(c: string | PresetColor) => {
+											const hex =
+												typeof c === "string"
+													? c
+													: c.value;
+											return (
+												hex.toUpperCase() ===
+												selectedInsightColor.value.toUpperCase()
+											);
+										}
+									) || selectedInsightColor
+								}
+								onUpdate={updateFavoriteColor}
+								onToggleFavorite={() =>
+									toggleFavoriteColor(
+										selectedInsightColor.value
+									)
+								}
+								isFavorite={
+									settings.library?.colors?.some(
+										(c: string | PresetColor) => {
+											const hex =
+												typeof c === "string"
+													? c
+													: c.value;
+											return (
+												hex.toUpperCase() ===
+												selectedInsightColor.value.toUpperCase()
+											);
+										}
+									) || false
+								}
+								isEditing={isEditing}
+								setIsEditing={setIsEditing}
+							/>
+						</div>
 					</div>
 				)}
 
@@ -353,8 +412,62 @@ const getContentForView = (
 
 // --- Subcomponents ---
 
-const InspectedColorCard = ({ color }: { color: any }) => {
+const InspectedColorCard = ({
+	color,
+	onUpdate,
+	onToggleFavorite,
+	isFavorite,
+	isEditing,
+	setIsEditing,
+}: {
+	color: any;
+	onUpdate: (
+		color: string,
+		name: string,
+		desc: string,
+		meaning?: string,
+		usage?: string
+	) => void;
+	onToggleFavorite: () => void;
+	isFavorite: boolean;
+	isEditing: boolean;
+	setIsEditing: (v: boolean) => void;
+}) => {
 	const isDark = colord(color.value).isDark();
+	// Lifted isEditing state
+	const [editName, setEditName] = useState(color.name);
+	const [editDesc, setEditDesc] = useState(color.description || "");
+	const [editMeaning, setEditMeaning] = useState(color.meaning || "");
+	const [editUsage, setEditUsage] = useState(color.usage || "");
+	const [copied, setCopied] = useState(false);
+
+	// Sync local state when selected color changes
+	useEffect(() => {
+		setEditName(color.name);
+		setEditDesc(color.description || "");
+		setEditMeaning(color.meaning || "");
+		setEditUsage(color.usage || "");
+		setIsEditing(false); // Reset edit mode on color switch
+	}, [color]);
+
+	const handleSave = () => {
+		onUpdate(color.value, editName, editDesc, editMeaning, editUsage);
+		setIsEditing(false);
+	};
+
+	const handleCancel = () => {
+		setEditName(color.name);
+		setEditDesc(color.description || "");
+		setEditMeaning(color.meaning || "");
+		setEditUsage(color.usage || "");
+		setIsEditing(false);
+	};
+
+	const handleCopy = () => {
+		navigator.clipboard.writeText(color.value.toUpperCase());
+		setCopied(true);
+		setTimeout(() => setCopied(false), 2000);
+	};
 
 	return (
 		<div className="space-y-3">
@@ -368,52 +481,319 @@ const InspectedColorCard = ({ color }: { color: any }) => {
 					className="absolute inset-0"
 					style={{ backgroundColor: color.value }}
 				/>
-				{/* Static Label */}
+				{/* Static Label (Hidden in Edit Mode if overlay covers it, but here we overlay inputs later or below) */}
+				{/* Let's keep the swatch clean and put edit controls below? Or overlay?
+		    The previous design had overlay. Let's stick to overlay for the swatch part if we edit name there,
+		    BUT the component splits Name into the swatch overlay and Description below.
+		    Let's make the WHOLE container editable or just the fields.
+
+		    Actually, the user asked to move inline editing to right sidebar where name and description are displayed.
+		    Currently InspectedColorCard displays name over the swatch and description below.
+
+		    Let's make the Name and Description fields turn into inputs when "Edit" is clicked.
+		*/}
+
+				{/* Header Actions */}
+				{/* Header Actions */}
+				<div className="absolute top-2 right-2 flex gap-1 z-[100]">
+					{!isEditing ? (
+						<>
+							{isFavorite && (
+								<button
+									onClick={() => setIsEditing(true)}
+									className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors backdrop-blur-sm"
+									title="Edit Details"
+								>
+									<Pencil size={12} />
+								</button>
+							)}
+
+							<button
+								onClick={handleCopy}
+								className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors backdrop-blur-sm"
+								title="Copy Hex"
+							>
+								{copied ? (
+									<Check
+										size={12}
+										className="text-green-500"
+									/>
+								) : (
+									<Copy size={12} />
+								)}
+							</button>
+
+							<button
+								onClick={onToggleFavorite}
+								className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors backdrop-blur-sm"
+								title={
+									isFavorite
+										? "Remove from Favorites"
+										: "Save to Favorites"
+								}
+							>
+								<Heart
+									size={12}
+									className={isFavorite ? "fill-red-500" : ""}
+								/>
+							</button>
+						</>
+					) : (
+						<>
+							<button
+								onClick={handleCancel}
+								className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors backdrop-blur-sm"
+								title="Cancel"
+							>
+								<X size={12} />
+							</button>
+							<button
+								onClick={handleSave}
+								className="p-1.5 rounded-full bg-green-500/80 hover:bg-green-500 text-white transition-colors backdrop-blur-sm"
+								title="Save"
+							>
+								<Check size={12} />
+							</button>
+						</>
+					)}
+				</div>
+
 				<div
 					className={`absolute inset-0 p-3 flex flex-col justify-end pointer-events-none ${
 						isDark ? "text-white/90" : "text-black/80"
 					}`}
 				>
-					<span className="text-xs font-bold uppercase opacity-70 tracking-wider mb-0.5">
-						{color.name}
-					</span>
+					{isEditing ? (
+						<div className="pointer-events-auto mb-1 relative z-[100]">
+							<input
+								type="text"
+								value={editName}
+								onChange={(e) => setEditName(e.target.value)}
+								onKeyDown={(e) => {
+									if (e.key === "Enter") {
+										e.preventDefault();
+										// Move focus to description
+										const descInput =
+											e.currentTarget.parentElement?.parentElement?.parentElement?.querySelector(
+												"textarea"
+											) as HTMLTextAreaElement;
+										if (descInput) descInput.focus();
+									} else if (e.key === "Escape") {
+										handleCancel();
+									}
+								}}
+								className="bg-black/40 backdrop-blur-md border border-white/20 rounded px-2 py-1 text-xs font-bold font-brand text-white w-full focus:outline-none focus:border-accent-cyan placeholder-white/50"
+								placeholder="Color Name"
+								autoFocus
+							/>
+						</div>
+					) : (
+						<span className="text-xs font-bold uppercase opacity-70 tracking-wider mb-0.5">
+							{color.name}
+						</span>
+					)}
 					<span className="text-[10px] font-mono opacity-75">
 						{color.value.toUpperCase()}
 					</span>
 				</div>
 			</div>
 
-			{/* Color Details */}
-			<div className="space-y-2 text-sm">
-				{color.description && (
+			{/* Color Details / Description Edit */}
+			<div className="space-y-2 text-sm relative z-[100]">
+				{isEditing ? (
 					<div>
 						<span className="text-xs font-mono text-accent-cyan uppercase tracking-wider block mb-1 opacity-60">
 							Description
 						</span>
-						<p className="text-gray-300 text-xs leading-relaxed">
-							{color.description}
-						</p>
+						<textarea
+							value={editDesc}
+							onChange={(e) => setEditDesc(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter" && !e.shiftKey) {
+									e.preventDefault();
+									handleSave();
+								} else if (e.key === "Escape") {
+									handleCancel();
+								}
+							}}
+							className="w-full bg-bg-void/50 border border-glass-stroke rounded-lg p-2 text-xs text-gray-300 resize-none h-20 focus:outline-none focus:border-accent-cyan"
+							placeholder="Add a description..."
+						/>
 					</div>
+				) : (
+					<>
+						{color.description && (
+							<div>
+								<span className="text-xs font-mono text-accent-cyan uppercase tracking-wider block mb-1 opacity-60">
+									Description
+								</span>
+								<p className="text-gray-300 text-xs leading-relaxed">
+									{color.description}
+								</p>
+							</div>
+						)}
+					</>
 				)}
-				{color.meaning && (
-					<div>
-						<span className="text-xs font-mono text-accent-cyan uppercase tracking-wider block mb-1 opacity-60">
-							Meaning
-						</span>
-						<p className="text-gray-300 text-xs leading-relaxed">
-							{color.meaning}
-						</p>
+				<div className="pt-2 border-t border-white/5 space-y-4">
+					<TagDisplayEdit
+						label="Meaning"
+						value={editMeaning}
+						onChange={setEditMeaning}
+						isEditing={isEditing}
+						suggestions={[
+							"Warmth",
+							"Energy",
+							"Trust",
+							"Calm",
+							"Nature",
+							"Luxury",
+							"Power",
+							"Mystery",
+							"Action",
+							"Caution",
+						]}
+					/>
+					<TagDisplayEdit
+						label="Usage"
+						value={editUsage}
+						onChange={setEditUsage}
+						isEditing={isEditing}
+						suggestions={[
+							"Backgrounds",
+							"Text",
+							"Buttons",
+							"Borders",
+							"Highlights",
+							"Alerts",
+							"Success States",
+							"Error States",
+							"Accents",
+							"Cards",
+						]}
+					/>
+				</div>
+			</div>
+		</div>
+	);
+};
+
+const TagDisplayEdit = ({
+	label,
+	value,
+	onChange,
+	isEditing,
+	suggestions = [],
+}: {
+	label: string;
+	value: string;
+	onChange: (val: string) => void;
+	isEditing: boolean;
+	suggestions?: string[];
+}) => {
+	const tags = value
+		? value
+				.split(",")
+				.map((t) => t.trim())
+				.filter(Boolean)
+		: [];
+	const [inputValue, setInputValue] = useState("");
+	const [isCreating, setIsCreating] = useState(false);
+
+	const addTag = (tag: string) => {
+		if (!tags.includes(tag)) {
+			const newTags = [...tags, tag];
+			onChange(newTags.join(", "));
+		}
+		setInputValue("");
+		setIsCreating(false);
+	};
+
+	const removeTag = (tagToRemove: string) => {
+		const newTags = tags.filter((t) => t !== tagToRemove);
+		onChange(newTags.join(", "));
+	};
+
+	// Filter suggestions to find ones NOT currently selected
+	const unselectedSuggestions = suggestions.filter((s) => !tags.includes(s));
+
+	if (!isEditing) {
+		if (tags.length === 0) return null;
+		return (
+			<div>
+				<span className="text-xs font-mono text-accent-cyan uppercase tracking-wider block mb-1 opacity-60">
+					{label}
+				</span>
+				<p className="text-gray-300 text-xs leading-relaxed capitalize">
+					{tags.join(", ")}
+				</p>
+			</div>
+		);
+	}
+
+	return (
+		<div className="relative">
+			<span className="text-xs font-mono text-accent-cyan uppercase tracking-wider block mb-1 opacity-60">
+				{label}
+			</span>
+			<div className="flex flex-wrap gap-1.5 mb-2">
+				{/* Selected Tags (Active) */}
+				{tags.map((tag, i) => (
+					<span
+						key={i}
+						className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-cyan/20 text-[10px] text-accent-cyan border border-accent-cyan/30 group cursor-pointer hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 transition-colors"
+						onClick={() => removeTag(tag)}
+					>
+						{tag}
+						<X size={8} className="opacity-50" />
+					</span>
+				))}
+
+				{/* Ghost Pills (Suggestions) */}
+				{unselectedSuggestions.map((tag, i) => (
+					<button
+						key={`ghost-${i}`}
+						onClick={() => addTag(tag)}
+						className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] text-gray-500 border border-white/5 hover:bg-white/10 hover:text-gray-300 hover:border-white/10 transition-colors"
+					>
+						+ {tag}
+					</button>
+				))}
+
+				{/* Create New Pill / Input */}
+				{isCreating ? (
+					<div className="relative flex items-center min-w-[60px]">
+						<input
+							type="text"
+							value={inputValue}
+							onChange={(e) => setInputValue(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter" && inputValue.trim()) {
+									e.preventDefault();
+									addTag(inputValue.trim());
+								} else if (e.key === "Escape") {
+									setIsCreating(false);
+									setInputValue("");
+								}
+							}}
+							onBlur={() => {
+								if (inputValue.trim()) {
+									addTag(inputValue.trim());
+								} else {
+									setIsCreating(false);
+								}
+							}}
+							autoFocus
+							placeholder="Type tag..."
+							className="bg-transparent border-b border-accent-cyan text-[10px] text-white focus:outline-none w-20 px-1 pb-0.5 placeholder-white/30"
+						/>
 					</div>
-				)}
-				{color.usage && (
-					<div>
-						<span className="text-xs font-mono text-accent-cyan uppercase tracking-wider block mb-1 opacity-60">
-							Usage
-						</span>
-						<p className="text-gray-300 text-xs leading-relaxed">
-							{color.usage}
-						</p>
-					</div>
+				) : (
+					<button
+						onClick={() => setIsCreating(true)}
+						className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] text-gray-500 border border-white/5 hover:bg-white/10 hover:text-gray-300 hover:border-white/10 transition-colors"
+					>
+						+ Create New
+					</button>
 				)}
 			</div>
 		</div>
