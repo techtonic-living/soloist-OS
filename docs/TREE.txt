@@ -1,32 +1,64 @@
 .
-├── .gitignore
+├── docs
+│   ├── HANDOFF.md
+│   ├── PRD.md
+│   ├── ROADMAP.md
+│   └── TREE.txt
+├── manifest.json
+├── package-lock.json
 ├── package.json
-├── plugin/
-│   ├── code.tsx                # Figma Plugin Logic (Backend)
-│   ├── manifest.json           # Plugin Configuration
-│   └── tsconfig.json
-└── ui-src/
-    ├── .env                    # Secrets (Gitignored)
-    ├── .gitignore
-    ├── index.html              # Vite Entry
+├── plugin
+│   └── code.tsx
+├── README.md
+├── tsconfig.json
+└── ui-src
+    ├── index.html
+    ├── package-lock.json
     ├── package.json
-    ├── postcss.config.js       # Tailwind PostCSS Config
-    ├── tailwind.config.js      # "The Void" Theme Config
+    ├── postcss.config.js
+    ├── src
+    │   ├── App.tsx
+    │   ├── components
+    │   │   ├── AiLevelSlider.tsx
+    │   │   ├── AssistantPanel.tsx
+    │   │   ├── BottomNav.tsx
+    │   │   ├── ColorAtelier.tsx
+    │   │   ├── ColorMatrix.tsx
+    │   │   ├── ConnectView.tsx
+    │   │   ├── ExploreView.tsx
+    │   │   ├── ExportTerminal.tsx
+    │   │   ├── KnowledgeBase.tsx
+    │   │   ├── lab
+    │   │   │   ├── ColorControlPanel.tsx
+    │   │   │   ├── ColorCreator.tsx
+    │   │   │   ├── ColorLibrary.tsx
+    │   │   │   ├── ColorMixer.tsx
+    │   │   │   ├── ContrastLab.tsx
+    │   │   │   ├── PaletteGenerator.tsx
+    │   │   │   ├── TypeLibrary.tsx
+    │   │   │   └── TypeSandbox.tsx
+    │   │   ├── OnboardingWizard.tsx
+    │   │   ├── OrganizeView.tsx
+    │   │   ├── SemanticMapper.tsx
+    │   │   ├── SettingsView.tsx
+    │   │   ├── SizingMatrix.tsx
+    │   │   ├── TheLab.tsx
+    │   │   ├── TokensView.tsx
+    │   │   ├── TypographyAtelier.tsx
+    │   │   └── TypographyMatrix.tsx
+    │   ├── data
+    │   │   └── colorPresets.ts
+    │   ├── hooks
+    │   │   └── useSoloistSystem.ts
+    │   ├── index.css
+    │   ├── main.tsx
+    │   ├── services
+    │   │   └── gemini.ts
+    │   ├── types.d.ts
+    │   ├── utils
+    │   │   ├── aiLogic.ts
+    │   │   └── colorUtils.ts
+    │   └── vite-env.d.ts
+    ├── tailwind.config.js
     ├── tsconfig.json
-    ├── vite.config.ts
-    └── src/
-        ├── index.css           # Fonts & Global Styles
-        ├── main.tsx            # React Entry
-        ├── App.tsx             # Main Shell & Navigation
-        ├── types.d.ts          # Type Definitions
-        ├── vite-env.d.ts
-        ├── utils/
-        │   └── aiLogic.ts      # Contrast Math & Teacher Mode
-        ├── hooks/
-        │   └── useSoloistSystem.ts  # Storage Adapter
-        ├── services/
-        │   └── gemini.ts       # Gemini API Client
-        └── components/
-            ├── ColorMatrix.tsx      # 3D Color Ramp Visualizer
-            ├── ExportTerminal.tsx   # Code Export View
-            └── KnowledgeBase.tsx    # Journal & Cheatsheets
+    └── vite.config.ts

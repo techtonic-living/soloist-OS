@@ -30,7 +30,8 @@ type PluginMessage =
 			};
 	  }
 	| { type: "save-storage"; payload: { key: string; data: any } }
-	| { type: "load-storage"; payload: { key: string } };
+	| { type: "load-storage"; payload: { key: string } }
+	| { type: "resize-ui"; payload: { width: number; height: number } };
 
 figma.ui.onmessage = async (msg: PluginMessage) => {
 	if (msg.type === "create-variables") {
@@ -279,6 +280,11 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
 			type: "storage-loaded",
 			payload: { key, data },
 		});
+	}
+
+	if (msg.type === "resize-ui") {
+		const { width, height } = msg.payload;
+		figma.ui.resize(width, height);
 	}
 };
 

@@ -62,8 +62,8 @@ export const generateRamp = (
 	});
 
 	return steps.map((step) => {
-		// Check if locked
-		if (lockedColors.has(step.id)) {
+		// Check if locked (But always allow ID 6 - the seed - to update if we are regenerating)
+		if (lockedColors.has(step.id) && step.id !== 6) {
 			return lockedColors.get(step.id)!;
 		}
 

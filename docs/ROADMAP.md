@@ -37,13 +37,16 @@
 
 ---
 
-## 📅 Phase 3: Intelligence & Expansion (Next Up)
+## 📅 Phase 3: Intelligence & Expansion (Current Status)
 
 -   [x] **State Management:** Lift color state to `App.tsx` so Export Terminal sees live changes.
 -   [x] **Real-time Color Logic:** Connect visualizer to `colord` library.
 -   [x] **Typography Module:** Build the Font Scale visualizer.
 -   [x] **Sizing Module:** Build the Spacing/Radius visualizer.
 -   [x] **Lab Consolidation:** Integrated "The Lab" tools (Generator, Contrast, Mixer) into domain-specific Ateliers.
+-   [x] **Color Studio:** Unified creation, harmony, and preset library.
+-   [x] **Robust Clipboard:** Cross-environment copy support (Figma/Web).
+-   [x] **Presets Library:** "Explore" tab with selectable color sets.
 
 ---
 

@@ -11,10 +11,29 @@ interface UserProfile {
 	avatarUrl?: string;
 }
 
+export interface CollectionItem {
+	type: "color" | "palette";
+	value: any;
+}
+
+export interface Collection {
+	id: string;
+	name: string;
+	items: CollectionItem[];
+}
+
+export interface Project {
+	id: string;
+	name: string;
+	collectionIds: string[];
+}
+
 interface UserLibrary {
 	colors: string[]; // Hex codes
 	fonts: string[]; // Font family names
 	palettes: { name: string; colors: string[] }[];
+	collections: Collection[];
+	projects: Project[];
 }
 
 interface SystemSettings {
@@ -38,6 +57,8 @@ const DEFAULT_SETTINGS: SystemSettings = {
 		colors: [],
 		fonts: [],
 		palettes: [],
+		collections: [],
+		projects: [],
 	},
 };
 

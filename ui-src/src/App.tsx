@@ -1,24 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { colord } from "colord";
 import { motion, AnimatePresence } from "framer-motion";
 import {
 	Layers,
-	BookOpen,
 	Settings,
 	Terminal,
-	Activity,
 	Sparkles,
 	Palette,
-	Type,
+	Maximize2,
+	Minimize2,
+	Layout,
 } from "lucide-react";
-import { ColorAtelier } from "./components/ColorAtelier";
-import { TypographyAtelier } from "./components/TypographyAtelier";
-import { KnowledgeBase } from "./components/KnowledgeBase";
-
 import { SettingsView } from "./components/SettingsView";
-import { ExportTerminal } from "./components/ExportTerminal";
-import { TokensView } from "./components/TokensView";
-import { TeacherPanel } from "./components/TeacherPanel";
+import { ExploreView } from "./components/ExploreView";
+import { OrganizeView } from "./components/OrganizeView";
+import { ConnectView } from "./components/ConnectView";
+import { AssistantPanel } from "./components/AssistantPanel";
+import { BottomNav } from "./components/BottomNav";
+import { AiLevelSlider } from "./components/AiLevelSlider";
 import { useSoloistSystem } from "./hooks/useSoloistSystem";
 import {
 	generateRamp,
@@ -26,9 +25,12 @@ import {
 	generateSignals,
 	generateAlphas,
 } from "./utils/colorUtils";
-import { useEffect } from "react";
 
 type View =
+	| "explore"
+	| "organize"
+	| "connect"
+	// Legacy/Background views (kept for state compatibility for now)
 	| "tokens"
 	| "knowledge"
 	| "settings"
@@ -38,24 +40,15 @@ type View =
 
 import { OnboardingWizard } from "./components/OnboardingWizard";
 import { DEFAULT_SEMANTICS, SemanticToken } from "./components/SemanticMapper";
+import { PresetColor } from "./data/colorPresets";
 
 const App = () => {
 	// Navigation State
-	const [activeView, setActiveView] = useState<View>("tokens");
-	const [activeColorStep, setActiveColorStep] = useState<
-		"primary" | "secondary" | "tertiary" | "neutrals" | "signals" | "alphas"
-	>("primary");
-	const [activeColorTab, setActiveColorTab] = useState<
-		"atelier" | "generator" | "contrast" | "mixer" | "library"
-	>("atelier");
-	const [activeTokensModule, setActiveTokensModule] = useState<
-		"colors" | "typography" | "spacing" | "semantics"
-	>("colors");
-	const [activeTypeTab, setActiveTypeTab] = useState<
-		"scale" | "pairing" | "library"
-	>("scale");
-
-	const [showWizard, setShowWizard] = useState(false); // Demo: could be true by default for new users
+	const [exploreTab, setExploreTab] = useState<
+		"colors" | "palettes" | "create" | "generator"
+	>("create");
+	const [selectedInsightColor, setSelectedInsightColor] =
+		useState<PresetColor | null>(null);
 
 	// Global Design System State
 	const { settings, updateSettings } = useSoloistSystem();
@@ -65,8 +58,46 @@ const App = () => {
 	const [neutralRamp, setNeutralRamp] = useState(() =>
 		generateNeutrals(seedColor)
 	);
-	const [signalRamp, setSignalRamp] = useState(() => generateSignals());
-	const [alphaRamp, setAlphaRamp] = useState(() => generateAlphas("#000000"));
+	const [signalRamp] = useState(() => generateSignals());
+	const [alphaRamp] = useState(() => generateAlphas("#000000"));
+
+	// Global State
+	const [activeView, setActiveView] = useState<View>("explore");
+	const [windowSize, setWindowSize] = useState<
+		"compact" | "standard" | "studio"
+	>("standard");
+	// Assistant Panel State (Pinned by default for better UX)
+	const [isAssistantPinned, setIsAssistantPinned] = useState(true);
+
+	// Onboarding Wizard State
+	const [showWizard, setShowWizard] = useState(false);
+
+	// Resize Handler
+	const handleResize = (size: "compact" | "standard" | "studio") => {
+		setWindowSize(size);
+
+		let width = 1000;
+		let height = 700;
+
+		if (size === "compact") {
+			width = 400;
+			height = 600;
+			setIsAssistantPinned(false); // Forced unpin for mobile
+		} else if (size === "standard") {
+			width = 1000;
+			height = 700;
+			setIsAssistantPinned(true); // Default to pinned
+		} else if (size === "studio") {
+			width = 1400;
+			height = 900;
+			setIsAssistantPinned(true); // Default to pinned
+		}
+
+		parent.postMessage(
+			{ pluginMessage: { type: "resize-ui", width, height } },
+			"*"
+		);
+	};
 
 	// Secondary & Tertiary (Harmonies)
 	// Default Secondary: Complementary (180deg)
@@ -78,6 +109,10 @@ const App = () => {
 	const [tertiaryRamp, setTertiaryRamp] = useState(() =>
 		generateRamp(colord(seedColor).rotate(-30).toHex())
 	);
+
+	const [harmonyMode, setHarmonyMode] = useState<
+		"complementary" | "analogous" | "triadic" | "manual"
+	>("complementary");
 
 	// Lifted State for Wizard/Dashboard consistency
 	const [baseSize, setBaseSize] = useState(16);
@@ -94,7 +129,7 @@ const App = () => {
 	}, [seedColor]);
 
 	return (
-		<div className="flex h-screen w-full bg-bg-void overflow-hidden text-sm">
+		<div className="flex flex-col h-screen w-full bg-bg-void overflow-hidden text-sm">
 			{/* WIZARD OVERLAY */}
 			<AnimatePresence>
 				{showWizard && (
@@ -124,292 +159,257 @@ const App = () => {
 				)}
 			</AnimatePresence>
 
-			{/* SIDEBAR */}
-			<nav className="w-16 flex-shrink-0 flex flex-col items-center py-6 border-r border-glass-stroke bg-bg-void/50 backdrop-blur-md z-50">
-				<div className="mb-8 font-brand text-2xl text-primary tracking-widest text-shadow-glow">
-					OS
-				</div>
-
-				<div className="space-y-6 flex flex-col w-full items-center">
-					<NavIcon
-						icon={Palette}
-						active={activeView === "atelier"}
-						onClick={() => setActiveView("atelier")}
-					/>
-					<NavIcon
-						icon={Type}
-						active={activeView === "typography"}
-						onClick={() => setActiveView("typography")}
-					/>
-					<NavIcon
-						icon={Layers}
-						active={activeView === "tokens"}
-						onClick={() => setActiveView("tokens")}
-					/>
-					<NavIcon
-						icon={BookOpen}
-						active={activeView === "knowledge"}
-						onClick={() => setActiveView("knowledge")}
-					/>
-
-					<NavIcon
-						icon={Terminal}
-						active={activeView === "export"}
-						onClick={() => setActiveView("export")}
-					/>
-				</div>
-
-				<div className="mt-auto space-y-6 flex flex-col w-full items-center">
-					{/* Wizard Launcher */}
-					<button
-						onClick={() => setShowWizard(true)}
-						className="p-3 rounded-xl text-accent-cyan hover:bg-accent-cyan/10 transition-all relative group"
-						title="Start Guided Setup"
-					>
-						<Sparkles size={20} strokeWidth={1.5} />
-					</button>
-
-					{/* AI Toggle Indicator */}
-					<div className="h-24 w-1 bg-glass-stroke rounded-full relative group">
-						<motion.div
-							className="w-full bg-accent-cyan rounded-full absolute bottom-0 shadow-neon-glow"
-							animate={{
-								height:
-									settings.aiLevel === "silent"
-										? "10%"
-										: settings.aiLevel === "guide"
-										? "50%"
-										: "100%",
-							}}
-						/>
-						<div className="absolute left-4 bottom-0 hidden group-hover:block w-32 bg-bg-surface border border-glass-stroke p-3 z-50 rounded-lg shadow-monolith">
-							<p className="text-xs text-accent-cyan mb-2 font-brand uppercase tracking-widest">
-								AI Assistance
-							</p>
-							<div className="space-y-2">
-								<button
-									onClick={() =>
-										updateSettings({ aiLevel: "teacher" })
-									}
-									className={`w-full text-left text-xs ${
-										settings.aiLevel === "teacher"
-											? "text-white"
-											: "text-gray-500"
-									}`}
-								>
-									Teacher Mode
-								</button>
-								<button
-									onClick={() =>
-										updateSettings({ aiLevel: "guide" })
-									}
-									className={`w-full text-left text-xs ${
-										settings.aiLevel === "guide"
-											? "text-white"
-											: "text-gray-500"
-									}`}
-								>
-									Co-Pilot
-								</button>
-								<button
-									onClick={() =>
-										updateSettings({ aiLevel: "silent" })
-									}
-									className={`w-full text-left text-xs ${
-										settings.aiLevel === "silent"
-											? "text-white"
-											: "text-gray-500"
-									}`}
-								>
-									Silent
-								</button>
-							</div>
+			{/* MAIN CONTAINER (Flex Row) */}
+			<div className="flex-1 flex overflow-hidden">
+				{/* 1. SIDEBAR NAVIGATION (Hidden in Compact) */}
+				{windowSize !== "compact" && (
+					<nav className="w-16 flex-shrink-0 flex flex-col items-center py-6 border-r border-glass-stroke bg-bg-void/50 backdrop-blur-md z-50">
+						<div className="mb-8 font-brand text-2xl text-primary tracking-widest text-shadow-glow">
+							OS
 						</div>
-					</div>
-					<NavIcon
-						icon={Settings}
-						active={activeView === "settings"}
-						onClick={() => setActiveView("settings")}
-					/>
-				</div>
-			</nav>
 
-			{/* MAIN CONTENT AREA */}
-			<main className="flex-1 relative overflow-hidden flex flex-row">
-				<div className="flex-1 flex flex-col h-full overflow-hidden">
-					<header className="h-16 flex-shrink-0 flex items-center justify-between px-8 border-b border-glass-stroke bg-bg-void/30 backdrop-blur-sm z-20">
-						<div className="flex items-center gap-3">
-							<h1 className="font-brand text-3xl text-white tracking-wide">
-								Soloist
-							</h1>
-							<span className="text-gray-600 font-light text-xl">
-								/
-							</span>
-							<h2 className="text-gray-400 font-display tracking-wide uppercase text-xs">
-								Workbench
-							</h2>
+						<div className="space-y-6 flex flex-col w-full items-center">
+							<NavIcon
+								icon={Palette}
+								active={activeView === "explore"}
+								onClick={() => setActiveView("explore")}
+							/>
+							<NavIcon
+								icon={Layers}
+								active={activeView === "organize"}
+								onClick={() => setActiveView("organize")}
+							/>
+							<NavIcon
+								icon={Terminal}
+								active={activeView === "connect"}
+								onClick={() => setActiveView("connect")}
+							/>
 						</div>
-						<div className="flex items-center gap-4">
-							<div className="flex items-center gap-2 px-3 py-1 rounded-full bg-glass-subtle border border-glass-stroke">
-								<Activity
-									size={14}
-									className="text-accent-cyan animate-pulse"
-								/>
-								<span className="text-xs text-gray-400 font-mono">
-									SYSTEM: ONLINE
-								</span>
-							</div>
-						</div>
-					</header>
 
-					<div className="flex-1 p-8 overflow-y-auto custom-scrollbar relative">
-						{/* Ambient Background */}
-						{settings.visualFidelity === "high" && (
-							<div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[150px] pointer-events-none" />
-						)}
-
-						<AnimatePresence mode="wait">
-							<motion.div
-								key={activeView}
-								initial={{ opacity: 0, y: 20 }}
-								animate={{ opacity: 1, y: 0 }}
-								exit={{ opacity: 0, y: -20 }}
-								transition={{ duration: 0.4 }}
-								className="w-full h-full max-w-6xl mx-auto"
+						<div className="mt-auto space-y-6 flex flex-col w-full items-center">
+							{/* Wizard Launcher */}
+							<button
+								onClick={() => setShowWizard(true)}
+								className="p-3 rounded-xl text-accent-cyan hover:bg-accent-cyan/10 transition-all relative group"
+								title="Start Guided Setup"
 							>
-								{activeView === "tokens" && (
-									<TokensView
-										ramp={ramp}
-										setRamp={setRamp}
-										neutralRamp={neutralRamp}
-										setNeutralRamp={setNeutralRamp}
-										secondaryRamp={secondaryRamp}
-										setSecondaryRamp={setSecondaryRamp}
-										tertiaryRamp={tertiaryRamp}
-										setTertiaryRamp={setTertiaryRamp}
-										signalRamp={signalRamp}
-										setSignalRamp={setSignalRamp}
-										alphaRamp={alphaRamp}
-										setAlphaRamp={setAlphaRamp}
-										setSeedColor={setSeedColor}
-										baseSize={baseSize}
-										setBaseSize={setBaseSize}
-										scale={scale}
-										setScale={setScale}
-										baseSpacing={baseSpacing}
-										setBaseSpacing={setBaseSpacing}
-										baseRadius={baseRadius}
-										setBaseRadius={setBaseRadius}
-										semanticTokens={semanticTokens}
-										setSemanticTokens={setSemanticTokens}
-										aiLevel={settings.aiLevel}
-										activeColorStep={activeColorStep}
-										setActiveColorStep={setActiveColorStep}
-										onNavigateToAtelier={() =>
-											setActiveView("atelier")
-										}
-										onNavigateToTypeAtelier={() =>
-											setActiveView("typography")
-										}
-										activeModule={activeTokensModule}
-										setActiveModule={setActiveTokensModule}
-									/>
-								)}
-								{activeView === "atelier" && (
-									<ColorAtelier
-										seedColor={seedColor}
-										setSeedColor={setSeedColor}
-										secondaryColor={
-											secondaryRamp[5]?.hex || "#000000"
-										}
-										setSecondaryColor={(hex: string) =>
-											setSecondaryRamp(
-												generateRamp(
-													hex,
-													secondaryRamp,
-													"secondary"
-												)
-											)
-										}
-										tertiaryColor={
-											tertiaryRamp[5]?.hex || "#000000"
-										}
-										setTertiaryColor={(hex: string) =>
-											setTertiaryRamp(
-												generateRamp(
-													hex,
-													tertiaryRamp,
-													"tertiary"
-												)
-											)
-										}
-										onComplete={() =>
-											setActiveView("tokens")
-										}
-										settings={settings}
-										updateSettings={updateSettings}
-										activeTab={activeColorTab}
-										setActiveTab={setActiveColorTab}
-									/>
-								)}
-								{activeView === "typography" && (
-									<TypographyAtelier
-										baseSize={baseSize}
-										setBaseSize={setBaseSize}
-										scale={scale}
-										setScale={setScale}
-										onComplete={() =>
-											setActiveView("tokens")
-										}
-										settings={settings}
-										updateSettings={updateSettings}
-										activeTab={activeTypeTab}
-										setActiveTab={setActiveTypeTab}
-									/>
-								)}
-								{activeView === "knowledge" && (
-									<KnowledgeBase />
-								)}
+								<Sparkles size={20} strokeWidth={1.5} />
+							</button>
 
-								{activeView === "settings" && (
-									<SettingsView
-										settings={settings}
-										updateSettings={updateSettings}
-									/>
-								)}
-								{activeView === "export" && (
-									<ExportTerminal
-										ramp={ramp}
-										secondaryRamp={secondaryRamp}
-										tertiaryRamp={tertiaryRamp}
-										neutralRamp={neutralRamp}
-										signalRamp={signalRamp}
-										alphaRamp={alphaRamp}
-										baseSize={baseSize}
-										scale={scale}
-										baseSpacing={baseSpacing}
-										baseRadius={baseRadius}
-										semanticTokens={semanticTokens}
-									/>
-								)}
-							</motion.div>
-						</AnimatePresence>
+							{/* AI Slider (Vertical) */}
+							<AiLevelSlider
+								value={settings.aiLevel}
+								onChange={(level) =>
+									updateSettings({ aiLevel: level })
+								}
+								orientation="vertical"
+							/>
+
+							{/* Settings */}
+							<NavIcon
+								icon={Settings}
+								active={activeView === "settings"}
+								onClick={() => setActiveView("settings")}
+							/>
+						</div>
+					</nav>
+				)}
+
+				{/* 2. CENTER CONTENT (Flex 1) */}
+				<main className="flex-1 relative overflow-hidden flex flex-column">
+					<div className="flex-1 flex flex-col h-full overflow-hidden">
+						{/* HEADER */}
+						<header className="h-16 flex-shrink-0 flex items-center justify-between px-8 border-b border-glass-stroke bg-bg-void/30 backdrop-blur-sm z-20">
+							<div className="flex items-center gap-3">
+								<h1 className="font-brand text-3xl text-white tracking-wide">
+									Soloist
+								</h1>
+								<span className="text-gray-600 font-light text-xl">
+									/
+								</span>
+								<h2 className="text-gray-400 font-display tracking-wide uppercase text-xs">
+									{activeView === "explore"
+										? "Explore"
+										: activeView === "organize"
+										? "Organize"
+										: activeView === "connect"
+										? "Connect"
+										: "Settings"}
+								</h2>
+							</div>
+
+							<div className="flex items-center gap-4">
+								{/* Resize Controls */}
+								<div className="flex items-center gap-1 bg-black/20 p-1 rounded-lg border border-white/5">
+									{[
+										{
+											id: "compact",
+											icon: Minimize2,
+											label: "Mobile",
+										},
+										{
+											id: "standard",
+											icon: Layout,
+											label: "Desktop",
+										},
+										{
+											id: "studio",
+											icon: Maximize2,
+											label: "Studio",
+										},
+									].map((mode) => (
+										<button
+											key={mode.id}
+											onClick={() =>
+												handleResize(mode.id as any)
+											}
+											className={`p-1.5 rounded-md transition-all ${
+												windowSize === mode.id
+													? "bg-white/10 text-white shadow-sm"
+													: "text-gray-500 hover:text-white"
+											}`}
+											title={mode.label}
+										>
+											<mode.icon size={14} />
+										</button>
+									))}
+								</div>
+							</div>
+						</header>
+
+						{/* VIEWPORT */}
+						<div className="flex-1 p-2 overflow-y-auto custom-scrollbar relative">
+							{/* Ambient Background */}
+							{settings.visualFidelity === "high" && (
+								<div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[150px] pointer-events-none" />
+							)}
+
+							<AnimatePresence mode="wait">
+								<motion.div
+									key={activeView}
+									initial={{ opacity: 0, y: 20 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0, y: -20 }}
+									transition={{ duration: 0.4 }}
+									className="w-full h-full max-w-6xl mx-auto"
+								>
+									{activeView === "explore" && (
+										<ExploreView
+											seedColor={seedColor}
+											setSeedColor={setSeedColor}
+											secondaryColor={
+												secondaryRamp[5]?.hex ||
+												"#000000"
+											}
+											setSecondaryColor={useCallback(
+												(hex: string) => {
+													setSecondaryRamp((prev) =>
+														generateRamp(
+															hex,
+															prev,
+															"secondary"
+														)
+													);
+												},
+												[]
+											)}
+											tertiaryColor={
+												tertiaryRamp[5]?.hex ||
+												"#000000"
+											}
+											setTertiaryColor={useCallback(
+												(hex: string) => {
+													setTertiaryRamp((prev) =>
+														generateRamp(
+															hex,
+															prev,
+															"tertiary"
+														)
+													);
+												},
+												[]
+											)}
+											harmonyMode={harmonyMode}
+											setHarmonyMode={setHarmonyMode}
+											settings={settings}
+											updateSettings={updateSettings}
+											activeTab={exploreTab}
+											setActiveTab={setExploreTab}
+											onInspectColor={
+												setSelectedInsightColor
+											}
+										/>
+									)}
+									{activeView === "organize" && (
+										<OrganizeView
+											settings={settings}
+											updateSettings={updateSettings}
+										/>
+									)}
+									{activeView === "connect" && (
+										<ConnectView
+											ramp={ramp}
+											secondaryRamp={secondaryRamp}
+											tertiaryRamp={tertiaryRamp}
+											neutralRamp={neutralRamp}
+											signalRamp={signalRamp}
+											alphaRamp={alphaRamp}
+											baseSize={baseSize}
+											scale={scale}
+											baseSpacing={baseSpacing}
+											baseRadius={baseRadius}
+											semanticTokens={semanticTokens}
+											settings={settings}
+										/>
+									)}
+
+									{/* Keeping Settings accessible */}
+									{activeView === "settings" && (
+										<SettingsView
+											settings={settings}
+											updateSettings={updateSettings}
+										/>
+									)}
+								</motion.div>
+							</AnimatePresence>
+						</div>
 					</div>
-				</div>
+				</main>
 
-				{/* Teacher Panel */}
-				<AnimatePresence>
-					{settings.aiLevel === "teacher" && (
-						<TeacherPanel
-							activeView={activeView}
-							activeColorStep={activeColorStep}
-							activeColorTab={activeColorTab}
-							activeTypeTab={activeTypeTab}
-							activeTokensModule={activeTokensModule}
-						/>
-					)}
-				</AnimatePresence>
-			</main>
+				{/* 3. ASSISTANT PANEL (Persistent) */}
+				{windowSize !== "compact" && (
+					<AssistantPanel
+						aiLevel={settings.aiLevel}
+						pinned={isAssistantPinned}
+						setPinned={setIsAssistantPinned}
+						activeView={activeView}
+						activeColorStep={
+							activeView === "tokens"
+								? "primary"
+								: undefined /* TODO: Fix this map */
+						}
+						activeExploreTab={exploreTab}
+						selectedInsightColor={selectedInsightColor}
+						// Color Creator Props
+						seedColor={seedColor}
+						setSeedColor={setSeedColor}
+						secondaryColor={secondaryRamp[5]?.hex}
+						tertiaryColor={tertiaryRamp[5]?.hex}
+						harmonyMode={harmonyMode}
+						settings={settings}
+						updateSettings={updateSettings}
+					/>
+				)}
+			</div>
+
+			{/* Bottom Nav (Only in Compact) */}
+			{windowSize === "compact" && (
+				<BottomNav
+					activeView={activeView}
+					setActiveView={setActiveView}
+					onWizardClick={() => setShowWizard(true)}
+				/>
+			)}
 		</div>
 	);
 };
