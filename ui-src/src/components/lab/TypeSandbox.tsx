@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Heart } from "lucide-react";
+import { HeartToggle } from "../common/HeartToggle";
 
 export const TypeSandbox = ({ onFavorite, favorites }: any) => {
 	const [headerFont, setHeaderFont] = useState("Playfair Display");
@@ -68,19 +68,16 @@ export const TypeSandbox = ({ onFavorite, favorites }: any) => {
 					>
 						Randomize
 					</button>
-					<button
-						onClick={() => onFavorite(pairingKey)}
-						className={`p-2 rounded-lg border transition-all ${
-							isFavorite
-								? "bg-red-500 text-white border-red-500"
-								: "bg-transparent text-gray-400 border-glass-stroke hover:text-white"
-						}`}
-					>
-						<Heart
+					<div className="p-2 rounded-lg border border-transparent hover:border-glass-stroke transition-all">
+						<HeartToggle
+							isFavorite={isFavorite}
+							onToggle={() => onFavorite(pairingKey)}
 							size={16}
-							className={isFavorite ? "fill-current" : ""}
+							className={
+								isFavorite ? "scale-110" : "hover:scale-110"
+							}
 						/>
-					</button>
+					</div>
 				</div>
 			</div>
 

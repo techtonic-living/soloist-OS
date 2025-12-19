@@ -6,7 +6,6 @@ import {
 	Sparkles,
 	GitMerge,
 	Copy,
-	Heart,
 	Type,
 	BookOpen,
 	Lock,
@@ -14,6 +13,7 @@ import {
 	Save,
 	Trash,
 } from "lucide-react";
+import { HeartToggle } from "./common/HeartToggle";
 
 interface TheLabProps {
 	settings: any;
@@ -453,19 +453,16 @@ const ColorMixer = ({ onFavorite, favorites }: any) => {
 							style={{ backgroundColor: hex }}
 						/>
 						<div className="absolute bottom-2 left-0 right-0 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-							<button
-								onClick={() => onFavorite(hex)}
-								className="p-1.5 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-md"
-							>
-								<Heart
-									size={12}
-									className={
-										favorites.includes(hex)
-											? "fill-current text-red-500"
-											: ""
-									}
-								/>
-							</button>
+							<HeartToggle
+								isFavorite={favorites.includes(hex)}
+								onToggle={() => onFavorite(hex)}
+								size={12}
+								className={
+									favorites.includes(hex)
+										? "scale-110"
+										: "text-white hover:text-red-500"
+								}
+							/>
 						</div>
 					</div>
 				))}
@@ -541,19 +538,16 @@ const TypeSandbox = ({ onFavorite, favorites }: any) => {
 					>
 						Randomize
 					</button>
-					<button
-						onClick={() => onFavorite(pairingKey)}
-						className={`p-2 rounded-lg border transition-all ${
-							isFavorite
-								? "bg-red-500 text-white border-red-500"
-								: "bg-transparent text-gray-400 border-glass-stroke hover:text-white"
-						}`}
-					>
-						<Heart
+					<div className="p-2 rounded-lg border border-transparent hover:border-glass-stroke transition-all">
+						<HeartToggle
+							isFavorite={isFavorite}
+							onToggle={() => onFavorite(pairingKey)}
 							size={16}
-							className={isFavorite ? "fill-current" : ""}
+							className={
+								isFavorite ? "scale-110" : "hover:scale-110"
+							}
 						/>
-					</button>
+					</div>
 				</div>
 			</div>
 
@@ -711,15 +705,16 @@ const Library = ({
 										onClick={() => onLoadColor(color)}
 										title="Click to load as seed"
 									/>
-									<button
-										onClick={() => onRemoveColor(color)}
-										className="absolute top-1 right-1 p-1 rounded-full bg-black/20 hover:bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-all"
-									>
-										<Heart
+									<div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-all">
+										<HeartToggle
+											isFavorite={true}
+											onToggle={() =>
+												onRemoveColor(color)
+											}
 											size={12}
-											className="fill-current text-white"
+											className="text-white"
 										/>
-									</button>
+									</div>
 									<div className="absolute bottom-0 inset-x-0 bg-black/40 backdrop-blur-sm p-1 text-center">
 										<span className="text-[8px] font-mono text-white">
 											{color}

@@ -16,7 +16,11 @@ import { PaletteGenerator } from "./lab/PaletteGenerator";
 import { ContrastLab } from "./lab/ContrastLab";
 import { ColorMixer } from "./lab/ColorMixer";
 import { ColorLibrary } from "./lab/ColorLibrary";
-import { toggleFavoriteWithMetadata } from "../utils/favorites";
+import { PaletteLibrary } from "./lab/PaletteLibrary";
+import {
+	toggleFavoriteWithMetadata,
+	savePaletteWithMetadata,
+} from "../utils/favorites";
 import { PresetColor } from "../data/colorPresets";
 
 interface ColorAtelierProps {
@@ -29,9 +33,21 @@ interface ColorAtelierProps {
 	onComplete: () => void;
 	settings: any;
 	updateSettings: (newSettings: any) => void;
-	activeTab: "atelier" | "generator" | "contrast" | "mixer" | "library";
+	activeTab:
+		| "atelier"
+		| "generator"
+		| "contrast"
+		| "mixer"
+		| "library"
+		| "palettes";
 	setActiveTab: (
-		tab: "atelier" | "generator" | "contrast" | "mixer" | "library"
+		tab:
+			| "atelier"
+			| "generator"
+			| "contrast"
+			| "mixer"
+			| "library"
+			| "palettes"
 	) => void;
 }
 
@@ -52,6 +68,14 @@ export const ColorAtelier = ({
 		"complementary" | "analogous" | "triadic" | "manual"
 	>("complementary");
 	const [locked, setLocked] = useState({ secondary: false, tertiary: false });
+
+	const [generatorColors, setGeneratorColors] = useState<string[]>([
+		"#3D8BFF",
+		"#00C2FF",
+		"#9D4EDD",
+		"#FF006E",
+		"#FFBE0B",
+	]);
 
 	// Auto-update harmonies if not manual/locked
 	useEffect(() => {
@@ -134,20 +158,10 @@ export const ColorAtelier = ({
 	};
 
 	const savePalette = (colors: string[]) => {
-		const library = settings.library || {
-			colors: [],
-			fonts: [],
-			palettes: [],
-		};
-		const newPalette = {
-			name: `Palette ${library.palettes.length + 1}`,
+		savePaletteWithMetadata({
 			colors,
-		};
-		updateSettings({
-			library: {
-				...library,
-				palettes: [...library.palettes, newPalette],
-			},
+			settings,
+			updateSettings,
 		});
 	};
 
@@ -296,7 +310,13 @@ export const ColorAtelier = ({
 					active={activeTab === "library"}
 					onClick={() => setActiveTab("library")}
 					icon={BookOpen}
-					label="Library"
+					label="Colors"
+				/>
+				<TabButton
+					active={activeTab === "palettes"}
+					onClick={() => setActiveTab("palettes")}
+					icon={Palette}
+					label="Palettes"
 				/>
 			</div>
 
@@ -410,6 +430,8 @@ export const ColorAtelier = ({
 						<PaletteGenerator
 							key="generator"
 							onSavePalette={savePalette}
+							colors={generatorColors}
+							setColors={setGeneratorColors}
 						/>
 					)}
 
@@ -450,6 +472,31 @@ export const ColorAtelier = ({
 								onDeleteGroup={deleteGroup}
 								onMoveColor={moveColor}
 								onReorderGroups={reorderGroups}
+								view="colors"
+							/>
+						</div>
+					)}
+
+					{activeTab === "palettes" && (
+						<div className="p-8 h-full">
+							<PaletteLibrary
+								key="palettes"
+								library={
+									settings.library || {
+										colors: [],
+										fonts: [],
+										palettes: [],
+									}
+								}
+								onInspectPalette={(palette) => {
+									// Just load the first color as seed for now
+									if (
+										palette.colors &&
+										palette.colors.length > 0
+									)
+										setSeedColor(palette.colors[0]);
+								}}
+								onRemovePalette={removePalette}
 							/>
 						</div>
 					)}

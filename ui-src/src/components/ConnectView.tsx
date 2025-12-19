@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
+import { useCopyFeedback } from "../hooks/useCopyFeedback";
 import {
 	Copy,
 	Check,
@@ -204,7 +205,7 @@ export const ConnectView = () => {
 	const [format, setFormat] = useState<"css" | "json" | "swift" | "tailwind">(
 		"css"
 	);
-	const [copied, setCopied] = useState(false);
+	const { isCopied, copy } = useCopyFeedback();
 	const [syncStatus, setSyncStatus] = useState<
 		"idle" | "syncing" | "success"
 	>("idle");
@@ -215,9 +216,7 @@ export const ConnectView = () => {
 		if (format === "json") code = generateJSON(ctx);
 		if (format === "tailwind") code = generateTailwind(ctx);
 		if (format === "swift") code = generateSwift(ctx);
-		navigator.clipboard.writeText(code);
-		setCopied(true);
-		setTimeout(() => setCopied(false), 2000);
+		copy(code, "Code");
 	};
 
 	const getCode = () => {
@@ -395,13 +394,13 @@ export const ConnectView = () => {
 									onClick={handleCopy}
 									className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg transition-all text-xs uppercase tracking-wider font-semibold"
 								>
-									{copied ? (
+									{isCopied ? (
 										<Check size={14} />
 									) : (
 										<Copy size={14} />
 									)}
 									<span>
-										{copied ? "COPIED" : "COPY CODE"}
+										{isCopied ? "COPIED" : "COPY CODE"}
 									</span>
 								</button>
 							</div>

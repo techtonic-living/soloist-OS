@@ -1,10 +1,22 @@
-import { Lightbulb, BookOpen, Ghost, Cpu, Zap } from "lucide-react";
+import {
+	Lightbulb,
+	BookOpen,
+	Ghost,
+	Cpu,
+	Zap,
+	Copy,
+	Check,
+	Pencil,
+	X,
+} from "lucide-react";
+import { HeartToggle } from "./common/HeartToggle";
+import { useCopyFeedback } from "../hooks/useCopyFeedback";
 import { ColorControlPanel } from "./lab/ColorControlPanel";
 import { colord } from "colord";
 import { toggleFavoriteWithMetadata } from "../utils/favorites";
 import { PresetColor } from "../data/colorPresets";
 import { useState, useEffect } from "react";
-import { Check, X, Pencil, Copy, Heart } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { useSoloist } from "../context/SoloistContext";
 
@@ -16,6 +28,8 @@ interface AssistantPanelProps {
 	activeTokensModule?: string;
 	activeExploreTab?: string;
 	selectedInsightColor?: any;
+	selectedInsightPalette?: any;
+	onLoadPalette?: (colors: string[]) => void;
 }
 
 export const AssistantPanel = ({
@@ -25,6 +39,8 @@ export const AssistantPanel = ({
 	activeTokensModule,
 	activeExploreTab,
 	selectedInsightColor,
+	selectedInsightPalette,
+	onLoadPalette,
 }: AssistantPanelProps) => {
 	// --- Context Consumption ---
 	const {
@@ -107,7 +123,8 @@ export const AssistantPanel = ({
 		activeTypeTab,
 		activeTokensModule,
 		activeExploreTab,
-		selectedInsightColor
+		selectedInsightColor,
+		selectedInsightPalette
 	);
 
 	// Check if we should show the Color Control Panel (Essential Content for 'Studio')
@@ -228,6 +245,18 @@ export const AssistantPanel = ({
 					</div>
 				)}
 
+				{/* 2b. INSPECTED PALETTE CARD (Palette Library) */}
+				{selectedInsightPalette && (
+					<div className="pt-4 border-t border-white/5">
+						<InspectedPaletteCard
+							palette={selectedInsightPalette}
+							onLoad={onLoadPalette}
+							onToggleFavorite={() => {}} // Placeholder
+							isFavorite={false} // Placeholder
+						/>
+					</div>
+				)}
+
 				{/* 3. ESSENTIAL CONTENT (Controls) */}
 				{showColorControls && seedColor && setSeedColor && (
 					<div className="pt-4 border-t border-white/5">
@@ -322,10 +351,31 @@ const getContentForView = (
 	_typeTab?: string,
 	_tokensModule?: string,
 	exploreTab?: string,
-	_selectedColor?: any
+	selectedColor?: any,
+	selectedPalette?: any
 ) => {
 	// Handle Explore View
 	if (view === "explore") {
+		// New Priority: Inspection (Override tab text if something is inspected)
+		if (selectedColor) {
+			return {
+				lessonId: "00.1a",
+				title: "Color Inspector",
+				description: "Detailed view of the selected color.",
+				concepts: [],
+				suggestions: [],
+			};
+		}
+		if (selectedPalette) {
+			return {
+				lessonId: "00.2a",
+				title: "Palette Inspector",
+				description: "Detailed view of the selected palette.",
+				concepts: [],
+				suggestions: [],
+			};
+		}
+
 		if (exploreTab === "colors") {
 			return {
 				lessonId: "00.1",
@@ -410,6 +460,132 @@ const getContentForView = (
 	};
 };
 
+const InspectedPaletteCard = ({
+	palette,
+	onLoad,
+	onToggleFavorite,
+	isFavorite,
+}: {
+	palette: any;
+	onLoad?: (colors: string[]) => void;
+	onToggleFavorite: () => void;
+	isFavorite: boolean;
+}) => {
+	const { isCopied, copy } = useCopyFeedback();
+	const [copiedColor, setCopiedColor] = useState<string | null>(null);
+
+	// Reset local copied color when global feedback resets
+	useEffect(() => {
+		if (!isCopied) setCopiedColor(null);
+	}, [isCopied]);
+
+	const handleCopy = (c: string) => {
+		copy(c, c); // Message is optional
+		setCopiedColor(c);
+	};
+
+	return (
+		<div className="space-y-4">
+			<div className="flex items-start justify-between">
+				<div>
+					<span className="text-xs font-mono text-accent-cyan uppercase tracking-wider block mb-1 opacity-60">
+						Palette
+					</span>
+					<h3 className="text-white font-bold text-lg leading-tight">
+						{palette.name}
+					</h3>
+					{palette.description && (
+						<p className="text-gray-400 text-xs mt-1 leading-relaxed">
+							{palette.description}
+						</p>
+					)}
+				</div>
+				{/* Actions */}
+				<div className="flex gap-1">
+					<button
+						onClick={onToggleFavorite}
+						className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors border border-white/5"
+						title={
+							isFavorite
+								? "Remove from Favorites"
+								: "Add to Favorites"
+						}
+					>
+						<HeartToggle
+							isFavorite={isFavorite}
+							onToggle={onToggleFavorite}
+							size={14}
+							className={
+								isFavorite
+									? "scale-110"
+									: "text-gray-400 hover:text-white hover:scale-110"
+							}
+						/>
+					</button>
+				</div>
+			</div>
+
+			{/* Color Strip */}
+			<div className="flex h-12 rounded-lg overflow-hidden border border-white/10">
+				{palette.colors.map((c: string, i: number) => (
+					<div
+						key={i}
+						className="flex-1 h-full relative group/color"
+						style={{ backgroundColor: c }}
+						onClick={() => handleCopy(c)}
+						title={`Click to Copy ${c}`}
+					>
+						<AnimatePresence>
+							{isCopied && copiedColor === c ? (
+								<motion.div
+									initial={{ opacity: 0 }}
+									animate={{ opacity: 1 }}
+									exit={{ opacity: 0 }}
+									className="absolute inset-0 bg-black/40 flex items-center justify-center cursor-default"
+								>
+									<Check size={14} className="text-white" />
+								</motion.div>
+							) : (
+								<div className="absolute inset-0 opacity-0 group-hover/color:opacity-100 bg-black/20 flex items-center justify-center transition-opacity cursor-pointer">
+									<Copy size={10} className="text-white" />
+								</div>
+							)}
+						</AnimatePresence>
+					</div>
+				))}
+			</div>
+
+			{/* Primary Action */}
+			{onLoad && (
+				<button
+					onClick={() => onLoad(palette.colors)}
+					className="w-full py-2.5 px-4 bg-accent-cyan/10 hover:bg-accent-cyan/20 border border-accent-cyan/30 rounded-lg text-accent-cyan text-xs font-mono font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 group"
+				>
+					<Zap
+						size={14}
+						className="group-hover:text-white transition-colors"
+					/>
+					<span>Send to Remix</span>
+				</button>
+			)}
+
+			{/* Tags */}
+			{palette.tags && palette.tags.length > 0 && (
+				<div className="flex flex-wrap gap-1.5 pt-2 border-t border-white/5">
+					{palette.tags.map((tag: string, i: number) => (
+						<span
+							key={i}
+							className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] text-gray-500 border border-white/5"
+						>
+							{tag}
+						</span>
+					))}
+				</div>
+			)}
+		</div>
+	);
+};
+
 // --- Subcomponents ---
 
 const InspectedColorCard = ({
@@ -439,7 +615,7 @@ const InspectedColorCard = ({
 	const [editDesc, setEditDesc] = useState(color.description || "");
 	const [editMeaning, setEditMeaning] = useState(color.meaning || "");
 	const [editUsage, setEditUsage] = useState(color.usage || "");
-	const [copied, setCopied] = useState(false);
+	const { isCopied, copy } = useCopyFeedback();
 
 	// Sync local state when selected color changes
 	useEffect(() => {
@@ -464,9 +640,7 @@ const InspectedColorCard = ({
 	};
 
 	const handleCopy = () => {
-		navigator.clipboard.writeText(color.value.toUpperCase());
-		setCopied(true);
-		setTimeout(() => setCopied(false), 2000);
+		copy(color.value.toUpperCase(), color.value.toUpperCase());
 	};
 
 	return (
@@ -513,7 +687,7 @@ const InspectedColorCard = ({
 								className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors backdrop-blur-sm"
 								title="Copy Hex"
 							>
-								{copied ? (
+								{isCopied ? (
 									<Check
 										size={12}
 										className="text-green-500"
@@ -532,9 +706,15 @@ const InspectedColorCard = ({
 										: "Save to Favorites"
 								}
 							>
-								<Heart
+								<HeartToggle
+									isFavorite={isFavorite}
+									onToggle={onToggleFavorite}
 									size={12}
-									className={isFavorite ? "fill-red-500" : ""}
+									className={
+										isFavorite
+											? "scale-110"
+											: "hover:scale-110"
+									}
 								/>
 							</button>
 						</>

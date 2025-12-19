@@ -3,18 +3,17 @@ import { colord } from "colord";
 import { motion, AnimatePresence } from "framer-motion";
 import { Lock, Unlock, Copy, Save } from "lucide-react";
 
+interface PaletteGeneratorProps {
+	onSavePalette: (colors: string[]) => void;
+	colors: string[];
+	setColors: (colors: string[] | ((prev: string[]) => string[])) => void;
+}
+
 export const PaletteGenerator = ({
 	onSavePalette,
-}: {
-	onSavePalette: (colors: string[]) => void;
-}) => {
-	const [colors, setColors] = useState<string[]>([
-		"#3D8BFF",
-		"#00C2FF",
-		"#9D4EDD",
-		"#FF006E",
-		"#FFBE0B",
-	]);
+	colors,
+	setColors,
+}: PaletteGeneratorProps) => {
 	const [locked, setLocked] = useState<boolean[]>([
 		false,
 		false,

@@ -7,6 +7,13 @@ export interface MetadataOptions {
 	maxAttempts?: number;
 }
 
+export interface PaletteMetadata {
+	name: string;
+	description: string;
+	colors: string[];
+	tags?: string[];
+}
+
 /**
  * Search all preset libraries for a color with matching hex value
  * @param hexValue The hex color to search for
@@ -151,6 +158,53 @@ Generate creative metadata in this EXACT JSON format (no markdown, just raw JSON
 			} custom color.`,
 			meaning: "Custom, Unique",
 			usage: "Custom UI Elements",
+		};
+	}
+};
+
+/**
+ * Generate AI-powered metadata for a palette
+ * @param colors The list of hex color values
+ * @returns Promise<PaletteMetadata> with generated metadata
+ */
+export const generatePaletteMetadata = async (
+	colors: string[],
+	options: MetadataOptions = {}
+): Promise<PaletteMetadata> => {
+	try {
+		const avoidNames = options.avoidNames || [];
+
+		// Construct prompt
+		const prompt = `Analyze this color palette: ${colors.join(", ")}
+
+Existing palette names to avoid: ${
+			avoidNames.length > 0 ? avoidNames.join(", ") : "None"
+		}
+
+Generate creative metadata in this EXACT JSON format (no markdown, just raw JSON):
+{
+  "name": "A creative 1-3 word name (e.g., 'Sunset Boulevard', 'Deep Forest')",
+  "description": "One concise sentence describing the palette's overall vibe.",
+  "tags": ["Tag1", "Tag2", "Tag3"]
+}`;
+
+		// Call Gemini API
+		const response = await generateText(prompt);
+		const metadata = JSON.parse(response);
+
+		return {
+			name: metadata.name || "Custom Palette",
+			description: metadata.description || "A custom color palette.",
+			colors: colors,
+			tags: metadata.tags || [],
+		};
+	} catch (error) {
+		console.error("Error generating palette metadata:", error);
+		return {
+			name: "Custom Palette",
+			description: "A custom color palette.",
+			colors: colors,
+			tags: ["Custom"],
 		};
 	}
 };

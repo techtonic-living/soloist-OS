@@ -1,10 +1,19 @@
 import { PresetColor } from "../data/colorPresets";
-import { findOrGenerateMetadata } from "../services/colorMetadata";
+import {
+	findOrGenerateMetadata,
+	generatePaletteMetadata,
+} from "../services/colorMetadata";
 import { SystemSettings } from "../hooks/useSoloistSystem";
 
 interface ToggleFavoriteParams {
 	color: string;
 	existingMetadata?: PresetColor;
+	settings: SystemSettings;
+	updateSettings: (settings: Partial<SystemSettings>) => void;
+}
+
+interface SavePaletteParams {
+	colors: string[];
 	settings: SystemSettings;
 	updateSettings: (settings: Partial<SystemSettings>) => void;
 }
@@ -17,6 +26,7 @@ const ensureLibrary = (settings: SystemSettings) => {
 		palettes: [],
 		collections: [],
 		projects: [],
+		colorGroups: [],
 		colorCache: [] as PresetColor[],
 	};
 
@@ -66,8 +76,22 @@ export const toggleFavoriteWithMetadata = async ({
 			const storedHex = typeof c === "string" ? c : c.value;
 			return storedHex.toUpperCase() !== normalizedHex;
 		});
+
+		// Remove from all groups
+		const updatedGroups = (library.colorGroups || []).map((group: any) => ({
+			...group,
+			colorIds: group.colorIds.filter(
+				(id: string) => id.toUpperCase() !== normalizedHex
+			),
+		}));
+
 		updateSettings({
-			library: { ...library, colors: newColors, colorCache },
+			library: {
+				...library,
+				colors: newColors,
+				colorCache,
+				colorGroups: updatedGroups,
+			},
 		});
 		return;
 	}
@@ -110,6 +134,54 @@ export const toggleFavoriteWithMetadata = async ({
 			library: {
 				...library,
 				colors: [...library.colors, color],
+			},
+		});
+	}
+};
+
+export const savePaletteWithMetadata = async ({
+	colors,
+	settings,
+	updateSettings,
+}: SavePaletteParams): Promise<void> => {
+	const library = ensureLibrary(settings);
+
+	// Check if this EXACT palette already exists (simple stringified check)
+	// We might want to allow duplicates if the user wants multiple versions, but let's prevent accidental double-clicks.
+	const exists = library.palettes.some(
+		(p: any) => JSON.stringify(p.colors) === JSON.stringify(colors)
+	);
+
+	if (exists) {
+		console.log("Palette already exists in library.");
+		return;
+	}
+
+	try {
+		const existingNames = library.palettes.map((p: any) => p.name);
+		const metadata = await generatePaletteMetadata(colors, {
+			avoidNames: existingNames,
+		});
+
+		updateSettings({
+			library: {
+				...library,
+				palettes: [...library.palettes, metadata],
+			},
+		});
+	} catch (error) {
+		console.error("Failed to get palette metadata:", error);
+		// Fallback
+		const newPalette = {
+			name: `Palette ${library.palettes.length + 1}`,
+			description: "Custom palette",
+			colors,
+			tags: [],
+		};
+		updateSettings({
+			library: {
+				...library,
+				palettes: [...library.palettes, newPalette],
 			},
 		});
 	}

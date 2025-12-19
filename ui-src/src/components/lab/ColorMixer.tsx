@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { colord } from "colord";
-import { Heart } from "lucide-react";
+import { HeartToggle } from "../common/HeartToggle";
 
 export const ColorMixer = ({ onFavorite, favorites }: any) => {
 	const [colorA, setColorA] = useState("#3D8BFF");
@@ -41,19 +41,16 @@ export const ColorMixer = ({ onFavorite, favorites }: any) => {
 							style={{ backgroundColor: hex }}
 						/>
 						<div className="absolute bottom-2 left-0 right-0 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-							<button
-								onClick={() => onFavorite(hex)}
-								className="p-1.5 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-md"
-							>
-								<Heart
-									size={12}
-									className={
-										favorites.includes(hex)
-											? "fill-current text-red-500"
-											: ""
-									}
-								/>
-							</button>
+							<HeartToggle
+								isFavorite={favorites.includes(hex)}
+								onToggle={() => onFavorite(hex)}
+								size={12}
+								className={
+									favorites.includes(hex)
+										? "scale-110"
+										: "text-white hover:text-red-500"
+								}
+							/>
 						</div>
 					</div>
 				))}

@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { colord } from "colord";
-import { Copy, Check, Heart, ArrowUpDown, X } from "lucide-react";
+import { Copy, Check, ArrowUpDown, Heart, X } from "lucide-react";
+import { HeartToggle } from "../common/HeartToggle";
+import { useCopyFeedback } from "../../hooks/useCopyFeedback";
+import { useAsyncToggle } from "../../hooks/useAsyncToggle";
+import { useToast } from "../../context/ToastContext";
 
 interface ColorControlPanelProps {
 	seedColor: string;
@@ -13,36 +17,6 @@ interface ColorControlPanelProps {
 	toggleFavorite?: (color: string) => Promise<void>;
 }
 
-// --- Shared Helpers ---
-
-const fallbackCopy = (text: string) => {
-	const textArea = document.createElement("textarea");
-	textArea.value = text;
-	textArea.style.position = "fixed";
-	textArea.style.left = "-9999px";
-	textArea.style.top = "0";
-	document.body.appendChild(textArea);
-	textArea.focus();
-	textArea.select();
-	try {
-		document.execCommand("copy");
-	} catch (err) {
-		console.error("Fallback copy failed", err);
-	}
-	document.body.removeChild(textArea);
-};
-
-const performCopy = (text: string) => {
-	// Try modern API first
-	if (navigator.clipboard && navigator.clipboard.writeText) {
-		navigator.clipboard.writeText(text).catch(() => {
-			fallbackCopy(text);
-		});
-	} else {
-		fallbackCopy(text);
-	}
-};
-
 export const ColorControlPanel = ({
 	seedColor,
 	setSeedColor,
@@ -53,17 +27,19 @@ export const ColorControlPanel = ({
 	updateSettings = () => {},
 	toggleFavorite: toggleFavoriteProp,
 }: ColorControlPanelProps) => {
-	const [copiedHex, setCopiedHex] = useState(false);
-	const [copiedRgb, setCopiedRgb] = useState(false);
-	const [copiedHsl, setCopiedHsl] = useState(false);
-	const [copiedHsb, setCopiedHsb] = useState(false);
 	const [activeEditorId, setActiveEditorId] = useState<string | null>(null);
 
-	// Toast State
-	const [toast, setToast] = useState<{
-		message: string;
-		visible: boolean;
-	} | null>(null);
+	// Hooks
+	const { isCopied: isHexCopied, copy: copyHex } = useCopyFeedback();
+	const { isCopied: isRgbCopied, copy: copyRgb } = useCopyFeedback();
+	const { isCopied: isHslCopied, copy: copyHsl } = useCopyFeedback();
+	const { isCopied: isHsbCopied, copy: copyHsb } = useCopyFeedback();
+
+	// Global Toast
+	const { showToast } = useToast();
+
+	// Async Toggle for Favorites
+	const { status: elementStatus, toggle: toggleElement } = useAsyncToggle();
 
 	// Parse Colors
 	const color = colord(seedColor);
@@ -72,55 +48,45 @@ export const ColorControlPanel = ({
 	const hsla = color.toHsl();
 	const hsva = color.toHsv(); // HSB is essentially HSV
 
-	// Helpers
-	const copyToClipboard = (text: string, setCopied: (v: boolean) => void) => {
-		showToast("Copied to clipboard");
-		performCopy(text);
-		setCopied(true);
-		setTimeout(() => setCopied(false), 2000);
-	};
+	// Toggle Favorite With Async Feedback
+	const handleFavoriteToggle = async (colorHex: string) => {
+		await toggleElement(async () => {
+			// Use the prop function if provided (with AI metadata), fallback to simple toggle
+			if (toggleFavoriteProp) {
+				await toggleFavoriteProp(colorHex);
+				return;
+			}
 
-	const showToast = (message: string) => {
-		setToast({ message, visible: true });
-		setTimeout(() => setToast(null), 3000);
-	};
+			// Fallback for when prop not provided
+			const currentLib = settings.library || { colors: [], palettes: [] };
+			const isFav = currentLib.colors.some((c: any) =>
+				typeof c === "string" ? c === colorHex : c.value === colorHex
+			);
 
-	const toggleFavorite = async (colorHex: string) => {
-		// Use the prop function if provided (with AI metadata), fallback to simple toggle
-		if (toggleFavoriteProp) {
-			await toggleFavoriteProp(colorHex);
-			return;
-		}
-
-		// Fallback for when prop not provided
-		const currentLib = settings.library || { colors: [], palettes: [] };
-		const isFav = currentLib.colors.some((c: any) =>
-			typeof c === "string" ? c === colorHex : c.value === colorHex
-		);
-
-		if (isFav) {
-			// Remove
-			updateSettings({
-				library: {
-					...currentLib,
-					colors: currentLib.colors.filter((c: any) =>
-						typeof c === "string"
-							? c !== colorHex
-							: c.value !== colorHex
-					),
-				},
-			});
-			showToast("Removed from Favorites");
-		} else {
-			// Add as simple string (no metadata generation in fallback)
-			updateSettings({
-				library: {
-					...currentLib,
-					colors: [...currentLib.colors, colorHex],
-				},
-			});
-			showToast("Saved to Favorites");
-		}
+			if (isFav) {
+				// Remove
+				updateSettings({
+					library: {
+						...currentLib,
+						colors: currentLib.colors.filter((c: any) =>
+							typeof c === "string"
+								? c !== colorHex
+								: c.value !== colorHex
+						),
+					},
+				});
+				showToast("Removed from Favorites");
+			} else {
+				// Add as simple string (no metadata generation in fallback)
+				updateSettings({
+					library: {
+						...currentLib,
+						colors: [...currentLib.colors, colorHex],
+					},
+				});
+				showToast("Saved to Favorites");
+			}
+		});
 	};
 
 	const handleManualInput = (val: string, type: string) => {
@@ -221,12 +187,7 @@ export const ColorControlPanel = ({
 				</>
 			)}
 
-			{/* Toast */}
-			{toast?.visible && (
-				<div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[1000] px-3 py-1.5 bg-black/80 backdrop-blur-md text-white/90 text-[10px] font-bold tracking-wider uppercase rounded-full border border-white/10 animate-in fade-in slide-in-from-bottom-2">
-					{toast.message}
-				</div>
-			)}
+			{/* Toast moved to Global Context */}
 
 			{/* PRIMARY COLOR CONTROLS */}
 			<div className="relative">
@@ -264,15 +225,15 @@ export const ColorControlPanel = ({
 								<button
 									onClick={(e) => {
 										e.stopPropagation();
-										copyToClipboard(
+										copyHex(
 											seedColor.toUpperCase(),
-											setCopiedHex
+											seedColor.toUpperCase()
 										);
 									}}
 									className="p-2 hover:bg-black/10 rounded-full transition-colors group/copy"
 									title="Copy Hex"
 								>
-									{copiedHex ? (
+									{isHexCopied ? (
 										<Check
 											size={16}
 											className="text-green-500"
@@ -281,27 +242,21 @@ export const ColorControlPanel = ({
 										<Copy size={16} />
 									)}
 								</button>
-								<button
-									onClick={(e) => {
-										e.stopPropagation();
-										toggleFavorite(seedColor.toUpperCase());
-									}}
-									className="p-2 hover:bg-black/10 rounded-full transition-colors group/heart"
-									title={
-										isPrimaryFavorite
-											? "Remove from Favorites"
-											: "Save to Favorites"
+								<HeartToggle
+									isFavorite={!!isPrimaryFavorite}
+									onToggle={() =>
+										handleFavoriteToggle(
+											seedColor.toUpperCase()
+										)
 									}
-								>
-									<Heart
-										size={16}
-										className={`transition-all ${
-											isPrimaryFavorite
-												? "fill-red-500 scale-110"
-												: "group-hover/heart:scale-110"
-										}`}
-									/>
-								</button>
+									showPending={elementStatus === "pending"}
+									className={
+										isPrimaryFavorite
+											? "scale-110"
+											: "group-hover/heart:scale-110"
+									}
+									size={18}
+								/>
 							</div>
 						</div>
 
@@ -328,12 +283,12 @@ export const ColorControlPanel = ({
 										setSeedColor(val);
 								}}
 								onCopy={() =>
-									copyToClipboard(
+									copyHex(
 										seedColor.toUpperCase(),
-										setCopiedHex
+										seedColor.toUpperCase()
 									)
 								}
-								isCopied={copiedHex}
+								isCopied={isHexCopied}
 								hideCopy={true}
 							/>
 
@@ -354,12 +309,12 @@ export const ColorControlPanel = ({
 									handleManualInput(val, "rgb")
 								}
 								onCopy={() =>
-									copyToClipboard(
+									copyRgb(
 										`rgb(${rgba.r}, ${rgba.g}, ${rgba.b})`,
-										setCopiedRgb
+										`rgb(${rgba.r}, ${rgba.g}, ${rgba.b})`
 									)
 								}
-								isCopied={copiedRgb}
+								isCopied={isRgbCopied}
 							/>
 
 							{/* HSL Input */}
@@ -381,16 +336,16 @@ export const ColorControlPanel = ({
 									handleManualInput(val, "hsl")
 								}
 								onCopy={() =>
-									copyToClipboard(
+									copyHsl(
 										`hsl(${Math.round(
 											hsla.h
 										)}, ${Math.round(
 											hsla.s
 										)}%, ${Math.round(hsla.l)}%)`,
-										setCopiedHsl
+										`hsl(${Math.round(hsla.h)}, ...)`
 									)
 								}
-								isCopied={copiedHsl}
+								isCopied={isHslCopied}
 							/>
 
 							{/* HSB Input (New) */}
@@ -411,19 +366,17 @@ export const ColorControlPanel = ({
 								onCommit={(val) =>
 									handleManualInput(val, "hsb")
 								}
-								onCopy={() => {
-									showToast("Copied to clipboard");
-									navigator.clipboard.writeText(
+								onCopy={() =>
+									copyHsb(
 										`hsb(${Math.round(
 											hsva.h
 										)}, ${Math.round(
 											hsva.s
-										)}%, ${Math.round(hsva.v)}%)`
-									);
-									setCopiedHsb(true);
-									setTimeout(() => setCopiedHsb(false), 2000);
-								}}
-								isCopied={copiedHsb}
+										)}%, ${Math.round(hsla.l)}%)`,
+										`hsb(${Math.round(hsva.h)}, ...)`
+									)
+								}
+								isCopied={isHsbCopied}
 							/>
 						</div>
 
@@ -450,9 +403,8 @@ export const ColorControlPanel = ({
 						isFavorite={isSecondaryFavorite}
 						onMakePrimary={() => setSeedColor(secondaryColor)}
 						onToggleFavorite={() =>
-							toggleFavorite(secondaryColor.toUpperCase())
+							handleFavoriteToggle(secondaryColor.toUpperCase())
 						}
-						onCopy={() => showToast("Copied to clipboard")}
 					/>
 					<MiniColorCard
 						label="Tertiary"
@@ -460,9 +412,8 @@ export const ColorControlPanel = ({
 						isFavorite={isTertiaryFavorite}
 						onMakePrimary={() => setSeedColor(tertiaryColor)}
 						onToggleFavorite={() =>
-							toggleFavorite(tertiaryColor.toUpperCase())
+							handleFavoriteToggle(tertiaryColor.toUpperCase())
 						}
-						onCopy={() => showToast("Copied to clipboard")}
 					/>
 				</div>
 			)}
@@ -550,24 +501,20 @@ const MiniColorCard = ({
 	isFavorite,
 	onMakePrimary,
 	onToggleFavorite,
-	onCopy,
 }: {
 	label: string;
 	color: string;
 	isFavorite?: boolean;
 	onMakePrimary: () => void;
 	onToggleFavorite: () => void;
-	onCopy?: () => void;
+	// onCopy removed as it logic is handled internally
 }) => {
-	const [copied, setCopied] = useState(false);
+	const { isCopied, copy } = useCopyFeedback();
 	const isDark = colord(color).isDark();
 
 	const handleCopy = (e: React.MouseEvent) => {
 		e.stopPropagation();
-		if (onCopy) onCopy(); // Trigger toast immediately
-		performCopy(color.toUpperCase());
-		setCopied(true);
-		setTimeout(() => setCopied(false), 2000);
+		copy(color.toUpperCase(), color.toUpperCase());
 	};
 
 	return (
@@ -601,22 +548,18 @@ const MiniColorCard = ({
 						className="p-1.5 rounded-full hover:bg-black/10 transition-colors"
 						title="Copy Hex"
 					>
-						{copied ? (
+						{isCopied ? (
 							<Check size={14} className="text-green-500" />
 						) : (
 							<Copy size={14} />
 						)}
 					</button>
-					<button
-						onClick={onToggleFavorite}
-						className="p-1.5 rounded-full hover:bg-black/10 transition-colors"
-						title="Toggle Favorite"
-					>
-						<Heart
-							size={14}
-							className={isFavorite ? "fill-red-500" : ""}
-						/>
-					</button>
+					<HeartToggle
+						isFavorite={!!isFavorite}
+						onToggle={onToggleFavorite}
+						size={14}
+						className={isDark ? "text-white hover:bg-white/20" : ""}
+					/>
 				</div>
 			</div>
 

@@ -3,8 +3,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ColorCreator } from "./lab/ColorCreator";
 import { PaletteGenerator } from "./lab/PaletteGenerator";
 import { ColorLibrary } from "./lab/ColorLibrary";
+import { PaletteLibrary } from "./lab/PaletteLibrary";
 import { PresetColor } from "../data/colorPresets";
-import { toggleFavoriteWithMetadata } from "../utils/favorites";
+import {
+	toggleFavoriteWithMetadata,
+	savePaletteWithMetadata,
+} from "../utils/favorites";
 
 import { useSoloist } from "../context/SoloistContext";
 
@@ -12,12 +16,20 @@ interface ExploreViewProps {
 	activeTab: "colors" | "palettes" | "studio" | "remix";
 	setActiveTab: (tab: "colors" | "palettes" | "studio" | "remix") => void;
 	onInspectColor?: (color: PresetColor | null) => void;
+	onInspectPalette?: (palette: any | null) => void;
+	generatorColors: string[];
+	setGeneratorColors: (
+		colors: string[] | ((prev: string[]) => string[])
+	) => void;
 }
 
 export const ExploreView = ({
 	activeTab,
 	setActiveTab,
 	onInspectColor = () => {},
+	onInspectPalette = () => {},
+	generatorColors,
+	setGeneratorColors,
 }: ExploreViewProps) => {
 	const {
 		seedColor,
@@ -183,20 +195,10 @@ export const ExploreView = ({
 
 	// Save Palette
 	const savePalette = (colors: string[]) => {
-		const library = settings.library || {
-			colors: [],
-			fonts: [],
-			palettes: [],
-		};
-		const newPalette = {
-			name: `Palette ${library.palettes.length + 1}`,
+		savePaletteWithMetadata({
 			colors,
-		};
-		updateSettings({
-			library: {
-				...library,
-				palettes: [...library.palettes, newPalette],
-			},
+			settings,
+			updateSettings,
 		});
 	};
 
@@ -274,6 +276,14 @@ export const ExploreView = ({
 								onDeleteGroup={deleteGroup}
 								onMoveColor={moveColor}
 								onReorderGroups={reorderGroups}
+								onReorderColors={(newColors) => {
+									updateSettings({
+										library: {
+											...(settings.library || {}),
+											colors: newColors,
+										},
+									});
+								}}
 							/>
 						</motion.div>
 					)}
@@ -288,17 +298,15 @@ export const ExploreView = ({
 							transition={{ duration: 0.2 }}
 							className="h-full p-6"
 						>
-							<ColorLibrary
-								view="palettes"
+							<PaletteLibrary
 								library={
 									settings.library || {
 										colors: [],
 										palettes: [],
 									}
 								}
-								onLoadColor={setSeedColor}
+								onInspectPalette={onInspectPalette}
 								onRemovePalette={removePalette}
-								onRemoveColor={() => {}}
 							/>
 						</motion.div>
 					)}
@@ -336,7 +344,11 @@ export const ExploreView = ({
 							transition={{ duration: 0.2 }}
 							className="h-full p-6"
 						>
-							<PaletteGenerator onSavePalette={savePalette} />
+							<PaletteGenerator
+								onSavePalette={savePalette}
+								colors={generatorColors}
+								setColors={setGeneratorColors}
+							/>
 						</motion.div>
 					)}
 				</AnimatePresence>

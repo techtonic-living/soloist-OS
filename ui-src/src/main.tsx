@@ -30,12 +30,15 @@ class ErrorBoundary extends React.Component<
 }
 
 import { SoloistProvider } from "./context/SoloistContext";
+import { ToastProvider } from "./context/ToastContext";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
 	<React.StrictMode>
 		<ErrorBoundary>
 			<SoloistProvider>
-				<App />
+				<ToastProvider>
+					<App />
+				</ToastProvider>
 			</SoloistProvider>
 		</ErrorBoundary>
 	</React.StrictMode>

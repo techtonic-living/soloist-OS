@@ -16,6 +16,20 @@ const App = () => {
 		null
 	);
 
+	const [inspectedPalette, setInspectedPalette] = useState<any | null>(null);
+	const [generatorColors, setGeneratorColors] = useState<string[]>([
+		"#3D8BFF",
+		"#00C2FF",
+		"#9D4EDD",
+		"#FF006E",
+		"#FFBE0B",
+	]);
+
+	const handleLoadRemix = (colors: string[]) => {
+		setGeneratorColors(colors);
+		setExploreTab("remix");
+	};
+
 	return (
 		<div className="flex flex-col h-screen w-full bg-bg-void overflow-hidden text-sm relative">
 			{/* Header / Brand - Minimal */}
@@ -40,6 +54,9 @@ const App = () => {
 							setInspectedColor(null);
 						}}
 						onInspectColor={setInspectedColor}
+						onInspectPalette={setInspectedPalette}
+						generatorColors={generatorColors}
+						setGeneratorColors={setGeneratorColors}
 					/>
 				</div>
 
@@ -51,6 +68,8 @@ const App = () => {
 				<AssistantPanel
 					activeExploreTab={exploreTab}
 					selectedInsightColor={inspectedColor}
+					selectedInsightPalette={inspectedPalette}
+					onLoadPalette={handleLoadRemix}
 				/>
 			</div>
 		</div>
