@@ -15,6 +15,7 @@ interface ToggleFavoriteParams {
 
 interface SavePaletteParams {
   colors: string[];
+  name?: string;
   settings: SystemSettings;
   updateSettings: (settings: Partial<SystemSettings>) => void;
 }
@@ -200,6 +201,7 @@ export const toggleFavoriteWithMetadata = async ({
 
 export const togglePaletteWithMetadata = async ({
   colors,
+  name,
   settings,
   updateSettings,
 }: SavePaletteParams): Promise<ToggleFavoriteResult> => {
@@ -229,10 +231,19 @@ export const togglePaletteWithMetadata = async ({
 
   // ADD Logic
   try {
-    const existingNames = library.palettes.map((p: any) => p.name);
-    const metadata = await generatePaletteMetadata(colors, {
-      avoidNames: existingNames,
-    });
+    let metadata;
+    if (name) {
+      // Use provided name
+      metadata = await generatePaletteMetadata(colors, {
+        avoidNames: [], // We trust the user/preset name if explicitly provided
+      });
+      metadata.name = name; // Override name
+    } else {
+      const existingNames = library.palettes.map((p: any) => p.name);
+      metadata = await generatePaletteMetadata(colors, {
+        avoidNames: existingNames,
+      });
+    }
 
     updateSettings({
       library: {

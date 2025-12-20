@@ -11,6 +11,7 @@ import {
 } from "../utils/favorites";
 
 import { useSoloist } from "../context/SoloistContext";
+import { useToast } from "../context/ToastContext";
 
 interface ExploreViewProps {
   activeTab: "colors" | "palettes" | "studio" | "remix";
@@ -50,6 +51,8 @@ export const ExploreView = ({
     settings,
     updateSettings,
   } = useSoloist();
+
+  const { showToast } = useToast();
 
   // Derived colors for ColorCreator
   const secondaryColor = secondaryRamp[5]?.hex || "#000000";
@@ -128,7 +131,7 @@ export const ExploreView = ({
     updateSettings({
       library: {
         ...library,
-        colorGroups: [...(library.colorGroups || []), newGroup],
+        colorGroups: [newGroup, ...(library.colorGroups || [])],
       },
     });
   };
@@ -193,6 +196,89 @@ export const ExploreView = ({
     });
   };
 
+  // Palette Group Management
+  const createPaletteGroup = (name: string, description: string) => {
+    const library = settings.library || {
+      colors: [],
+      fonts: [],
+      palettes: [],
+      paletteGroups: [],
+    };
+    const newGroup = {
+      id: `pgroup-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name,
+      description,
+      paletteIds: [],
+      isActive: true,
+      isHidden: false,
+    };
+    updateSettings({
+      library: {
+        ...library,
+        paletteGroups: [newGroup, ...(library.paletteGroups || [])],
+      },
+    });
+  };
+
+  const updatePaletteGroup = (id: string, updates: Partial<any>) => {
+    const library = settings.library;
+    if (!library || !library.paletteGroups) return;
+    const updatedGroups = library.paletteGroups.map((g) =>
+      g.id === id ? { ...g, ...updates } : g
+    );
+    updateSettings({
+      library: { ...library, paletteGroups: updatedGroups },
+    });
+  };
+
+  const deletePaletteGroup = (id: string) => {
+    const library = settings.library;
+    if (!library || !library.paletteGroups) return;
+    const updatedGroups = library.paletteGroups.filter((g) => g.id !== id);
+    updateSettings({
+      library: { ...library, paletteGroups: updatedGroups },
+    });
+  };
+
+  const movePaletteToGroup = (
+    paletteName: string,
+    targetGroupId: string | null
+  ) => {
+    const library = settings.library;
+    if (!library || !library.paletteGroups) return;
+
+    // 1. Remove from all groups first
+    let updatedGroups = library.paletteGroups.map((g) => ({
+      ...g,
+      paletteIds: g.paletteIds.filter((p) => p !== paletteName),
+    }));
+
+    // 2. Add to target group if specified
+    if (targetGroupId) {
+      updatedGroups = updatedGroups.map((g) => {
+        if (g.id === targetGroupId) {
+          return {
+            ...g,
+            paletteIds: [...g.paletteIds, paletteName],
+          };
+        }
+        return g;
+      });
+    }
+
+    updateSettings({
+      library: { ...library, paletteGroups: updatedGroups },
+    });
+  };
+
+  const reorderPaletteGroups = (newOrder: any[]) => {
+    const library = settings.library;
+    if (!library) return;
+    updateSettings({
+      library: { ...library, paletteGroups: newOrder },
+    });
+  };
+
   // Save Palette
   const savePalette = (colors: string[]) => {
     togglePaletteWithMetadata({
@@ -208,9 +294,94 @@ export const ExploreView = ({
       fonts: [],
       palettes: [],
     };
+    const palette = library.palettes[index];
     const newPalettes = [...library.palettes];
     newPalettes.splice(index, 1);
-    updateSettings({ library: { ...library, palettes: newPalettes } });
+
+    // Also remove from any palette groups
+    const updatedPaletteGroups = (library.paletteGroups || []).map((g) => ({
+      ...g,
+      paletteIds: g.paletteIds.filter((id) => id !== palette.name),
+    }));
+
+    updateSettings({
+      library: {
+        ...library,
+        palettes: newPalettes,
+        paletteGroups: updatedPaletteGroups,
+      },
+    });
+
+    if (palette) {
+      showToast(
+        <>
+          Removed <span className="text-accent-cyan">{palette.name}</span> from
+          favorites
+        </>
+      );
+    }
+  };
+
+  const removePalettes = (palettesToRemove: any[]) => {
+    const library = settings.library;
+    if (!library || !library.palettes) return;
+
+    const namesToRemove = new Set(palettesToRemove.map((p) => p.name));
+    const newPalettes = library.palettes.filter(
+      (p: any) => !namesToRemove.has(p.name)
+    );
+
+    // Also remove from any palette groups
+    const updatedPaletteGroups = (library.paletteGroups || []).map((g) => ({
+      ...g,
+      paletteIds: g.paletteIds.filter((id) => !namesToRemove.has(id)),
+    }));
+
+    updateSettings({
+      library: {
+        ...library,
+        palettes: newPalettes,
+        paletteGroups: updatedPaletteGroups,
+      },
+    });
+
+    showToast(
+      <>
+        Removed{" "}
+        <span className="text-accent-cyan">{palettesToRemove.length}</span>{" "}
+        palettes from favorites
+      </>
+    );
+  };
+
+  // Bulk add palettes to library
+  const bulkAddPalettes = (palettes: any[]) => {
+    const library = settings.library || {
+      colors: [],
+      fonts: [],
+      palettes: [],
+    };
+
+    // Filter out potential duplicates based on name/colors
+    // For now, simpler check by name
+    const existingNames = new Set(library.palettes.map((p: any) => p.name));
+    const newPalettes = palettes.filter((p) => !existingNames.has(p.name));
+
+    if (newPalettes.length === 0) return;
+
+    updateSettings({
+      library: {
+        ...library,
+        palettes: [...library.palettes, ...newPalettes],
+      },
+    });
+
+    showToast(
+      <>
+        Added <span className="text-accent-cyan">{newPalettes.length}</span>{" "}
+        palettes to favorites
+      </>
+    );
   };
 
   return (
@@ -317,10 +488,40 @@ export const ExploreView = ({
                   settings.library || {
                     colors: [],
                     palettes: [],
+                    paletteGroups: [],
                   }
                 }
                 onInspectPalette={onInspectPalette}
                 onRemovePalette={removePalette}
+                onRemovePalettes={removePalettes}
+                onAddPalettes={bulkAddPalettes}
+                onCreateGroup={createPaletteGroup}
+                onUpdateGroup={updatePaletteGroup}
+                onDeleteGroup={deletePaletteGroup}
+                onMovePalette={movePaletteToGroup}
+                onReorderGroups={reorderPaletteGroups}
+                uiPreferences={settings.uiPreferences}
+                onUpdateUiPreferences={(prefs) => {
+                  updateSettings({
+                    uiPreferences: {
+                      ...(settings.uiPreferences || {
+                        paletteGridDensity: {
+                          favorites: 2,
+                          libraries: 2,
+                        },
+                      }),
+                      ...prefs,
+                    },
+                  });
+                }}
+                onToggleFavorite={(colors, name) =>
+                  togglePaletteWithMetadata({
+                    colors,
+                    name,
+                    settings,
+                    updateSettings,
+                  })
+                }
               />
             </motion.div>
           )}

@@ -181,7 +181,8 @@ export const AssistantPanel = ({
     activeTokensModule,
     activeExploreTab,
     selectedInsightColor,
-    selectedInsightPalette
+    selectedInsightPalette,
+    inspectedRemixIndex
   );
 
   // Check if we should show the Color Control Panel (Essential Content for 'Studio')
@@ -410,8 +411,9 @@ const getContentForView = (
   _typeTab?: string,
   _tokensModule?: string,
   exploreTab?: string,
-  _selectedColor?: any,
-  selectedPalette?: any
+  selectedColor?: any,
+  selectedPalette?: any,
+  inspectedRemixIndex?: number | null
 ) => {
   // Handle Explore View
   if (view === "explore") {
@@ -421,6 +423,21 @@ const getContentForView = (
         lessonId: "00.2a",
         title: "Palette Inspector",
         description: "Detailed view of the selected palette.",
+        concepts: [],
+        suggestions: [],
+      };
+    }
+
+    if (
+      selectedColor ||
+      (exploreTab === "remix" &&
+        inspectedRemixIndex !== null &&
+        inspectedRemixIndex !== undefined)
+    ) {
+      return {
+        lessonId: "00.1a",
+        title: "Color Inspector",
+        description: "Detailed view of the selected color.",
         concepts: [],
         suggestions: [],
       };
@@ -1096,7 +1113,7 @@ const RemixColorInspectorCard = ({
         />
 
         {/* Interactive Overlay */}
-        <div className="absolute inset-0 z-10 p-4 flex flex-col justify-between pointer-events-auto">
+        <div className="absolute inset-0 z-10 p-2 flex flex-col justify-between pointer-events-auto">
           {/* Interaction Lock for other elements if editing */}
           {activeEditorId !== null && (
             <div className="absolute inset-0 z-[90] bg-transparent cursor-default" />

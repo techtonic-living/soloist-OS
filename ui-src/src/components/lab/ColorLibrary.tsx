@@ -11,6 +11,8 @@ import {
   Edit3,
   ChevronUp,
   ChevronDown,
+  ChevronsUp,
+  ChevronsDown,
   Globe,
   FolderOpen,
   ArrowRightLeft,
@@ -655,6 +657,7 @@ export const ColorLibrary = ({
                         setIsCreatingGroup(false);
                         setNewGroupName("");
                         setNewGroupDesc("");
+                        setIsEditingLibrary(true);
                       }
                     };
 
@@ -1091,41 +1094,90 @@ export const ColorLibrary = ({
 
                         {/* Actions */}
                         <div className="flex items-center gap-1 transition-opacity">
-                          {onReorderGroups && (
-                            <div className="flex items-center gap-1 mr-1">
+                          {isEditingLibrary && onReorderGroups && (
+                            <div className="flex items-center gap-1 border-r border-glass-stroke mr-1 pr-1">
                               {index > 0 && (
-                                <button
-                                  onClick={() => {
-                                    // Move Up - simplified using index
-                                    const newGroups = [...library.colorGroups];
-                                    [newGroups[index - 1], newGroups[index]] = [
-                                      newGroups[index],
-                                      newGroups[index - 1],
-                                    ];
-                                    onReorderGroups(newGroups);
-                                  }}
-                                  className="p-1.5 text-gray-500 hover:text-white"
-                                  title="Move Up"
-                                >
-                                  <ChevronUp size={14} />
-                                </button>
+                                <div className="flex items-center">
+                                  {/* Move to Top (Visible if not top) */}
+                                  <button
+                                    onClick={() => {
+                                      // Move to Top
+                                      const newGroups = [
+                                        ...library.colorGroups,
+                                      ];
+                                      const [moved] = newGroups.splice(
+                                        index,
+                                        1
+                                      );
+                                      newGroups.unshift(moved);
+                                      onReorderGroups(newGroups);
+                                    }}
+                                    className="p-1.5 text-gray-500 hover:text-white"
+                                    title="Move to Top"
+                                  >
+                                    <ChevronsUp size={14} />
+                                  </button>
+
+                                  <button
+                                    onClick={() => {
+                                      // Move Up - simplified using index
+                                      const newGroups = [
+                                        ...library.colorGroups,
+                                      ];
+                                      [newGroups[index - 1], newGroups[index]] =
+                                        [
+                                          newGroups[index],
+                                          newGroups[index - 1],
+                                        ];
+                                      onReorderGroups(newGroups);
+                                    }}
+                                    className="p-1.5 text-gray-500 hover:text-white"
+                                    title="Move Up"
+                                  >
+                                    <ChevronUp size={14} />
+                                  </button>
+                                </div>
                               )}
                               {index < library.colorGroups.length - 1 && (
-                                <button
-                                  onClick={() => {
-                                    // Move Down - simplified using index
-                                    const newGroups = [...library.colorGroups];
-                                    [newGroups[index + 1], newGroups[index]] = [
-                                      newGroups[index],
-                                      newGroups[index + 1],
-                                    ];
-                                    onReorderGroups(newGroups);
-                                  }}
-                                  className="p-1.5 text-gray-500 hover:text-white"
-                                  title="Move Down"
-                                >
-                                  <ChevronDown size={14} />
-                                </button>
+                                <div className="flex items-center">
+                                  <button
+                                    onClick={() => {
+                                      // Move Down - simplified using index
+                                      const newGroups = [
+                                        ...library.colorGroups,
+                                      ];
+                                      [newGroups[index + 1], newGroups[index]] =
+                                        [
+                                          newGroups[index],
+                                          newGroups[index + 1],
+                                        ];
+                                      onReorderGroups(newGroups);
+                                    }}
+                                    className="p-1.5 text-gray-500 hover:text-white"
+                                    title="Move Down"
+                                  >
+                                    <ChevronDown size={14} />
+                                  </button>
+                                  {/* Move to Bottom (Visible if not bottom) */}
+                                  <button
+                                    onClick={() => {
+                                      // Move to Bottom
+                                      const newGroups = [
+                                        ...library.colorGroups,
+                                      ];
+                                      const [moved] = newGroups.splice(
+                                        index,
+                                        1
+                                      );
+                                      newGroups.push(moved);
+                                      onReorderGroups(newGroups);
+                                    }}
+                                    className="p-1.5 text-gray-500 hover:text-white"
+                                    title="Move to Bottom"
+                                  >
+                                    <ChevronsDown size={14} />
+                                  </button>
+                                </div>
                               )}
                             </div>
                           )}

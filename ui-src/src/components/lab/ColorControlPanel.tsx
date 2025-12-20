@@ -260,7 +260,7 @@ export const ColorControlPanel = ({
           </svg>
           {/* Overlay Content */}
           <div
-            className={`absolute inset-0 z-10 p-4 flex flex-col justify-between pointer-events-none ${
+            className={`absolute inset-0 z-10 p-2 flex flex-col justify-between pointer-events-none ${
               isDark ? "text-white" : "text-black/80"
             } ${harmonyMode === "manual" ? "cursor-pointer" : ""}`}
             onClick={
