@@ -61,7 +61,16 @@ We avoid heavy solid borders. Instead, we use "Glass Strokes" – semi-transpare
 
 ### Scrollbars
 
-Use `.custom-scrollbar` on scrollable containers for a consistent, minimal interface (6px width, glass thumb).
+Use `.custom-scrollbar` on scrollable containers for a consistent, minimal interface across all tools (Color Library, Color Studio, etc.).
+
+**Specifications:**
+-   **Width**: 6px (compact, minimal footprint)
+-   **Thumb Style**: Semi-transparent white (`bg-white/20`) with glass aesthetic
+-   **Track**: Transparent (inherits container background)
+-   **Hover State**: Increases opacity to `bg-white/30` for visibility feedback
+-   **Rounded**: Fully rounded corners (`rounded-full`) for refined appearance
+
+**Implementation**: Defined in `index.css` with webkit scrollbar pseudo-elements for cross-browser compatibility.
 
 ## 3. Component Library Guidelines
 

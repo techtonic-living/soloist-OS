@@ -557,6 +557,7 @@ const SmartColorInput = ({
   // Local state
   const [localValue, setLocalValue] = useState(value);
   const [isEditing, setIsEditing] = useState(false);
+  const [initialHexValue, setInitialHexValue] = useState<string | null>(null);
 
   // Slider State
   const [activeComponent, setActiveComponent] = useState<number | null>(null);
@@ -634,15 +635,35 @@ const SmartColorInput = ({
   // Text Input Logic (Hex)
   // ---------------------------
   const handleSave = () => {
-    if (onCommit) {
-      onCommit(localValue);
+    let commitValue = localValue;
+
+    if (type === "hex") {
+      const hexPattern = /^[A-Fa-f0-9]{6}$/;
+      const normalizedValue = `#${localValue.replace(/^#/, "")}`;
+
+      if (!hexPattern.test(localValue) || !colord(normalizedValue).isValid()) {
+        return;
+      }
+
+      commitValue = normalizedValue;
     }
+
+    if (onCommit) {
+      onCommit(commitValue);
+    }
+    setInitialHexValue(null);
     setIsEditing(false);
     onEditEnd();
   };
 
   const handleCancel = () => {
-    setLocalValue(value);
+    if (type === "hex" && initialHexValue) {
+      setLocalValue(initialHexValue);
+      if (onCommit) onCommit(initialHexValue);
+    } else {
+      setLocalValue(value);
+    }
+    setInitialHexValue(null);
     setIsEditing(false);
     onEditEnd();
   };
@@ -664,33 +685,59 @@ const SmartColorInput = ({
     // HEX Mode: Text Input (Keep the unified style for Hex)
     if (type === "hex") {
       if (isEditing) {
+        const hexPattern = /^[A-Fa-f0-9]{6}$/;
+        const normalizedValue = `#${localValue.replace(/^#/, "")}`;
+        const isInvalid =
+          !hexPattern.test(localValue) || !colord(normalizedValue).isValid();
+
         return (
-          <div className="relative z-[100] flex items-center gap-2 flex-1 min-w-0">
-            <input
-              autoFocus
-              type="text"
-              value={localValue.toUpperCase()}
-              onChange={(e) => setLocalValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="flex-1 min-w-0 bg-black/40 backdrop-blur-md border border-white/20 rounded px-2 py-1 text-xs font-bold font-mono text-white text-center focus:outline-none focus:border-accent-cyan"
-              title="Hex Value"
-              placeholder="#000000"
-            />
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={handleCancel}
-                className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors backdrop-blur-sm"
-                title="Cancel"
-              >
-                <X size={12} />
-              </button>
-              <button
-                onClick={handleSave}
-                className="p-1.5 rounded-full bg-green-500/80 hover:bg-green-500 text-white transition-colors backdrop-blur-sm"
-                title="Save"
-              >
-                <Check size={12} />
-              </button>
+          <div className="relative z-[100] flex flex-col gap-1 flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <input
+                autoFocus
+                type="text"
+                value={localValue.toUpperCase()}
+                onChange={(e) => {
+                  const nextVal = e.target.value.replace(/^#/, "");
+                  setLocalValue(nextVal);
+
+                  if (
+                    hexPattern.test(nextVal) &&
+                    colord(`#${nextVal}`).isValid()
+                  ) {
+                    if (onCommit) onCommit(`#${nextVal}`);
+                  }
+                }}
+                onKeyDown={handleKeyDown}
+                className={`flex-1 min-w-0 bg-black/40 backdrop-blur-md border rounded px-2 py-1 text-xs font-bold font-mono text-white text-center focus:outline-none transition-colors ${
+                  isInvalid
+                    ? "border-red-500 focus:border-red-500"
+                    : "border-white/20 focus:border-accent-cyan"
+                }`}
+                title="Hex Value"
+                placeholder="000000"
+              />
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={handleCancel}
+                  className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors backdrop-blur-sm"
+                  title="Cancel"
+                >
+                  <X size={12} />
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={isInvalid}
+                  className={`p-1.5 rounded-full text-white transition-colors backdrop-blur-sm ${
+                    isInvalid
+                      ? "bg-gray-500 opacity-50"
+                      : "bg-green-500/80 hover:bg-green-500"
+                  }`}
+                  title={isInvalid ? "Invalid Hex Color Format" : "Save"}
+                >
+                  <Check size={12} />
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -699,6 +746,8 @@ const SmartColorInput = ({
           <button
             onClick={() => {
               if (editable && !disabled) {
+                setInitialHexValue(value);
+                setLocalValue(value.replace(/^#/, ""));
                 setIsEditing(true);
                 onEditStart(id);
               }
@@ -708,7 +757,7 @@ const SmartColorInput = ({
                             flex-1 text-center transition-all duration-300 font-bold text-3xl font-brand
                             ${
                               editable && !disabled
-                                ? "cursor-text hover:text-white"
+                                ? "cursor-pointer hover:text-white"
                                 : "cursor-default select-none"
                             }
                             ${

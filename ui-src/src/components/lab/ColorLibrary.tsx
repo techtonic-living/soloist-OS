@@ -102,12 +102,14 @@ export const ColorLibrary = ({
     message: React.ReactNode;
     onConfirm: () => void;
     variant?: "danger" | "info" | "warning";
+    confirmLabel?: string;
   }>({
     isOpen: false,
     title: "",
     message: null,
     onConfirm: () => {},
     variant: undefined,
+    confirmLabel: undefined,
   });
 
   const closeConfirm = () =>
@@ -394,19 +396,62 @@ export const ColorLibrary = ({
             <span className="text-[10px] text-gray-500 font-mono uppercase">
               Sort
             </span>
-            <div className="relative group">
-              <select
-                value={sortOption}
-                onChange={(e) => setSortOption(e.target.value as SortOption)}
+            <div className="relative">
+              <button
+                onClick={(e) => {
+                  const menu = e.currentTarget
+                    .nextElementSibling as HTMLElement;
+                  menu.classList.toggle("hidden");
+                }}
+                className="appearance-none bg-black/20 border border-white/10 rounded px-2 py-0.5 text-[10px] text-gray-300 font-mono uppercase focus:outline-none focus:border-accent-cyan cursor-pointer pr-6 hover:bg-white/5 transition-colors flex items-center gap-2"
                 aria-label="Sort order"
-                className="appearance-none bg-black/20 border border-white/10 rounded px-2 py-0.5 text-[10px] text-gray-300 font-mono uppercase focus:outline-none focus:border-accent-cyan cursor-pointer pr-6 hover:bg-white/5 transition-colors"
               >
+                {sortOption === "custom"
+                  ? "Custom"
+                  : sortOption === "hue"
+                  ? "Hue"
+                  : "Name (A-Z)"}
+              </button>
+              <div className="hidden absolute right-0 mt-1 bg-bg-raised border border-glass-stroke rounded shadow-monolith z-50 min-w-max">
                 {activeSubTab === "favorites" && (
-                  <option value="custom">Custom</option>
+                  <button
+                    onClick={() => {
+                      setSortOption("custom");
+                      (document.activeElement as HTMLElement)?.blur();
+                      const menu = document.activeElement?.parentElement
+                        ?.nextElementSibling as HTMLElement;
+                      if (menu) menu.classList.add("hidden");
+                    }}
+                    className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
+                  >
+                    Custom
+                  </button>
                 )}
-                <option value="name">Name (A-Z)</option>
-                <option value="hue">Hue</option>
-              </select>
+                <button
+                  onClick={() => {
+                    setSortOption("hue");
+                    const menu = document.querySelector(
+                      '[aria-label="Sort order"]'
+                    )?.nextElementSibling as HTMLElement;
+                    if (menu) menu.classList.add("hidden");
+                  }}
+                  className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
+                >
+                  Hue
+                </button>
+                <button
+                  onClick={() => {
+                    setSortOption("name");
+                    const menu = document.querySelector(
+                      '[aria-label="Sort order"]'
+                    )?.nextElementSibling as HTMLElement;
+                    if (menu) menu.classList.add("hidden");
+                  }}
+                  className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
+                >
+                  Name (A-Z)
+                </button>
+              </div>
               <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
                 <svg
                   width="8"
@@ -584,7 +629,7 @@ export const ColorLibrary = ({
                             });
                           }}
                           className="p-1.5 hover:bg-white/10 rounded-full text-red-500 hover:text-red-400 transition-colors"
-                          title="Unfavorite All"
+                          title="Unfavorite All in Global"
                         >
                           <Heart size={14} className="fill-current" />
                         </button>
@@ -625,6 +670,8 @@ export const ColorLibrary = ({
                       } else if (e.key === "Escape") {
                         e.preventDefault();
                         setIsCreatingGroup(false);
+                        setNewGroupName("");
+                        setNewGroupDesc("");
                       }
                     };
 
@@ -660,7 +707,11 @@ export const ColorLibrary = ({
                         />
                         <div className="flex justify-end gap-2">
                           <button
-                            onClick={() => setIsCreatingGroup(false)}
+                            onClick={() => {
+                              setIsCreatingGroup(false);
+                              setNewGroupName("");
+                              setNewGroupDesc("");
+                            }}
                             className="text-xs text-gray-500 hover:text-white px-2 py-1"
                           >
                             Cancel
@@ -1126,8 +1177,9 @@ export const ColorLibrary = ({
                                   isOpen: true,
                                   title: `Delete ${group.name}?`,
                                   message:
-                                    "Are you sure you want to delete this group? Colors will be returned to your main library.",
+                                    "Are you sure you want to delete this group? Colors assigned to this group will be returned to Global.",
                                   variant: "danger",
+                                  confirmLabel: "Delete Group",
                                   onConfirm: () => {
                                     if (onDeleteGroup) {
                                       onDeleteGroup(group.id);
@@ -1147,19 +1199,15 @@ export const ColorLibrary = ({
                               onClick={() => {
                                 setConfirmState({
                                   isOpen: true,
-                                  title: `Remove ${group.name}`,
+                                  title: "Unfavorite All in Group",
                                   message: (
                                     <span className="text-gray-300">
-                                      Are you sure you want to remove all saved
-                                      colors from{" "}
+                                      Are you sure you want to remove all colors
+                                      assigned to{" "}
                                       <strong className="text-white">
-                                        Favorites {">"} {group.name}
+                                        {group.name}
                                       </strong>{" "}
-                                      (
-                                      <span className="text-accent-cyan font-mono">
-                                        {groupItems.length}
-                                      </span>
-                                      )?
+                                      from Favorites?
                                     </span>
                                   ),
                                   onConfirm: () => {
@@ -1182,8 +1230,9 @@ export const ColorLibrary = ({
                                   variant: "danger",
                                 });
                               }}
-                              className="p-1.5 text-gray-500 hover:text-red-400 group-btn-heart"
+                              className="p-1.5 text-gray-500 hover:text-red-400 group-btn-heart disabled:opacity-30 disabled:hover:text-gray-500"
                               title="Unfavorite All in Group"
+                              disabled={groupItems.length === 0}
                             >
                               <Heart
                                 size={14}
@@ -1197,9 +1246,9 @@ export const ColorLibrary = ({
                           )}
                         </div>
                       </div>
-                      {editingGroupId !== group.id && (
+                      {editingGroupId !== group.id && group.description && (
                         <p className="text-xs text-white/80 leading-relaxed border-b border-glass-stroke pb-2">
-                          {group.description || "No description"}
+                          {group.description}
                         </p>
                       )}
                     </div>
@@ -1577,7 +1626,7 @@ export const ColorLibrary = ({
         message={confirmState.message}
         onConfirm={confirmState.onConfirm}
         onCancel={closeConfirm}
-        confirmLabel="Remove All"
+        confirmLabel={confirmState.confirmLabel || "Remove All"}
         variant="danger"
       />
     </div>

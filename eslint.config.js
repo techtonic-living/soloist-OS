@@ -54,4 +54,15 @@ export default [
       "no-console": ["warn", { allow: ["warn", "error"] }],
     },
   },
+  // Exception: Interactive color picker components require inline styles for dynamic values
+  // (computed positioning, gradients, and colors cannot be static Tailwind classes)
+  {
+    files: [
+      "ui-src/src/components/lab/ColorCreator.tsx",
+      "ui-src/src/components/lab/PaletteGenerator.tsx",
+    ],
+    rules: {
+      "no-inline-styles": "off",
+    },
+  },
 ];
