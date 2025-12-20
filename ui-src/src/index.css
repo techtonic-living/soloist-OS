@@ -10,6 +10,48 @@ body {
   transition-timing-function: cubic-bezier(0.32, 0.12, 0, 1);
 }
 
+/*
+  During native HTML5 drag, some browsers will show a default arrow cursor.
+  We force a grabbing cursor globally while organizing/reordering.
+*/
+html.organize-dragging,
+html.organize-dragging body,
+html.organize-dragging body *,
+body.organize-dragging,
+body.organize-dragging * {
+  cursor: grabbing !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+/* Shared drop-target highlight for pointer-based organize DnD */
+.organize-drop-target-active {
+  /* Match Tailwind `rounded-lg` */
+  border-radius: 8px;
+  box-shadow:
+    /* Accent cyan ring */ 0 0 0 2px rgba(63, 227, 242, 0.8),
+    0 10px 26px rgba(0, 0, 0, 0.28),
+    /* Match the active-tab underline glow: shadow-[0_0_8px_rgba(63,227,242,0.8)] */
+      0 0 8px rgba(63, 227, 242, 0.8);
+  transition: box-shadow 160ms ease, transform 160ms ease;
+}
+
+html.organize-dragging .organize-drop-target-active {
+  animation: organizeDropTargetPulse 900ms ease-in-out infinite;
+}
+
+@keyframes organizeDropTargetPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgba(63, 227, 242, 0.7),
+      0 10px 26px rgba(0, 0, 0, 0.28), 0 0 8px rgba(63, 227, 242, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 2px rgba(63, 227, 242, 0.9),
+      0 10px 26px rgba(0, 0, 0, 0.28), 0 0 10px rgba(63, 227, 242, 0.9);
+  }
+}
+
 @layer components {
   .depth-card {
     @apply bg-bg-surface rounded-2xl border border-glass-stroke shadow-monolith transition-all duration-500 ease-out;

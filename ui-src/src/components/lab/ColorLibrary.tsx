@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   Heart,
   Book,
@@ -27,6 +27,11 @@ import { HeartToggle } from "../common/HeartToggle";
 import { useCopyFeedback } from "../../hooks/useCopyFeedback";
 import { useToast } from "../../context/ToastContext";
 import { ToggleFavoriteResult } from "../../utils/favorites";
+import {
+  createOrganizeDragGhost,
+  positionOrganizeDragGhost,
+  setOrganizeDragCursorActive,
+} from "../../utils/organizeDnD";
 
 // --- Helper Functions ---
 // Ensure labels are unique within a render pass (case-insensitive)
@@ -96,6 +101,8 @@ export const ColorLibrary = ({
   // Sort State
   type SortOption = "custom" | "name" | "hue";
   const [sortOption, setSortOption] = useState<SortOption>("custom");
+  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+  const sortMenuRef = useRef<HTMLDivElement | null>(null);
 
   // Confirmation Modal State
   const [confirmState, setConfirmState] = useState<{
@@ -119,61 +126,260 @@ export const ColorLibrary = ({
 
   // Edit Mode State
   const [isEditingLibrary, setIsEditingLibrary] = useState(false);
+  // Presets "Custom" mode (hide/reorder built-in libraries + individual preset colors)
+  const [isEditingPresets, setIsEditingPresets] = useState(false);
 
-  // Drag and Drop Handlers
-  const handleDragStart = (
-    e: React.DragEvent,
-    colorHex: string,
-    sourceGroupId: string | null,
-    index?: number
-  ) => {
-    e.dataTransfer.setData("text/plain", colorHex);
-    e.dataTransfer.setData("sourceGroupId", sourceGroupId || "null");
-    if (index !== undefined) {
-      e.dataTransfer.setData("sourceIndex", index.toString());
+  // Pointer-based organize drag (replaces native HTML5 drag so cursor can stay grabbing)
+  const canReorderInCurrentSort = sortOption === "custom";
+  const isPointerOrganizeEnabled = isEditingLibrary;
+  const isPointerDraggingRef = useRef(false);
+  const pointerDragRef = useRef<{
+    pointerId: number | null;
+    sourceHex: string;
+    sourceGroupId: string | null;
+    displayName: string;
+    started: boolean;
+    startX: number;
+    startY: number;
+    offsetX: number;
+    offsetY: number;
+    ghostEl: HTMLDivElement | null;
+    activeTargetEl: HTMLElement | null;
+    target: {
+      groupId: string | null;
+      id?: string;
+      isDropzone?: boolean;
+    } | null;
+  } | null>(null);
+
+  const clearActiveTarget = () => {
+    const st = pointerDragRef.current;
+    if (!st?.activeTargetEl) return;
+    st.activeTargetEl.classList.remove("organize-drop-target-active");
+    st.activeTargetEl = null;
+  };
+
+  const endPointerDrag = () => {
+    const st = pointerDragRef.current;
+    if (!st) return;
+
+    clearActiveTarget();
+
+    if (st.ghostEl) {
+      st.ghostEl.remove();
+      st.ghostEl = null;
     }
-    e.dataTransfer.effectAllowed = "move";
+
+    setOrganizeDragCursorActive(false);
+
+    // Drop action
+    if (st.started && st.target) {
+      const targetGroupId = st.target.groupId;
+
+      // Same collection => reorder (Custom only)
+      if (targetGroupId === st.sourceGroupId) {
+        if (!canReorderInCurrentSort) {
+          // Move-only mode: same-group drops are a no-op.
+          pointerDragRef.current = null;
+          window.setTimeout(() => {
+            isPointerDraggingRef.current = false;
+          }, 0);
+          return;
+        }
+
+        // Global reorder
+        if (targetGroupId === null && onReorderColors) {
+          const allColors = [...(library.colors || [])];
+          const sourceIdx = allColors.findIndex((c: string | PresetColor) => {
+            const v = typeof c === "string" ? c : c.value;
+            return v.toUpperCase() === st.sourceHex.toUpperCase();
+          });
+
+          const targetId = st.target.id;
+          const targetIdx =
+            targetId !== undefined
+              ? allColors.findIndex((c: string | PresetColor) => {
+                  const v = typeof c === "string" ? c : c.value;
+                  return v.toUpperCase() === targetId.toUpperCase();
+                })
+              : allColors.length - 1;
+
+          if (sourceIdx !== -1 && targetIdx !== -1 && sourceIdx !== targetIdx) {
+            const [moved] = allColors.splice(sourceIdx, 1);
+            allColors.splice(targetIdx, 0, moved);
+            onReorderColors(allColors);
+          }
+        }
+
+        // Group reorder
+        if (targetGroupId !== null && onUpdateGroup) {
+          const group = (library.colorGroups as ColorGroup[] | undefined)?.find(
+            (g) => g.id === targetGroupId
+          );
+          const ids = [...(group?.colorIds || [])];
+          const sourceIndex = ids.findIndex(
+            (cid) => cid.toUpperCase() === st.sourceHex.toUpperCase()
+          );
+
+          const targetId = st.target.id;
+          const targetIndex =
+            targetId !== undefined
+              ? ids.findIndex(
+                  (cid) => cid.toUpperCase() === targetId.toUpperCase()
+                )
+              : ids.length - 1;
+
+          if (
+            sourceIndex !== -1 &&
+            targetIndex !== -1 &&
+            sourceIndex !== targetIndex
+          ) {
+            const [moved] = ids.splice(sourceIndex, 1);
+            ids.splice(targetIndex, 0, moved);
+            onUpdateGroup(targetGroupId, { colorIds: ids });
+          }
+        }
+      } else {
+        // Cross-group move
+        if (onMoveColor) {
+          onMoveColor(st.sourceHex, targetGroupId);
+        }
+      }
+    }
+
+    pointerDragRef.current = null;
+    window.setTimeout(() => {
+      isPointerDraggingRef.current = false;
+    }, 0);
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
+  const startPointerOrganizeDrag = (
+    e: React.PointerEvent,
+    hexValue: string,
+    sourceGroupId: string | null,
+    displayName: string
+  ) => {
+    if (!isPointerOrganizeEnabled) return;
+    if (e.button !== 0) return;
 
-  const handleDrop = (e: React.DragEvent, targetGroupId: string | null) => {
-    e.preventDefault();
-    const colorHex = e.dataTransfer.getData("text/plain");
-    const sourceGroupId = e.dataTransfer.getData("sourceGroupId");
-    const sourceIndexStr = e.dataTransfer.getData("sourceIndex");
-
-    // Handle Reordering (Same Group)
+    const target = e.target as HTMLElement | null;
     if (
-      sourceGroupId === (targetGroupId || "null") &&
-      targetGroupId !== null &&
-      sourceIndexStr &&
-      onUpdateGroup
+      target?.closest?.("button, a, input, textarea, select, [role='button']")
     ) {
-      // Get target index from drop target (we need to pass this somehow or assume drop on container = append?
-      // Actually, to reorder *between* items, we need SmartColorCard to handle the drop or pass the index up.
-      // For this implementation, we will utilize the `SmartColorCard`'s onDrop prop (added below)
-      // instead of the container's onDrop for precise targeting.
-      // The container drop (this function) will handle "Add to Group" or "Append".
-
-      // If we are dropping on the container background, maybe append?
-      // For now, let's keep container drop for cross-group moves,
-      // and let individual cards handle reorder drops in the render loop.
-
-      // If we are here, it means we dropped on the *container* but not a specific card.
-      // We can treat this as "Move to end".
       return;
     }
 
-    // If moved to same group (and not caught by specific card reorder), do nothing
-    if (sourceGroupId === (targetGroupId || "null")) return;
+    // Prevent text selection / native gestures while we begin an organize drag.
+    e.preventDefault();
 
-    if (onMoveColor && colorHex) {
-      onMoveColor(colorHex, targetGroupId);
-    }
+    const el = e.currentTarget as HTMLElement;
+    const rect = el.getBoundingClientRect();
+
+    // Capture pointer so we keep getting move/up events even if pointer leaves the card.
+    el.setPointerCapture(e.pointerId);
+
+    pointerDragRef.current = {
+      pointerId: e.pointerId,
+      sourceHex: hexValue,
+      sourceGroupId,
+      displayName,
+      started: false,
+      startX: e.clientX,
+      startY: e.clientY,
+      offsetX: rect.width / 2,
+      offsetY: rect.height / 2,
+      ghostEl: null,
+      activeTargetEl: null,
+      target: null,
+    };
+
+    const onMove = (ev: PointerEvent) => {
+      const st = pointerDragRef.current;
+      if (!st || st.pointerId !== ev.pointerId) return;
+
+      const dx = ev.clientX - st.startX;
+      const dy = ev.clientY - st.startY;
+      const dist = Math.hypot(dx, dy);
+
+      if (!st.started && dist > 4) {
+        st.started = true;
+        isPointerDraggingRef.current = true;
+        setOrganizeDragCursorActive(true);
+
+        const width = Math.max(120, Math.ceil(rect.width || 220));
+        const height = Math.max(56, Math.ceil(rect.height || 56));
+        const ghost = createOrganizeDragGhost(
+          {
+            kind: "color",
+            title: st.displayName || st.sourceHex.toUpperCase(),
+            color: st.sourceHex,
+          },
+          width,
+          height
+        );
+        ghost.style.zIndex = "2147483647";
+        document.body.appendChild(ghost);
+        st.ghostEl = ghost;
+      }
+
+      if (st.started) {
+        if (st.ghostEl) {
+          positionOrganizeDragGhost(
+            st.ghostEl,
+            ev.clientX,
+            ev.clientY,
+            st.offsetX,
+            st.offsetY
+          );
+        }
+
+        const under = document.elementFromPoint(
+          ev.clientX,
+          ev.clientY
+        ) as HTMLElement | null;
+        const targetSelector = canReorderInCurrentSort
+          ? "[data-organize-drop='1'], [data-organize-dropzone='1']"
+          : "[data-organize-dropzone='1']";
+        const targetEl = (under?.closest?.(targetSelector) ||
+          null) as HTMLElement | null;
+
+        if (targetEl !== st.activeTargetEl) {
+          clearActiveTarget();
+          st.activeTargetEl = targetEl;
+          if (targetEl) {
+            targetEl.classList.add("organize-drop-target-active");
+          }
+        }
+
+        if (targetEl) {
+          const groupRaw = targetEl.dataset.organizeGroup;
+          const groupId =
+            groupRaw === undefined || groupRaw === "null" ? null : groupRaw;
+          const id = targetEl.dataset.organizeId;
+          const isDropzone = targetEl.dataset.organizeDropzone === "1";
+          st.target = {
+            groupId,
+            id: id && id.length > 0 ? id : undefined,
+            isDropzone,
+          };
+        } else {
+          st.target = null;
+        }
+      }
+    };
+
+    const onUpOrCancel = (ev: PointerEvent) => {
+      const st = pointerDragRef.current;
+      if (!st || st.pointerId !== ev.pointerId) return;
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUpOrCancel);
+      window.removeEventListener("pointercancel", onUpOrCancel);
+      endPointerDrag();
+    };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUpOrCancel);
+    window.addEventListener("pointercancel", onUpOrCancel);
   };
 
   // Separate colors into Groups and "My Favorites" (Unassigned)
@@ -245,12 +451,61 @@ export const ColorLibrary = ({
     "favorites"
   );
 
-  // Reset sort to 'hue' if switching to presets while in 'custom'
+  // Organize mode only applies to Favorites.
   useEffect(() => {
-    if (activeSubTab === "presets" && sortOption === "custom") {
-      setSortOption("hue");
+    if (activeSubTab !== "favorites" && isEditingLibrary) {
+      setIsEditingLibrary(false);
     }
-  }, [activeSubTab, sortOption]);
+  }, [activeSubTab, isEditingLibrary]);
+
+  // Presets customization only applies when viewing Presets AND sort is Custom.
+  useEffect(() => {
+    if (activeSubTab !== "presets" && isEditingPresets) {
+      setIsEditingPresets(false);
+      return;
+    }
+    if (
+      activeSubTab === "presets" &&
+      sortOption !== "custom" &&
+      isEditingPresets
+    ) {
+      setIsEditingPresets(false);
+    }
+  }, [activeSubTab, sortOption, isEditingPresets]);
+
+  // Close sort menu when switching tabs
+  useEffect(() => {
+    setIsSortMenuOpen(false);
+  }, [activeSubTab]);
+
+  // Close sort menu on outside-click / Escape (polish)
+  useEffect(() => {
+    if (!isSortMenuOpen) return;
+
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      const el = sortMenuRef.current;
+      if (el && !el.contains(target)) {
+        setIsSortMenuOpen(false);
+      }
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsSortMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("touchstart", onPointerDown, { passive: true });
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("touchstart", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isSortMenuOpen]);
 
   // Toggling favorite checks if it exists in the library prop
   const isFavorite = (color: string) => {
@@ -291,6 +546,37 @@ export const ColorLibrary = ({
         },
       });
     }
+  };
+
+  // --- Preset Libraries customization (Presets tab, Custom sort) ---
+  const colorPresetCustom = uiPreferences?.colorPresetCustom || {};
+
+  const updateColorPresetCustom = (
+    updates: NonNullable<UiPreferences["colorPresetCustom"]>
+  ) => {
+    if (!onUpdateUiPreferences) return;
+    onUpdateUiPreferences({
+      colorPresetCustom: {
+        ...(uiPreferences?.colorPresetCustom || {}),
+        ...updates,
+      },
+    });
+  };
+
+  const normalizeOrder = (base: string[], preferred?: string[]) => {
+    const baseSet = new Set(base);
+    const safePreferred = (preferred || []).filter((x) => baseSet.has(x));
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const x of safePreferred) {
+      if (seen.has(x)) continue;
+      seen.add(x);
+      result.push(x);
+    }
+    for (const x of base) {
+      if (!seen.has(x)) result.push(x);
+    }
+    return result;
   };
 
   // Map density value to Tailwind grid column classes to avoid inline styles
@@ -366,106 +652,152 @@ export const ColorLibrary = ({
             </button>
           </div>
 
-          {/* Density Slider */}
-          <div className="flex items-center gap-2 pb-2">
-            <span className="text-[10px] text-gray-500 font-mono uppercase">
-              View
-            </span>
-            <label htmlFor="view-density" className="sr-only">
-              View density
-            </label>
-            <input
-              id="view-density"
-              type="range"
-              min="1"
-              max="6"
-              step="1"
-              value={density}
-              onChange={(e) => setDensity(parseInt(e.target.value))}
-              onMouseUp={(e) =>
-                commitDensityChange(parseInt(e.currentTarget.value))
-              }
-              onTouchEnd={(e) =>
-                commitDensityChange(parseInt(e.currentTarget.value))
-              }
-              aria-label="View density"
-              className="w-20 accent-accent-cyan h-1 bg-white/20 rounded-full appearance-none cursor-pointer"
-            />
-          </div>
+          {/* Right-side Controls (match Palette Library layout) */}
+          <div className="flex items-center gap-4">
+            {/* Sort + Organize group */}
+            <div className="flex items-center gap-2 pb-2 border-l border-white/10 pl-4 ml-2">
+              {/* Organize (always visible; disabled in Presets unless sort is Custom) */}
+              <div className="flex items-center">
+                {(() => {
+                  const isPresets = activeSubTab === "presets";
+                  const isDisabled = isPresets && sortOption !== "custom";
+                  const isActive =
+                    activeSubTab === "favorites"
+                      ? isEditingLibrary
+                      : isEditingPresets;
+                  const label =
+                    activeSubTab === "favorites"
+                      ? isEditingLibrary
+                        ? "Done Organizing"
+                        : sortOption === "custom"
+                        ? "Organize Colors and Groups"
+                        : "Organize Colors and Groups (Move only)"
+                      : isDisabled
+                      ? "Switch Sort to Custom to customize libraries"
+                      : isEditingPresets
+                      ? "Done Customizing"
+                      : "Customize Libraries";
 
-          {/* Sort Control */}
-          <div className="flex items-center gap-2 pb-2 border-l border-white/10 pl-4 ml-2">
-            <span className="text-[10px] text-gray-500 font-mono uppercase">
-              Sort
-            </span>
-            <div className="relative">
-              <button
-                onClick={(e) => {
-                  const menu = e.currentTarget
-                    .nextElementSibling as HTMLElement;
-                  menu.classList.toggle("hidden");
-                }}
-                className="appearance-none bg-black/20 border border-white/10 rounded px-2 py-0.5 text-[10px] text-gray-300 font-mono uppercase focus:outline-none focus:border-accent-cyan cursor-pointer pr-6 hover:bg-white/5 transition-colors flex items-center gap-2"
-                aria-label="Sort order"
-              >
-                {sortOption === "custom"
-                  ? "Custom"
-                  : sortOption === "hue"
-                  ? "Hue"
-                  : "Name (A-Z)"}
-              </button>
-              <div className="hidden absolute right-0 mt-1 bg-bg-raised border border-glass-stroke rounded shadow-monolith z-50 min-w-max">
-                {activeSubTab === "favorites" && (
-                  <button
-                    onClick={() => {
-                      setSortOption("custom");
-                      (document.activeElement as HTMLElement)?.blur();
-                      const menu = document.activeElement?.parentElement
-                        ?.nextElementSibling as HTMLElement;
-                      if (menu) menu.classList.add("hidden");
-                    }}
-                    className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
-                  >
-                    Custom
-                  </button>
+                  return (
+                    <button
+                      disabled={isDisabled}
+                      onClick={() => {
+                        if (isDisabled) return;
+                        if (activeSubTab === "favorites") {
+                          setIsEditingLibrary((v) => !v);
+                        } else {
+                          setIsEditingPresets((v) => !v);
+                        }
+                      }}
+                      className={`p-1.5 rounded-full transition-all ${
+                        isActive
+                          ? "text-accent-cyan bg-accent-cyan/10 ring-1 ring-accent-cyan/30"
+                          : isDisabled
+                          ? "text-gray-600 opacity-40 cursor-default"
+                          : "text-gray-500 hover:text-white hover:bg-white/10"
+                      }`}
+                      title={label}
+                      aria-label={label}
+                    >
+                      <ArrowRightLeft size={14} />
+                    </button>
+                  );
+                })()}
+              </div>
+
+              <span className="text-[10px] text-gray-500 font-mono uppercase">
+                Sort
+              </span>
+              <div className="relative" ref={sortMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsSortMenuOpen((v) => !v)}
+                  className="w-28 appearance-none bg-black/20 border border-white/10 rounded px-2 py-0.5 text-[10px] text-gray-300 font-mono uppercase focus:outline-none focus:border-accent-cyan cursor-pointer pr-6 hover:bg-white/5 transition-colors flex items-center gap-2"
+                  aria-label="Sort order"
+                  aria-haspopup="menu"
+                >
+                  {sortOption === "custom"
+                    ? "Custom"
+                    : sortOption === "hue"
+                    ? "Hue"
+                    : "Name (A-Z)"}
+                </button>
+
+                {isSortMenuOpen && (
+                  <div className="absolute right-0 mt-1 bg-bg-raised border border-glass-stroke rounded shadow-monolith z-50 min-w-max">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSortOption("custom");
+                        setIsSortMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
+                    >
+                      Custom
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSortOption("hue");
+                        setIsSortMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
+                    >
+                      Hue
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSortOption("name");
+                        setIsSortMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
+                    >
+                      Name (A-Z)
+                    </button>
+                  </div>
                 )}
-                <button
-                  onClick={() => {
-                    setSortOption("hue");
-                    const menu = document.querySelector(
-                      '[aria-label="Sort order"]'
-                    )?.nextElementSibling as HTMLElement;
-                    if (menu) menu.classList.add("hidden");
-                  }}
-                  className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
-                >
-                  Hue
-                </button>
-                <button
-                  onClick={() => {
-                    setSortOption("name");
-                    const menu = document.querySelector(
-                      '[aria-label="Sort order"]'
-                    )?.nextElementSibling as HTMLElement;
-                    if (menu) menu.classList.add("hidden");
-                  }}
-                  className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
-                >
-                  Name (A-Z)
-                </button>
+
+                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
+                  <svg
+                    width="8"
+                    height="8"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </div>
               </div>
-              <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
-                <svg
-                  width="8"
-                  height="8"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </div>
+            </div>
+
+            {/* Density Slider */}
+            <div className="flex items-center gap-2 pb-2">
+              <span className="text-[10px] text-gray-500 font-mono uppercase">
+                View
+              </span>
+              <label htmlFor="view-density" className="sr-only">
+                View density
+              </label>
+              <input
+                id="view-density"
+                type="range"
+                min="1"
+                max="6"
+                step="1"
+                value={density}
+                onChange={(e) => setDensity(parseInt(e.target.value))}
+                onMouseUp={(e) =>
+                  commitDensityChange(parseInt(e.currentTarget.value))
+                }
+                onTouchEnd={(e) =>
+                  commitDensityChange(parseInt(e.currentTarget.value))
+                }
+                aria-label="View density"
+                className="w-20 accent-accent-cyan h-1 bg-white/20 rounded-full appearance-none cursor-pointer"
+              />
             </div>
           </div>
         </div>
@@ -541,15 +873,22 @@ export const ColorLibrary = ({
               <div
                 className={`space-y-4 transition-all ${
                   isEditingLibrary
-                    ? "bg-white/5 border border-white/10 border-dashed rounded-xl p-4"
+                    ? "bg-accent-cyan/5 border border-accent-cyan/30 border-dashed rounded-xl p-4 relative overflow-hidden"
                     : "rounded-none p-0"
                 }`}
-                onDragOver={isEditingLibrary ? handleDragOver : undefined}
-                onDrop={
-                  isEditingLibrary ? (e) => handleDrop(e, null) : undefined
+                data-organize-dropzone={
+                  isPointerOrganizeEnabled ? "1" : undefined
+                }
+                data-organize-group={
+                  isPointerOrganizeEnabled ? "null" : undefined
                 }
               >
-                <div className="space-y-1">
+                {/* Blueprint Pattern Background (Edit Mode) */}
+                {isEditingLibrary && (
+                  <div className="absolute inset-0 z-0 opacity-10 pointer-events-none bg-blueprint-grid" />
+                )}
+
+                <div className="space-y-1 relative z-10">
                   <div className="flex items-center justify-between group/section">
                     <div className="flex items-center gap-2">
                       <Globe size={14} className="text-accent-cyan" />
@@ -570,27 +909,6 @@ export const ColorLibrary = ({
                           <FolderPlus size={14} />
                         </button>
                       )}
-                      {/* Organize / Edit Mode Toggle */}
-                      <button
-                        disabled={sortOption !== "custom"}
-                        onClick={() => setIsEditingLibrary(!isEditingLibrary)}
-                        className={`p-1.5 rounded-full transition-all ${
-                          sortOption !== "custom"
-                            ? "opacity-30 text-gray-500"
-                            : isEditingLibrary
-                            ? "text-accent-cyan bg-accent-cyan/10 ring-1 ring-accent-cyan/30"
-                            : "text-gray-500 hover:text-white hover:bg-white/10"
-                        }`}
-                        title={
-                          sortOption !== "custom"
-                            ? "Switch to Custom Sort to Organize"
-                            : isEditingLibrary
-                            ? "Done Organizing"
-                            : "Organize Colors and Groups"
-                        }
-                      >
-                        <ArrowRightLeft size={14} />
-                      </button>
                       {unassignedColors.length > 0 && onRemoveColors && (
                         <button
                           onClick={() => {
@@ -599,11 +917,8 @@ export const ColorLibrary = ({
                               title: "Remove Global Favorites",
                               message: (
                                 <span className="text-gray-300">
-                                  Are you sure you want to remove all colors in{" "}
-                                  <strong className="text-white">
-                                    Favorites &gt; Global
-                                  </strong>
-                                  ?
+                                  Are you sure you want to remove all colors
+                                  saved to Global from Favorites?
                                 </span>
                               ),
                               onConfirm: () => {
@@ -731,12 +1046,29 @@ export const ColorLibrary = ({
                   })()}
 
                 {unassignedColors.length === 0 ? (
-                  <p className="text-gray-600 italic text-sm">
-                    No unassigned favorites.
-                  </p>
+                  isEditingLibrary ? (
+                    <div
+                      className="border-2 border-dashed border-white/10 rounded-lg p-6 flex flex-col items-center justify-center text-gray-500 gap-2 bg-black/5 relative z-10 transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan/70"
+                      data-organize-dropzone={
+                        isPointerOrganizeEnabled ? "1" : undefined
+                      }
+                      data-organize-group={
+                        isPointerOrganizeEnabled ? "null" : undefined
+                      }
+                    >
+                      <Globe size={24} className="opacity-50" />
+                      <span className="text-xs font-mono uppercase tracking-wider">
+                        Drop Colors Here
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-gray-600 text-xs italic">
+                      No global favorites.
+                    </p>
+                  )
                 ) : (
                   <div
-                    className={`grid gap-3 transition-all duration-300 ${densityClass}`}
+                    className={`grid gap-3 transition-all duration-300 relative z-10 ${densityClass}`}
                   >
                     {unassignedColors.map(
                       (c: PresetColor | string, idx: number) => {
@@ -756,94 +1088,31 @@ export const ColorLibrary = ({
                             label={finalName}
                             name={finalName}
                             isFavorite={true}
-                            draggable={
-                              isEditingLibrary && sortOption === "custom"
-                            }
-                            onDragStart={
-                              isEditingLibrary && sortOption === "custom"
-                                ? (e) => handleDragStart(e, hexValue, null)
+                            draggable={isPointerOrganizeEnabled}
+                            usePointerDnD={isPointerOrganizeEnabled}
+                            organizeDnd={{ groupId: null, id: hexValue }}
+                            onPointerDown={
+                              isPointerOrganizeEnabled
+                                ? (e) =>
+                                    startPointerOrganizeDrag(
+                                      e,
+                                      hexValue,
+                                      null,
+                                      finalName
+                                    )
                                 : undefined
                             }
+                            onClickCapture={(e) => {
+                              if (isPointerDraggingRef.current) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }
+                            }}
                             onMoveRequest={() =>
                               setColorToMove({
                                 value: hexValue,
                                 groupId: null,
                               })
-                            }
-                            onDrop={
-                              isEditingLibrary
-                                ? (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    const sourceGroupId =
-                                      e.dataTransfer.getData("sourceGroupId");
-                                    const sourceHex =
-                                      e.dataTransfer.getData("text/plain");
-
-                                    // Global Reordering (Unassigned <-> Unassigned)
-                                    if (
-                                      sourceGroupId === "null" &&
-                                      onReorderColors
-                                    ) {
-                                      const allColors = [
-                                        ...(library.colors || []),
-                                      ];
-
-                                      // Find indices in MASTER list (by Hex)
-                                      const sourceIdx = allColors.findIndex(
-                                        (c) => {
-                                          const v =
-                                            typeof c === "string" ? c : c.value;
-                                          return (
-                                            v.toUpperCase() ===
-                                            sourceHex.toUpperCase()
-                                          );
-                                        }
-                                      );
-                                      const targetIdx = allColors.findIndex(
-                                        (c) => {
-                                          const v =
-                                            typeof c === "string" ? c : c.value;
-                                          return (
-                                            v.toUpperCase() ===
-                                            hexValue.toUpperCase()
-                                          );
-                                        }
-                                      );
-
-                                      if (
-                                        sourceIdx !== -1 &&
-                                        targetIdx !== -1 &&
-                                        sourceIdx !== targetIdx
-                                      ) {
-                                        const [moved] = allColors.splice(
-                                          sourceIdx,
-                                          1
-                                        );
-                                        allColors.splice(targetIdx, 0, moved);
-                                        onReorderColors(allColors);
-                                      }
-                                    }
-                                    // Group -> Global Drop
-                                    else if (
-                                      sourceGroupId !== "null" &&
-                                      sourceGroupId
-                                    ) {
-                                      if (onMoveColor) {
-                                        onMoveColor(sourceHex, null);
-                                      }
-                                    }
-                                  }
-                                : undefined
-                            }
-                            onDragOver={
-                              isEditingLibrary
-                                ? (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    e.dataTransfer.dropEffect = "move";
-                                  }
-                                : undefined
                             }
                             onClick={() => {
                               onLoadColor(hexValue);
@@ -918,11 +1187,11 @@ export const ColorLibrary = ({
                         ? "bg-accent-cyan/5 border border-accent-cyan/30 border-dashed rounded-xl p-4 relative overflow-hidden"
                         : "rounded-none p-0"
                     }`}
-                    onDragOver={isEditingLibrary ? handleDragOver : undefined}
-                    onDrop={
-                      isEditingLibrary
-                        ? (e) => handleDrop(e, group.id)
-                        : undefined
+                    data-organize-dropzone={
+                      isPointerOrganizeEnabled ? "1" : undefined
+                    }
+                    data-organize-group={
+                      isPointerOrganizeEnabled ? group.id : undefined
                     }
                   >
                     {/* Blueprint Pattern Background (Edit Mode) */}
@@ -1191,15 +1460,19 @@ export const ColorLibrary = ({
                                     isHidden: !group.isHidden,
                                   })
                                 }
-                                className="p-1.5 text-gray-500 hover:text-white"
+                                className={
+                                  group.isHidden
+                                    ? "p-1.5 text-accent-cyan hover:text-accent-cyan/80"
+                                    : "p-1.5 text-gray-500 hover:text-white"
+                                }
                                 title={
                                   group.isHidden ? "Show Group" : "Hide Group"
                                 }
                               >
                                 {group.isHidden ? (
-                                  <Eye size={14} />
-                                ) : (
                                   <EyeOff size={14} />
+                                ) : (
+                                  <Eye size={14} />
                                 )}
                               </button>
                               <button
@@ -1210,8 +1483,9 @@ export const ColorLibrary = ({
                                     description: group.description,
                                   });
                                 }}
-                                className="p-1.5 text-gray-500 hover:text-accent-cyan"
-                                title="Rename Group"
+                                className="p-1.5 text-gray-500 hover:text-accent-cyan disabled:opacity-30 disabled:hover:text-gray-500"
+                                title="Edit Group Name and Description"
+                                disabled={editingGroupId === group.id}
                               >
                                 <Edit3 size={14} />
                               </button>
@@ -1277,8 +1551,12 @@ export const ColorLibrary = ({
                                   variant: "danger",
                                 });
                               }}
-                              className="p-1.5 text-gray-500 hover:text-red-400 group-btn-heart disabled:opacity-30 disabled:hover:text-gray-500"
-                              title="Unfavorite All in Group"
+                              className="p-1.5 rounded-full transition-colors hover:bg-white/10 text-gray-500 hover:text-red-400 group-btn-heart disabled:opacity-30 disabled:hover:text-gray-500"
+                              title={
+                                groupItems.length === 0
+                                  ? "No Colors to Remove"
+                                  : "Unfavorite All in Group"
+                              }
                               disabled={groupItems.length === 0}
                             >
                               <Heart
@@ -1303,6 +1581,12 @@ export const ColorLibrary = ({
                     {!group.isHidden && (
                       <div
                         className={`grid gap-3 transition-all duration-300 ${densityClass}`}
+                        data-organize-dropzone={
+                          isPointerOrganizeEnabled ? "1" : undefined
+                        }
+                        data-organize-group={
+                          isPointerOrganizeEnabled ? group.id : undefined
+                        }
                       >
                         {groupItems.map(
                           (colorItem: string | PresetColor, idx: number) => {
@@ -1333,83 +1617,34 @@ export const ColorLibrary = ({
                                 label={finalName}
                                 name={finalName}
                                 isFavorite={true}
-                                draggable={
-                                  isEditingLibrary && sortOption === "custom"
-                                }
-                                onDragStart={
-                                  isEditingLibrary && sortOption === "custom"
+                                draggable={isPointerOrganizeEnabled}
+                                usePointerDnD={isPointerOrganizeEnabled}
+                                organizeDnd={{
+                                  groupId: group.id,
+                                  id: hexValue,
+                                }}
+                                onPointerDown={
+                                  isPointerOrganizeEnabled
                                     ? (e) =>
-                                        handleDragStart(
+                                        startPointerOrganizeDrag(
                                           e,
                                           hexValue,
                                           group.id,
-                                          idx
+                                          finalName
                                         )
                                     : undefined
                                 }
+                                onClickCapture={(e) => {
+                                  if (isPointerDraggingRef.current) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                  }
+                                }}
                                 onMoveRequest={() =>
                                   setColorToMove({
                                     value: hexValue,
                                     groupId: group.id,
                                   })
-                                }
-                                onDrop={
-                                  isEditingLibrary
-                                    ? (e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        e.dataTransfer.dropEffect = "move";
-
-                                        const colorHex =
-                                          e.dataTransfer.getData("text/plain");
-                                        // Robust Value-Based Reordering
-                                        if (colorHex && onUpdateGroup) {
-                                          // 1. Find indices based on VALUES, not drag indices
-                                          const sourceIndex =
-                                            group.colorIds.findIndex(
-                                              (cid) =>
-                                                cid.toUpperCase() ===
-                                                colorHex.toUpperCase()
-                                            );
-                                          // Target is THIS card's index (idx)
-                                          const targetIndex = idx;
-
-                                          if (
-                                            sourceIndex === -1 ||
-                                            sourceIndex === targetIndex
-                                          )
-                                            return;
-
-                                          // 2. Perform Move
-                                          const newColorIds = [
-                                            ...group.colorIds,
-                                          ];
-                                          const [moved] = newColorIds.splice(
-                                            sourceIndex,
-                                            1
-                                          );
-                                          newColorIds.splice(
-                                            targetIndex,
-                                            0,
-                                            moved
-                                          );
-
-                                          // 3. Update Group
-                                          onUpdateGroup(group.id, {
-                                            colorIds: newColorIds,
-                                          });
-                                        }
-                                      }
-                                    : undefined
-                                }
-                                onDragOver={
-                                  isEditingLibrary
-                                    ? (e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        e.dataTransfer.dropEffect = "move";
-                                      }
-                                    : undefined
                                 }
                                 onClick={() => {
                                   onLoadColor(hexValue);
@@ -1462,7 +1697,15 @@ export const ColorLibrary = ({
 
                     {/* Empty State Drop Zone */}
                     {groupItems.length === 0 && isEditingLibrary && (
-                      <div className="border-2 border-dashed border-white/10 rounded-lg p-6 flex flex-col items-center justify-center text-gray-500 gap-2 bg-black/5 relative z-10 transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan/70">
+                      <div
+                        className="border-2 border-dashed border-white/10 rounded-lg p-6 flex flex-col items-center justify-center text-gray-500 gap-2 bg-black/5 relative z-10 transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan/70"
+                        data-organize-dropzone={
+                          isPointerOrganizeEnabled ? "1" : undefined
+                        }
+                        data-organize-group={
+                          isPointerOrganizeEnabled ? group.id : undefined
+                        }
+                      >
                         <FolderPlus size={24} className="opacity-50" />
                         <span className="text-xs font-mono uppercase tracking-wider">
                           Drop Colors Here
@@ -1562,106 +1805,335 @@ export const ColorLibrary = ({
                   No preset libraries found.
                 </p>
               ) : (
-                PRESET_LIBRARIES.map((preset) => {
-                  const isFullyFavorited = preset.colors.every((c) =>
-                    isFavorite(c.value)
+                (() => {
+                  const hiddenLibraries =
+                    colorPresetCustom.hiddenLibraries || {};
+                  const hiddenItems = colorPresetCustom.hiddenItems || {};
+
+                  const baseLibraryNames = PRESET_LIBRARIES.map((p) => p.name);
+
+                  const orderedLibraryNames =
+                    sortOption === "custom"
+                      ? normalizeOrder(
+                          baseLibraryNames,
+                          colorPresetCustom.libraryOrder
+                        )
+                      : baseLibraryNames;
+
+                  const libraryByName = new Map(
+                    PRESET_LIBRARIES.map((p) => [p.name, p])
                   );
 
-                  // Logic: Sort Presets based on sortOption
-                  // Note: We create a copy to avoid mutating the original preset constant
-                  const sortedPresetColors = [...preset.colors].sort((a, b) => {
+                  const orderedLibraries = orderedLibraryNames
+                    .map((name) => libraryByName.get(name))
+                    .filter(Boolean) as typeof PRESET_LIBRARIES;
+
+                  const visibleLibraries =
+                    sortOption === "custom" && !isEditingPresets
+                      ? orderedLibraries.filter((p) => !hiddenLibraries[p.name])
+                      : orderedLibraries;
+
+                  return visibleLibraries.map((preset, libraryIndex) => {
+                    const isLibraryHidden = Boolean(
+                      hiddenLibraries[preset.name]
+                    );
+
+                    const isFullyFavorited = preset.colors.every((c) =>
+                      isFavorite(c.value)
+                    );
+
+                    // Determine which colors to show & in what order
+                    let sortedPresetColors = [...preset.colors];
+
                     if (sortOption === "hue") {
-                      // Use HSL hue for robust sorting
-                      return (
-                        colord(a.value).toHsl().h - colord(b.value).toHsl().h
+                      sortedPresetColors.sort(
+                        (a, b) =>
+                          colord(a.value).toHsl().h - colord(b.value).toHsl().h
+                      );
+                    } else if (sortOption === "name") {
+                      sortedPresetColors.sort((a, b) =>
+                        a.name.localeCompare(b.name)
                       );
                     }
-                    if (sortOption === "name") {
-                      return a.name.localeCompare(b.name);
+
+                    if (sortOption === "custom" && !isEditingPresets) {
+                      sortedPresetColors = sortedPresetColors.filter(
+                        (c) => !hiddenItems[`${preset.name}::${c.value}`]
+                      );
                     }
-                    return 0; // Default/Custom preserves original order (though Presets don't use Custom sort)
-                  });
 
-                  return (
-                    <div key={preset.name} className="space-y-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between group/library">
-                          <div className="flex items-center gap-2">
-                            <Book size={14} className="text-accent-cyan" />
-                            <h4 className="text-sm font-bold text-white tracking-wide">
-                              {preset.name}
-                            </h4>
-                            <span className="text-xs text-gray-500 font-mono ml-1">
-                              ({preset.colors.length})
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {onAddColors && (
-                              <HeartToggle
-                                isFavorite={isFullyFavorited}
-                                onToggle={() =>
-                                  handleBulkFavorite(preset.colors)
-                                }
-                                size={14}
-                                className={
-                                  isFullyFavorited
-                                    ? "scale-110"
-                                    : "text-gray-500 hover:text-red-500 hover:scale-110"
-                                }
-                              />
-                            )}
-                          </div>
-                        </div>
-                        <p className="text-xs text-white/80 leading-relaxed border-b border-glass-stroke pb-2">
-                          {preset.description}
-                        </p>
-                      </div>
-
+                    return (
                       <div
-                        className={`grid gap-3 transition-all duration-300 ${densityClass}`}
+                        key={preset.name}
+                        className={`space-y-4 ${
+                          sortOption === "custom" &&
+                          isEditingPresets &&
+                          isLibraryHidden
+                            ? "opacity-50"
+                            : ""
+                        }`}
                       >
-                        {sortedPresetColors.map((c, idx) => {
-                          const finalName = c.name;
-                          return (
-                            <SmartColorCard
-                              key={`${c.value}-${idx}`}
-                              color={c.value}
-                              label={finalName}
-                              name={finalName}
-                              isFavorite={isFavorite(c.value)}
-                              onClick={() => {
-                                onLoadColor(c.value);
-                                if (onInspectColor) onInspectColor(c);
-                              }}
-                              onToggleFavorite={async () => {
-                                const res = await onToggleFavorite(c.value, c);
-                                if (
-                                  res &&
-                                  res.action === "added" &&
-                                  (res.color as PresetColor).isAutoRenamed
-                                ) {
-                                  showToast(
-                                    <div className="flex flex-col">
-                                      <span>
-                                        Auto-renamed to{" "}
-                                        <span className="text-accent-cyan">
-                                          {(res.color as PresetColor).name}
-                                        </span>
-                                      </span>
-                                      <span className="text-[10px] opacity-60 font-normal">
-                                        Prevention: Duplicate Found
-                                      </span>
-                                    </div>
-                                  );
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between group/library">
+                            <div className="flex items-center gap-2">
+                              {sortOption === "custom" &&
+                              isEditingPresets &&
+                              isLibraryHidden ? (
+                                <EyeOff size={14} className="text-gray-600" />
+                              ) : (
+                                <Book size={14} className="text-accent-cyan" />
+                              )}
+                              <h4 className="text-sm font-bold text-white tracking-wide">
+                                {preset.name}
+                              </h4>
+                              <span className="text-xs text-gray-500 font-mono ml-1">
+                                ({preset.colors.length})
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1">
+                              {sortOption === "custom" && isEditingPresets && (
+                                <>
+                                  <div className="flex items-center gap-0.5 border-r border-glass-stroke mr-1 pr-1">
+                                    {libraryIndex > 0 && (
+                                      <button
+                                        onClick={() => {
+                                          const base = PRESET_LIBRARIES.map(
+                                            (p) => p.name
+                                          );
+                                          const current = normalizeOrder(
+                                            base,
+                                            colorPresetCustom.libraryOrder
+                                          );
+                                          const idx = current.indexOf(
+                                            preset.name
+                                          );
+                                          if (idx > 0) {
+                                            const next = [...current];
+                                            const [moved] = next.splice(idx, 1);
+                                            next.unshift(moved);
+                                            updateColorPresetCustom({
+                                              libraryOrder: next,
+                                            });
+                                          }
+                                        }}
+                                        className="p-1.5 text-gray-500 hover:text-white"
+                                        title="Move to Top"
+                                      >
+                                        <ChevronsUp size={14} />
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => {
+                                        const base = PRESET_LIBRARIES.map(
+                                          (p) => p.name
+                                        );
+                                        const current = normalizeOrder(
+                                          base,
+                                          colorPresetCustom.libraryOrder
+                                        );
+                                        const idx = current.indexOf(
+                                          preset.name
+                                        );
+                                        if (idx > 0) {
+                                          const next = [...current];
+                                          [next[idx - 1], next[idx]] = [
+                                            next[idx],
+                                            next[idx - 1],
+                                          ];
+                                          updateColorPresetCustom({
+                                            libraryOrder: next,
+                                          });
+                                        }
+                                      }}
+                                      className="p-1.5 text-gray-500 hover:text-white"
+                                      title="Move Up"
+                                    >
+                                      <ChevronUp size={14} />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const base = PRESET_LIBRARIES.map(
+                                          (p) => p.name
+                                        );
+                                        const current = normalizeOrder(
+                                          base,
+                                          colorPresetCustom.libraryOrder
+                                        );
+                                        const idx = current.indexOf(
+                                          preset.name
+                                        );
+                                        if (
+                                          idx !== -1 &&
+                                          idx < current.length - 1
+                                        ) {
+                                          const next = [...current];
+                                          [next[idx + 1], next[idx]] = [
+                                            next[idx],
+                                            next[idx + 1],
+                                          ];
+                                          updateColorPresetCustom({
+                                            libraryOrder: next,
+                                          });
+                                        }
+                                      }}
+                                      className="p-1.5 text-gray-500 hover:text-white"
+                                      title="Move Down"
+                                    >
+                                      <ChevronDown size={14} />
+                                    </button>
+                                    {libraryIndex <
+                                      visibleLibraries.length - 1 && (
+                                      <button
+                                        onClick={() => {
+                                          const base = PRESET_LIBRARIES.map(
+                                            (p) => p.name
+                                          );
+                                          const current = normalizeOrder(
+                                            base,
+                                            colorPresetCustom.libraryOrder
+                                          );
+                                          const idx = current.indexOf(
+                                            preset.name
+                                          );
+                                          if (
+                                            idx !== -1 &&
+                                            idx < current.length - 1
+                                          ) {
+                                            const next = [...current];
+                                            const [moved] = next.splice(idx, 1);
+                                            next.push(moved);
+                                            updateColorPresetCustom({
+                                              libraryOrder: next,
+                                            });
+                                          }
+                                        }}
+                                        className="p-1.5 text-gray-500 hover:text-white"
+                                        title="Move to Bottom"
+                                      >
+                                        <ChevronsDown size={14} />
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  <button
+                                    onClick={() => {
+                                      updateColorPresetCustom({
+                                        hiddenLibraries: {
+                                          ...hiddenLibraries,
+                                          [preset.name]: !isLibraryHidden,
+                                        },
+                                      });
+                                    }}
+                                    className={
+                                      isLibraryHidden
+                                        ? "p-1.5 text-accent-cyan hover:text-accent-cyan/80"
+                                        : "p-1.5 text-gray-500 hover:text-white"
+                                    }
+                                    title={
+                                      isLibraryHidden
+                                        ? "Show Library"
+                                        : "Hide Library"
+                                    }
+                                  >
+                                    {isLibraryHidden ? (
+                                      <EyeOff size={14} />
+                                    ) : (
+                                      <Eye size={14} />
+                                    )}
+                                  </button>
+                                </>
+                              )}
+
+                              {onAddColors && (
+                                <HeartToggle
+                                  isFavorite={isFullyFavorited}
+                                  onToggle={() =>
+                                    handleBulkFavorite(preset.colors)
+                                  }
+                                  size={14}
+                                  className={
+                                    isFullyFavorited
+                                      ? "scale-110"
+                                      : "text-gray-500 hover:text-red-500 hover:scale-110"
+                                  }
+                                />
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-xs text-white/80 leading-relaxed border-b border-glass-stroke pb-2">
+                            {preset.description}
+                          </p>
+                        </div>
+
+                        <div
+                          className={`grid gap-3 transition-all duration-300 ${densityClass}`}
+                        >
+                          {sortedPresetColors.map((c, idx) => {
+                            const finalName = c.name;
+                            const hideKey = `${preset.name}::${c.value}`;
+                            const itemHidden = Boolean(hiddenItems[hideKey]);
+                            const isCustomizing =
+                              sortOption === "custom" && isEditingPresets;
+
+                            return (
+                              <SmartColorCard
+                                key={`${c.value}-${idx}`}
+                                color={c.value}
+                                label={finalName}
+                                name={finalName}
+                                isFavorite={isFavorite(c.value)}
+                                isCustomizing={isCustomizing}
+                                isHidden={isCustomizing ? itemHidden : false}
+                                onToggleHidden={
+                                  isCustomizing
+                                    ? () => {
+                                        updateColorPresetCustom({
+                                          hiddenItems: {
+                                            ...hiddenItems,
+                                            [hideKey]: !itemHidden,
+                                          },
+                                        });
+                                      }
+                                    : undefined
                                 }
-                              }}
-                            />
-                          );
-                        })}
+                                onClick={() => {
+                                  onLoadColor(c.value);
+                                  if (onInspectColor) onInspectColor(c);
+                                }}
+                                onToggleFavorite={async () => {
+                                  const res = await onToggleFavorite(
+                                    c.value,
+                                    c
+                                  );
+                                  if (
+                                    res &&
+                                    res.action === "added" &&
+                                    (res.color as PresetColor).isAutoRenamed
+                                  ) {
+                                    showToast(
+                                      <div className="flex flex-col">
+                                        <span>
+                                          Auto-renamed to{" "}
+                                          <span className="text-accent-cyan">
+                                            {(res.color as PresetColor).name}
+                                          </span>
+                                        </span>
+                                        <span className="text-[10px] opacity-60 font-normal">
+                                          Prevention: Duplicate Found
+                                        </span>
+                                      </div>
+                                    );
+                                  }
+                                }}
+                              />
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })
+                    );
+                  });
+                })()
               )}
             </div>
           )}
@@ -1689,11 +2161,21 @@ const SmartColorCard = ({
   isFavorite,
   onClick,
   onToggleFavorite,
+  isCustomizing,
+  isHidden,
+  onToggleHidden,
+  onMoveUp,
+  onMoveDown,
   draggable,
   onDragStart,
+  onDragEnd,
   onMoveRequest,
   onDrop,
   onDragOver,
+  usePointerDnD,
+  organizeDnd,
+  onPointerDown,
+  onClickCapture,
 }: {
   color: string;
   label: string;
@@ -1705,14 +2187,26 @@ const SmartColorCard = ({
     color: string,
     metadata?: PresetColor
   ) => Promise<ToggleFavoriteResult | void>;
+  isCustomizing?: boolean;
+  isHidden?: boolean;
+  onToggleHidden?: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
   draggable?: boolean;
   onDragStart?: (e: React.DragEvent) => void;
+  onDragEnd?: (e: React.DragEvent) => void;
   onMoveRequest?: () => void;
   onDrop?: (e: React.DragEvent) => void;
   onDragOver?: (e: React.DragEvent) => void;
+  usePointerDnD?: boolean;
+  organizeDnd?: { groupId: string | null; id: string };
+  onPointerDown?: (e: React.PointerEvent) => void;
+  onClickCapture?: (e: React.MouseEvent) => void;
 }) => {
   const { isCopied, copy } = useCopyFeedback();
   const isDark = colord(color).isDark();
+
+  const isOrganizing = Boolean(usePointerDnD || draggable);
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1723,15 +2217,31 @@ const SmartColorCard = ({
     <div
       className={`relative rounded-lg overflow-hidden h-14 shadow-sm transition-all hover:shadow-lg group/minicard ${
         isDark ? "border border-white/40" : "border border-black/20"
-      } ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`}
-      draggable={draggable}
-      onDragStart={onDragStart}
-      onDrop={onDrop}
-      onDragOver={onDragOver}
+      } ${isHidden ? "opacity-50" : ""} ${
+        draggable || usePointerDnD ? "cursor-grab active:cursor-grabbing" : ""
+      } ${usePointerDnD ? "touch-none" : ""}`}
+      draggable={draggable && !usePointerDnD}
+      onDragStart={usePointerDnD ? undefined : onDragStart}
+      onDragEnd={usePointerDnD ? undefined : onDragEnd}
+      onDrop={usePointerDnD ? undefined : onDrop}
+      onDragOver={usePointerDnD ? undefined : onDragOver}
+      onPointerDown={usePointerDnD ? onPointerDown : undefined}
+      onClickCapture={usePointerDnD ? onClickCapture : undefined}
+      data-organize-drop={usePointerDnD ? "1" : undefined}
+      data-organize-group={
+        usePointerDnD
+          ? organizeDnd?.groupId === null
+            ? "null"
+            : organizeDnd?.groupId
+          : undefined
+      }
+      data-organize-id={usePointerDnD ? organizeDnd?.id : undefined}
     >
       {/* Interactive Color Body */}
       <div
-        className="absolute inset-0 cursor-pointer flex"
+        className={`absolute inset-0 flex ${
+          isOrganizing ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
+        }`}
         onClick={onClick}
         title={`Click to load ${name}`}
       >
@@ -1768,10 +2278,57 @@ const SmartColorCard = ({
 
           {/* Actions Row (Top Right) */}
           <div
-            className={`absolute top-1 right-1 flex items-center gap-0.5 z-20 opacity-0 group-hover/minicard:opacity-100 transition-opacity pointer-events-auto ${
-              isDark ? "text-white" : "text-black/60"
-            }`}
+            className={`absolute top-1 right-1 flex items-center gap-0.5 z-20 transition-opacity pointer-events-auto ${
+              isCustomizing
+                ? "opacity-100"
+                : "opacity-0 group-hover/minicard:opacity-100"
+            } ${isDark ? "text-white" : "text-black/60"}`}
           >
+            {/* Presets Customization Controls */}
+            {(isCustomizing || onToggleHidden || onMoveUp || onMoveDown) && (
+              <div className="flex items-center gap-0.5 mr-0.5 pr-0.5 border-r border-black/10">
+                {onMoveUp && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMoveUp();
+                    }}
+                    className="p-1 rounded-full hover:bg-black/10 transition-colors cursor-pointer"
+                    title="Move Up"
+                    aria-label="Move Up"
+                  >
+                    <ChevronUp size={10} />
+                  </button>
+                )}
+                {onMoveDown && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMoveDown();
+                    }}
+                    className="p-1 rounded-full hover:bg-black/10 transition-colors cursor-pointer"
+                    title="Move Down"
+                    aria-label="Move Down"
+                  >
+                    <ChevronDown size={10} />
+                  </button>
+                )}
+                {onToggleHidden && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleHidden();
+                    }}
+                    className="p-1 rounded-full hover:bg-black/10 transition-colors cursor-pointer"
+                    title={isHidden ? "Show" : "Hide"}
+                    aria-label={isHidden ? "Show" : "Hide"}
+                  >
+                    {isHidden ? <EyeOff size={10} /> : <Eye size={10} />}
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Move Button (Only if draggable/editable) */}
             {onMoveRequest && (
               <button
@@ -1779,7 +2336,7 @@ const SmartColorCard = ({
                   e.stopPropagation();
                   onMoveRequest();
                 }}
-                className="p-1 rounded-full hover:bg-black/20 transition-colors"
+                className="p-1 rounded-full hover:bg-black/20 transition-colors cursor-pointer"
                 title="Move to Group"
               >
                 <ArrowRight size={10} />
@@ -1788,7 +2345,7 @@ const SmartColorCard = ({
 
             <button
               onClick={handleCopy}
-              className="p-1 rounded-full hover:bg-black/10 transition-colors"
+              className="p-1 rounded-full hover:bg-black/10 transition-colors cursor-pointer"
               title="Copy Hex"
             >
               {isCopied ? (
@@ -1805,8 +2362,8 @@ const SmartColorCard = ({
               size={10}
               className={
                 isDark
-                  ? "text-white hover:bg-white/20"
-                  : "text-black/80 hover:bg-black/10"
+                  ? "text-white hover:bg-white/20 cursor-pointer"
+                  : "text-black/80 hover:bg-black/10 cursor-pointer"
               }
             />
           </div>

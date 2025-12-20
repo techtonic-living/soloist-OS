@@ -500,6 +500,14 @@ export const ExploreView = ({
                 onDeleteGroup={deletePaletteGroup}
                 onMovePalette={movePaletteToGroup}
                 onReorderGroups={reorderPaletteGroups}
+                onReorderPalettes={(newOrder) => {
+                  updateSettings({
+                    library: {
+                      ...(settings.library || {}),
+                      palettes: newOrder,
+                    },
+                  });
+                }}
                 uiPreferences={settings.uiPreferences}
                 onUpdateUiPreferences={(prefs) => {
                   updateSettings({
@@ -507,7 +515,7 @@ export const ExploreView = ({
                       ...(settings.uiPreferences || {
                         paletteGridDensity: {
                           favorites: 2,
-                          libraries: 2,
+                          presets: 2,
                         },
                       }),
                       ...prefs,

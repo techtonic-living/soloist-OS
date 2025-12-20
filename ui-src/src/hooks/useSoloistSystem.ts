@@ -14,6 +14,24 @@ export interface UiPreferences {
     favorites: number;
     presets: number;
   };
+
+  /**
+   * Optional user customization for Preset Libraries (the built-in Libraries tab).
+   * Stored in UI prefs so it persists across sessions without mutating preset constants.
+   */
+  colorPresetCustom?: {
+    libraryOrder?: string[]; // library name order
+    hiddenLibraries?: Record<string, boolean>; // library name -> hidden
+    itemOrderByLibrary?: Record<string, string[]>; // library name -> list of color hex values
+    hiddenItems?: Record<string, boolean>; // `${libraryName}::${hex}` -> hidden
+  };
+
+  palettePresetCustom?: {
+    libraryOrder?: string[]; // library id order
+    hiddenLibraries?: Record<string, boolean>; // library id -> hidden
+    itemOrderByLibrary?: Record<string, string[]>; // library id -> list of palette names
+    hiddenItems?: Record<string, boolean>; // `${libraryId}::${paletteName}` -> hidden
+  };
 }
 
 interface UserProfile {
