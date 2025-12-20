@@ -1,4 +1,4 @@
-import { Palette, Pipette, Grid, Wand2 } from "lucide-react";
+import { Palette, SlidersHorizontal, Grid, Wand2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ColorCreator } from "./lab/ColorCreator";
 import { PaletteGenerator } from "./lab/PaletteGenerator";
@@ -21,6 +21,8 @@ interface ExploreViewProps {
   setGeneratorColors: (
     colors: string[] | ((prev: string[]) => string[])
   ) => void;
+  inspectedRemixIndex?: number | null;
+  onInspectRemixColor?: (index: number | null) => void;
   activeColorSlot?: "primary" | "secondary" | "tertiary";
   setActiveColorSlot?: (slot: "primary" | "secondary" | "tertiary") => void;
 }
@@ -32,6 +34,8 @@ export const ExploreView = ({
   onInspectPalette = () => {},
   generatorColors,
   setGeneratorColors,
+  inspectedRemixIndex,
+  onInspectRemixColor,
   activeColorSlot,
 }: ExploreViewProps) => {
   const {
@@ -229,7 +233,7 @@ export const ExploreView = ({
           <TabButton
             active={activeTab === "studio"}
             onClick={() => setActiveTab("studio")}
-            icon={Pipette}
+            icon={SlidersHorizontal}
             label="Studio"
           />
           <TabButton
@@ -359,6 +363,8 @@ export const ExploreView = ({
                 onSavePalette={savePalette}
                 colors={generatorColors}
                 setColors={setGeneratorColors}
+                inspectedIndex={inspectedRemixIndex}
+                onInspectColor={onInspectRemixColor}
                 favoriteColors={
                   settings.library?.colors.map((c: any) =>
                     typeof c === "string" ? c : c.value

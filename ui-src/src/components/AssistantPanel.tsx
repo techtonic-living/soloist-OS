@@ -5,10 +5,11 @@ import {
   Cpu,
   Zap,
   Copy,
-  Check,
   Pencil,
-  X,
   Wand2,
+  SlidersHorizontal,
+  Check,
+  X,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { HeartToggle } from "./common/HeartToggle";
@@ -38,8 +39,13 @@ interface AssistantPanelProps {
   // Updated to match implementation
   onToggleFavorite?: (color: string) => Promise<ToggleFavoriteResult | void>;
   onLoadPalette?: (colors: string[]) => void;
+  onAddToRemix?: (color: string) => void;
+  onLoadStudio?: (color: string) => void;
   activeColorSlot?: "primary" | "secondary" | "tertiary";
   setActiveColorSlot?: (slot: "primary" | "secondary" | "tertiary") => void;
+  inspectedRemixIndex?: number | null;
+  generatorColors?: string[];
+  onUpdateRemixColor?: (index: number, color: string) => void;
 }
 
 export const AssistantPanel = ({
@@ -51,8 +57,13 @@ export const AssistantPanel = ({
   selectedInsightColor,
   selectedInsightPalette,
   onLoadPalette,
+  onAddToRemix,
+  onLoadStudio,
   activeColorSlot,
   setActiveColorSlot,
+  inspectedRemixIndex,
+  generatorColors = [],
+  onUpdateRemixColor,
 }: AssistantPanelProps) => {
   // --- Context Consumption ---
   const {
@@ -185,6 +196,14 @@ export const AssistantPanel = ({
   const showSuggestions = aiLevel === "guide" || aiLevel === "teacher";
   const showConcepts = aiLevel === "teacher";
 
+  // Helper to check if a color is in favorites (handles both strings and objects)
+  const checkIsFavorite = (colorHex: string) => {
+    return settings.library?.colors.some((c: any) => {
+      const storedHex = typeof c === "string" ? c : c.value;
+      return storedHex.toUpperCase() === colorHex.toUpperCase();
+    });
+  };
+
   return (
     <div
       className={`h-full w-[320px] border-l border-glass-stroke flex flex-col overflow-hidden relative transition-all duration-200 ${
@@ -245,37 +264,59 @@ export const AssistantPanel = ({
           </p>
         </div>
 
-        {/* 2. INSPECTED COLOR CARD (Libraries) */}
-        {selectedInsightColor && (
-          <div className="pt-4 border-t border-white/5">
+        {/* 2c. REMIX INDIVIDUAL COLOR INSPECTOR */}
+        {activeExploreTab === "remix" &&
+          inspectedRemixIndex !== null &&
+          inspectedRemixIndex !== undefined &&
+          generatorColors[inspectedRemixIndex] && (
             <div className="pt-4 border-t border-white/5">
-              <InspectedColorCard
-                color={
-                  settings.library?.colors?.find((c: string | PresetColor) => {
-                    const hex = typeof c === "string" ? c : c.value;
-                    return (
-                      hex.toUpperCase() ===
-                      selectedInsightColor.value.toUpperCase()
-                    );
-                  }) || selectedInsightColor
+              <RemixColorInspectorCard
+                index={inspectedRemixIndex}
+                color={generatorColors[inspectedRemixIndex]}
+                onUpdate={(newColor) =>
+                  onUpdateRemixColor?.(inspectedRemixIndex as number, newColor)
                 }
-                onUpdate={handleUpdateColor}
-                onToggleFavorite={() =>
-                  toggleFavoriteColor(selectedInsightColor.value)
-                }
-                isFavorite={
-                  settings.library?.colors?.some((c: string | PresetColor) => {
-                    const hex = typeof c === "string" ? c : c.value;
-                    return (
-                      hex.toUpperCase() ===
-                      selectedInsightColor.value.toUpperCase()
-                    );
-                  }) || false
-                }
+                onToggleFavorite={toggleFavoriteColor}
+                isFavorite={checkIsFavorite(
+                  generatorColors[inspectedRemixIndex]
+                )}
                 isEditing={isEditing}
                 setIsEditing={setIsEditing}
               />
             </div>
+          )}
+
+        {/* 2. INSPECTED COLOR CARD (Libraries) */}
+        {selectedInsightColor && (
+          <div className="pt-4 border-t border-white/5">
+            <InspectedColorCard
+              color={
+                settings.library?.colors?.find((c: string | PresetColor) => {
+                  const hex = typeof c === "string" ? c : c.value;
+                  return (
+                    hex.toUpperCase() ===
+                    selectedInsightColor.value.toUpperCase()
+                  );
+                }) || selectedInsightColor
+              }
+              onUpdate={handleUpdateColor}
+              onToggleFavorite={() =>
+                toggleFavoriteColor(selectedInsightColor.value)
+              }
+              isFavorite={
+                settings.library?.colors?.some((c: string | PresetColor) => {
+                  const hex = typeof c === "string" ? c : c.value;
+                  return (
+                    hex.toUpperCase() ===
+                    selectedInsightColor.value.toUpperCase()
+                  );
+                }) || false
+              }
+              isEditing={isEditing}
+              setIsEditing={setIsEditing}
+              onLoadStudio={onLoadStudio}
+              onLoadRemix={() => onAddToRemix?.(selectedInsightColor.value)}
+            />
           </div>
         )}
 
@@ -369,21 +410,12 @@ const getContentForView = (
   _typeTab?: string,
   _tokensModule?: string,
   exploreTab?: string,
-  selectedColor?: any,
+  _selectedColor?: any,
   selectedPalette?: any
 ) => {
   // Handle Explore View
   if (view === "explore") {
-    // New Priority: Inspection (Override tab text if something is inspected)
-    if (selectedColor) {
-      return {
-        lessonId: "00.1a",
-        title: "Color Inspector",
-        description: "Detailed view of the selected color.",
-        concepts: [],
-        suggestions: [],
-      };
-    }
+    // Priority: Specific inspection descriptions
     if (selectedPalette) {
       return {
         lessonId: "00.2a",
@@ -397,9 +429,9 @@ const getContentForView = (
     if (exploreTab === "colors") {
       return {
         lessonId: "00.1",
-        title: "Color Library",
+        title: "Saved Colors",
         description:
-          "This is your collection of saved colors. Think of it as your palette box.",
+          "This is your collection of saved colors. Think of it as your palette playground.",
         concepts: [
           "Star colors to save them here.",
           "Click a color to set it as your active seed.",
@@ -443,36 +475,36 @@ const getContentForView = (
         ],
         suggestions: [
           {
-            title: "Harmony Handles",
-            text: "Drag the main handle and watch the smaller harmony handles follow automatically.",
+            title: "Mixing Harmonies",
+            text: "Try switching between Complementary and Analogous modes.",
           },
         ],
       };
     }
     if (exploreTab === "remix") {
       return {
-        lessonId: "00.5",
+        lessonId: "00.7",
         title: "Palette Remix",
-        description: "Let algorithms find the perfect colors for you.",
+        description: "Generate and refine entire color palettes instantly.",
         concepts: [
-          "Lock colors you like to keep them while regenerating others.",
-          "Iterate quickly to find unexpected combinations.",
+          "Lock colors you like to keep them while randomizing others.",
+          "Save your favorite remixes to your Palette Library.",
         ],
         suggestions: [
           {
-            title: "Lock and Roll",
-            text: "Lock a nice accent color and generate options around it.",
+            title: "Dynamic Evolution",
+            text: "Randomize often to discover unexpected but beautiful pairings.",
           },
         ],
       };
     }
   }
 
-  // Default Fallback
   return {
-    lessonId: "00.0",
-    title: "Soloist Assistant",
-    description: "Select a tool to see context and controls.",
+    lessonId: "00",
+    title: "Design Assistant",
+    description:
+      "I'm here to help you build a consistent and accessible design system.",
     concepts: [],
     suggestions: [],
   };
@@ -552,6 +584,8 @@ const InspectedColorCard = ({
   isFavorite,
   isEditing,
   setIsEditing,
+  onLoadStudio,
+  onLoadRemix,
 }: {
   color: any;
   onUpdate: (
@@ -565,6 +599,8 @@ const InspectedColorCard = ({
   isFavorite: boolean;
   isEditing: boolean;
   setIsEditing: (v: boolean) => void;
+  onLoadStudio?: (color: string) => void;
+  onLoadRemix?: () => void;
 }) => {
   const { settings } = useSoloist();
   const library = settings.library || { colors: [] };
@@ -656,6 +692,26 @@ const InspectedColorCard = ({
                   title="Edit Details"
                 >
                   <Pencil size={12} />
+                </button>
+              )}
+
+              {onLoadStudio && (
+                <button
+                  onClick={() => onLoadStudio(color.value)}
+                  className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors backdrop-blur-sm"
+                  title="Send to Studio"
+                >
+                  <SlidersHorizontal size={12} />
+                </button>
+              )}
+
+              {onLoadRemix && (
+                <button
+                  onClick={onLoadRemix}
+                  className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors backdrop-blur-sm"
+                  title="Send to Remix"
+                >
+                  <Wand2 size={12} />
                 </button>
               )}
 
@@ -959,6 +1015,807 @@ const TagDisplayEdit = ({
           </button>
         )}
       </div>
+    </div>
+  );
+};
+
+// ---------------------------
+// Remix Individual Color Inspector Card
+// ---------------------------
+
+const RemixColorInspectorCard = ({
+  index,
+  color: colorHex,
+  onUpdate,
+  onToggleFavorite,
+  isFavorite,
+}: {
+  index: number;
+  color: string;
+  onUpdate: (color: string) => void;
+  onToggleFavorite: (color: string) => void;
+  isFavorite: boolean;
+  isEditing: boolean;
+  setIsEditing: (editing: boolean) => void;
+}) => {
+  const [activeEditorId, setActiveEditorId] = useState<string | null>(null);
+
+  // Hooks
+  const { isCopied: isHexCopied, copy: copyHex } = useCopyFeedback();
+  const { isCopied: isRgbCopied, copy: copyRgb } = useCopyFeedback();
+  const { isCopied: isHslCopied, copy: copyHsl } = useCopyFeedback();
+  const { isCopied: isHsbCopied, copy: copyHsb } = useCopyFeedback();
+
+  const color = colord(colorHex);
+  const hsla = color.toHsl();
+  const rgba = color.toRgb();
+  const hsva = color.toHsv();
+  const isDark = color.isDark();
+
+  const handleColorChange = (h: number, s: number, l?: number) => {
+    const newColor = colord({
+      h,
+      s,
+      l: l !== undefined ? l : hsla.l,
+    }).toHex();
+    onUpdate(newColor);
+  };
+
+  const handleManualInput = (val: string, type: string) => {
+    let newColor;
+    if (type === "rgb") {
+      newColor = colord(`rgb(${val})`);
+    } else if (type === "hsl") {
+      newColor = colord(`hsl(${val})`);
+    } else if (type === "hsb") {
+      const parts = val
+        .split(",")
+        .map((p) => parseFloat(p.trim().replace("%", "")));
+      newColor = colord({ h: parts[0], s: parts[1], v: parts[2] });
+    } else {
+      newColor = colord(val);
+    }
+
+    if (newColor.isValid()) {
+      onUpdate(newColor.toHex());
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Precision Card (Match ColorControlPanel Style) */}
+      <div
+        className={`relative group w-full aspect-[4/3] rounded-2xl shadow-2xl overflow-hidden transition-all ${
+          isDark ? "border border-white/40" : "border border-black/20"
+        } ${activeEditorId ? "z-[100]" : ""}`}
+      >
+        {/* Swatch Background */}
+        <div
+          className="absolute inset-0 z-0"
+          style={{ backgroundColor: colorHex }}
+        />
+
+        {/* Interactive Overlay */}
+        <div className="absolute inset-0 z-10 p-4 flex flex-col justify-between pointer-events-auto">
+          {/* Interaction Lock for other elements if editing */}
+          {activeEditorId !== null && (
+            <div className="absolute inset-0 z-[90] bg-transparent cursor-default" />
+          )}
+
+          <div
+            className={`flex justify-between items-start transition-opacity duration-300 ${
+              activeEditorId ? "opacity-20 pointer-events-none" : "opacity-100"
+            }`}
+          >
+            <span
+              className={`text-[10px] font-bold tracking-widest uppercase opacity-60 ${
+                isDark ? "text-white" : "text-black"
+              }`}
+            >
+              Slot {index + 1}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() =>
+                  copyHex(colorHex.toUpperCase(), colorHex.toUpperCase())
+                }
+                className={`p-1.5 rounded-full hover:bg-black/10 transition-colors ${
+                  isDark ? "text-white" : "text-black/80"
+                }`}
+              >
+                {isHexCopied ? (
+                  <Check size={14} className="text-green-500" />
+                ) : (
+                  <Copy size={14} />
+                )}
+              </button>
+              <HeartToggle
+                isFavorite={isFavorite}
+                onToggle={() => onToggleFavorite(colorHex)}
+                size={14}
+                className={isDark ? "text-white" : "text-black/80"}
+              />
+            </div>
+          </div>
+
+          {/* Center: Stacked Editable Inputs (Ported from ColorControlPanel) */}
+          <div
+            className={`space-y-1 w-full flex flex-col items-center relative transition-all ${
+              activeEditorId ? "z-[100]" : "z-20"
+            }`}
+          >
+            {/* HEX Input */}
+            <SmartColorInput
+              id="hex"
+              value={colorHex.toUpperCase()}
+              type="hex"
+              editable={true}
+              disabled={activeEditorId !== null && activeEditorId !== "hex"}
+              onEditStart={(id) => setActiveEditorId(id)}
+              onEditEnd={() => setActiveEditorId(null)}
+              onCommit={(val) => {
+                if (colord(val).isValid()) onUpdate(val);
+              }}
+              onCopy={() =>
+                copyHex(colorHex.toUpperCase(), colorHex.toUpperCase())
+              }
+              isCopied={isHexCopied}
+              hideCopy={true}
+              isDark={isDark}
+            />
+
+            {/* RGB Input */}
+            <SmartColorInput
+              id="rgb"
+              value={`${rgba.r}, ${rgba.g}, ${rgba.b}`}
+              type="rgb"
+              label="RGB"
+              editable={true}
+              disabled={activeEditorId !== null && activeEditorId !== "rgb"}
+              onEditStart={(id) => setActiveEditorId(id)}
+              onEditEnd={() => setActiveEditorId(null)}
+              onCommit={(val) => handleManualInput(val, "rgb")}
+              onCopy={() =>
+                copyRgb(
+                  `rgb(${rgba.r}, ${rgba.g}, ${rgba.b})`,
+                  `rgb(${rgba.r}, ${rgba.g}, ${rgba.b})`
+                )
+              }
+              isCopied={isRgbCopied}
+            />
+
+            {/* HSL Input */}
+            <SmartColorInput
+              id="hsl"
+              value={`${Math.round(hsla.h)}, ${Math.round(
+                hsla.s
+              )}%, ${Math.round(hsla.l)}%`}
+              type="hsl"
+              label="HSL"
+              editable={true}
+              disabled={activeEditorId !== null && activeEditorId !== "hsl"}
+              onEditStart={(id) => setActiveEditorId(id)}
+              onEditEnd={() => setActiveEditorId(null)}
+              onCommit={(val) => handleManualInput(val, "hsl")}
+              onCopy={() =>
+                copyHsl(
+                  `hsl(${Math.round(hsla.h)}, ${Math.round(
+                    hsla.s
+                  )}%, ${Math.round(hsla.l)}%)`,
+                  `hsl(${Math.round(hsla.h)}, ...)`
+                )
+              }
+              isCopied={isHslCopied}
+            />
+
+            {/* HSB Input */}
+            <SmartColorInput
+              id="hsb"
+              value={`${Math.round(hsva.h)}, ${Math.round(
+                hsva.s
+              )}%, ${Math.round(hsva.v)}%`}
+              type="hsb"
+              label="HSB"
+              editable={true}
+              disabled={activeEditorId !== null && activeEditorId !== "hsb"}
+              onEditStart={(id) => setActiveEditorId(id)}
+              onEditEnd={() => setActiveEditorId(null)}
+              onCommit={(val) => handleManualInput(val, "hsb")}
+              onCopy={() =>
+                copyHsb(
+                  `hsb(${Math.round(hsva.h)}, ${Math.round(
+                    hsva.s
+                  )}%, ${Math.round(hsva.v)}%)`,
+                  `hsb(${Math.round(hsva.h)}, ...)`
+                )
+              }
+              isCopied={isHsbCopied}
+            />
+          </div>
+
+          <div className="h-4" />
+        </div>
+      </div>
+
+      {/* The Wheel (Below Swatch) */}
+      <div className="flex flex-col items-center justify-center py-4 bg-black/20 rounded-2xl border border-white/5 shadow-inner">
+        <div className="scale-90">
+          <LocalColorWheel
+            size={240}
+            hue={hsla.h}
+            saturation={hsla.s}
+            onChange={(h, s) => handleColorChange(h, s)}
+            lightness={hsla.l}
+          />
+        </div>
+      </div>
+
+      {/* Lightness Control Pill */}
+      <div className="relative z-20 flex items-center gap-3 p-1 pr-4 bg-black/60 backdrop-blur-xl rounded-full border border-white/10 shadow-2xl w-full">
+        <div className="px-3 py-1.5 rounded-full bg-white/5 text-[10px] uppercase font-bold tracking-wider text-gray-400 pointer-events-none select-none">
+          Lightness
+        </div>
+
+        <div className="relative flex-1 h-3 rounded-full overflow-hidden shadow-inner border border-white/10 group cursor-pointer">
+          <div
+            className="absolute inset-0 z-0 opacity-80"
+            style={{
+              background: `linear-gradient(to right, #000 0%, ${colord({
+                h: hsla.h,
+                s: hsla.s,
+                l: 50,
+              }).toHex()} 50%, #fff 100%)`,
+            }}
+          />
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={hsla.l}
+            onChange={(e) =>
+              handleColorChange(hsla.h, hsla.s, parseInt(e.target.value))
+            }
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+          />
+          <div
+            className="absolute top-0 bottom-0 w-1.5 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)] pointer-events-none transition-transform duration-75"
+            style={{
+              left: `${hsla.l}%`,
+              transform: "translateX(-50%)",
+            }}
+          />
+        </div>
+
+        <div className="w-8 text-right text-[10px] uppercase font-bold tracking-wider text-white select-none">
+          {Math.round(hsla.l)}%
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ---------------------------
+// Local Color Wheel (Ported from ColorCreator)
+// ---------------------------
+
+const LocalColorWheel = ({
+  size,
+  hue,
+  saturation,
+  onChange,
+  lightness = 50,
+}: {
+  size: number;
+  hue: number;
+  saturation: number;
+  onChange: (h: number, s: number) => void;
+  lightness?: number;
+}) => {
+  const wheelRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const radius = size / 2;
+
+  const getPosition = (h: number, s: number) => {
+    const angleRad = (h - 90) * (Math.PI / 180);
+    const dist = (s / 100) * radius;
+    const x = radius + Math.cos(angleRad) * dist;
+    const y = radius + Math.sin(angleRad) * dist;
+    return { x, y };
+  };
+
+  const mainPos = getPosition(hue, saturation);
+
+  const handleMove = (clientX: number, clientY: number) => {
+    if (!wheelRef.current) return;
+    const rect = wheelRef.current.getBoundingClientRect();
+    const cx = rect.left + radius;
+    const cy = rect.top + radius;
+    const dx = clientX - cx;
+    const dy = clientY - cy;
+
+    let angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+    if (angle < 0) angle += 360;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const s = Math.min(100, (dist / radius) * 100);
+    onChange(angle, s);
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+    const onMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
+    const onMouseUp = () => setIsDragging(false);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, [isDragging]);
+
+  return (
+    <div
+      ref={wheelRef}
+      className="relative cursor-pointer active:cursor-grabbing"
+      style={{ width: size, height: size }}
+      onMouseDown={(e) => {
+        setIsDragging(true);
+        handleMove(e.clientX, e.clientY);
+      }}
+    >
+      <div className="absolute inset-0 rounded-full border border-white/20 shadow-2xl overflow-hidden">
+        <div
+          className="absolute inset-0 opacity-80"
+          style={{
+            background: `conic-gradient(from 0deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)`,
+            filter: `brightness(${lightness}%)`,
+          }}
+        />
+        <div className="absolute inset-0 bg-[radial-gradient(circle,#fff,transparent_70%)]" />
+      </div>
+
+      {/* Main Handle */}
+      <div
+        className="absolute w-6 h-6 -ml-3 -mt-3 rounded-full border-2 border-white shadow-lg z-30 transition-all hover:scale-110 cursor-grab active:cursor-grabbing group-active:shadow-2xl"
+        style={{
+          left: mainPos.x,
+          top: mainPos.y,
+          backgroundColor: colord({
+            h: hue,
+            s: saturation,
+            l: lightness,
+          }).toHex(),
+        }}
+      />
+    </div>
+  );
+};
+
+// ---------------------------
+// Smart Color Input (Ported from ColorControlPanel)
+// ---------------------------
+
+const SmartColorInput = ({
+  id,
+  value,
+  type,
+  label,
+  onCommit,
+  onCopy,
+  isCopied,
+  editable = false,
+  disabled = false,
+  onEditStart,
+  onEditEnd,
+  hideCopy = false,
+  isDark,
+}: {
+  id: string;
+  value: string;
+  type: "hex" | "rgb" | "hsl" | "hsb";
+  label?: string;
+  onCommit?: (val: string) => void;
+  onCopy: () => void;
+  isCopied: boolean;
+  editable?: boolean;
+  disabled?: boolean;
+  onEditStart: (id: string) => void;
+  onEditEnd: () => void;
+  hideCopy?: boolean;
+  isDark?: boolean;
+}) => {
+  // Local state
+  const [localValue, setLocalValue] = useState(value);
+  const [isEditing, setIsEditing] = useState(false);
+  const [initialHexValue, setInitialHexValue] = useState<string | null>(null);
+
+  // Slider State
+  const [activeComponent, setActiveComponent] = useState<number | null>(null);
+  const [initialValue, setInitialValue] = useState<string | null>(null);
+
+  // Sync local value when prop changes (if not editing)
+  useEffect(() => {
+    if (!isEditing && activeComponent === null) {
+      setLocalValue(value);
+    }
+  }, [value, isEditing, activeComponent]);
+
+  // ---------------------------
+  // Slider Logic
+  // ---------------------------
+  const getComponentValues = () => {
+    if (type === "hex") return [];
+    return localValue
+      .replace(/%/g, "")
+      .split(",")
+      .map((p) => parseInt(p.trim()));
+  };
+
+  const componentValues = getComponentValues();
+
+  const getSliderConfig = (index: number) => {
+    if (type === "rgb") return { min: 0, max: 255 };
+    if (type === "hsl" || type === "hsb")
+      return { min: 0, max: index === 0 ? 360 : 100 };
+    return { min: 0, max: 100 };
+  };
+
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (activeComponent === null) return;
+    const newVal = parseInt(e.target.value);
+    const newComponents = [...componentValues];
+    newComponents[activeComponent] = newVal;
+
+    let formattedString = "";
+    if (type === "rgb") {
+      formattedString = newComponents.join(", ");
+    } else {
+      formattedString = `${newComponents[0]}, ${newComponents[1]}%, ${newComponents[2]}%`;
+    }
+
+    setLocalValue(formattedString);
+    // Real-time update
+    if (onCommit) onCommit(formattedString);
+  };
+
+  const startSlider = (idx: number) => {
+    if (disabled) return;
+    setInitialValue(value);
+    setActiveComponent(idx);
+    onEditStart(id);
+  };
+
+  const commitSlider = () => {
+    setActiveComponent(null);
+    setInitialValue(null);
+    onEditEnd();
+  };
+
+  const revertSlider = () => {
+    if (initialValue && onCommit) {
+      onCommit(initialValue);
+      setLocalValue(initialValue);
+    }
+    setActiveComponent(null);
+    setInitialValue(null);
+    onEditEnd();
+  };
+
+  // ---------------------------
+  // Text Input Logic (Hex)
+  // ---------------------------
+  const handleSave = () => {
+    let commitValue = localValue;
+
+    if (type === "hex") {
+      const hexPattern = /^[A-Fa-f0-9]{6}$/;
+      const normalizedValue = `#${localValue.replace(/^#/, "")}`;
+
+      if (!hexPattern.test(localValue) || !colord(normalizedValue).isValid()) {
+        return;
+      }
+
+      commitValue = normalizedValue;
+    }
+
+    if (onCommit) {
+      onCommit(commitValue);
+    }
+    setInitialHexValue(null);
+    setIsEditing(false);
+    onEditEnd();
+  };
+
+  const handleCancel = () => {
+    if (type === "hex" && initialHexValue) {
+      setLocalValue(initialHexValue);
+      if (onCommit) onCommit(initialHexValue);
+    } else {
+      setLocalValue(value);
+    }
+    setInitialHexValue(null);
+    setIsEditing(false);
+    onEditEnd();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      handleCancel();
+    }
+  };
+
+  // ---------------------------
+  // Render
+  // ---------------------------
+  const renderContent = () => {
+    // HEX Mode: Text Input (Keep the unified style for Hex)
+    if (type === "hex") {
+      if (isEditing) {
+        const hexPattern = /^[A-Fa-f0-9]{6}$/;
+        const normalizedValue = `#${localValue.replace(/^#/, "")}`;
+        const isInvalid =
+          !hexPattern.test(localValue) || !colord(normalizedValue).isValid();
+
+        return (
+          <div className="relative z-[100] flex flex-col gap-1 flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <input
+                autoFocus
+                type="text"
+                value={localValue.toUpperCase()}
+                onChange={(e) => {
+                  const nextVal = e.target.value.replace(/^#/, "");
+                  setLocalValue(nextVal);
+
+                  if (
+                    hexPattern.test(nextVal) &&
+                    colord(`#${nextVal}`).isValid()
+                  ) {
+                    if (onCommit) onCommit(`#${nextVal}`);
+                  }
+                }}
+                onKeyDown={handleKeyDown}
+                className={`flex-1 min-w-0 bg-black/40 backdrop-blur-md border rounded px-2 py-1 text-xs font-bold font-mono text-white text-center focus:outline-none transition-colors ${
+                  isInvalid
+                    ? "border-red-500 focus:border-red-500"
+                    : "border-white/20 focus:border-accent-cyan"
+                }`}
+                title="Hex Value"
+                placeholder="000000"
+              />
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={handleCancel}
+                  className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors backdrop-blur-sm"
+                  title="Cancel"
+                >
+                  <X size={12} />
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={isInvalid}
+                  className={`p-1.5 rounded-full text-white transition-colors backdrop-blur-sm ${
+                    isInvalid
+                      ? "bg-gray-500 opacity-50"
+                      : "bg-green-500/80 hover:bg-green-500"
+                  }`}
+                  title={isInvalid ? "Invalid Hex Color Format" : "Save"}
+                >
+                  <Check size={12} />
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      } else {
+        return (
+          <button
+            onClick={() => {
+              if (editable && !disabled) {
+                setInitialHexValue(value);
+                setLocalValue(value.replace(/^#/, ""));
+                setIsEditing(true);
+                onEditStart(id);
+              }
+            }}
+            disabled={!editable || disabled}
+            className={`
+                            flex-1 text-center transition-all duration-300 font-bold text-3xl font-brand
+                            ${
+                              editable && !disabled
+                                ? "cursor-pointer hover:text-white"
+                                : "cursor-default select-none"
+                            }
+                            ${
+                              disabled
+                                ? "opacity-30 blur-[1px]"
+                                : isDark
+                                ? "opacity-90 text-white"
+                                : "opacity-90 text-black/80"
+                            }
+                        `}
+          >
+            {value.toUpperCase()}
+          </button>
+        );
+      }
+    }
+
+    // SLIDER Mode (Active)
+    if (activeComponent !== null) {
+      const config = getSliderConfig(activeComponent);
+      return (
+        <div className="relative z-[100] flex items-center gap-2 flex-1 min-w-0">
+          <div
+            className="flex items-center gap-1.5 w-[120px] bg-black/40 rounded px-2 py-0.5 animate-in fade-in zoom-in-95 duration-200 border border-accent-cyan backdrop-blur-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Component Label */}
+            <span className="text-[10px] font-mono opacity-60 w-3 text-right shrink-0">
+              {activeComponent === 0
+                ? type === "rgb"
+                  ? "R"
+                  : "H"
+                : activeComponent === 1
+                ? type === "rgb"
+                  ? "G"
+                  : "S"
+                : type === "rgb"
+                ? "B"
+                : type === "hsl"
+                ? "L"
+                : "B"}
+            </span>
+
+            {/* Slider */}
+            <input
+              type="range"
+              min={config.min}
+              max={config.max}
+              value={componentValues[activeComponent]}
+              onChange={handleSliderChange}
+              autoFocus
+              className="flex-1 h-1 bg-white/20 rounded-full appearance-none cursor-pointer accent-accent-cyan hover:accent-accent-cyan/80 min-w-0"
+              title="Adjust Value"
+            />
+
+            {/* Value Readout */}
+            <span className="text-[10px] font-mono font-bold w-6 text-left shrink-0">
+              {componentValues[activeComponent]}
+            </span>
+          </div>
+
+          {/* Actions: Revert & Commit (Outside, aligned with Hex) */}
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                revertSlider();
+              }}
+              className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors backdrop-blur-sm"
+              title="Cancel"
+            >
+              <X size={12} />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                commitSlider();
+              }}
+              className="p-1.5 rounded-full bg-green-500/80 hover:bg-green-500 text-white transition-colors backdrop-blur-sm"
+              title="Commit"
+            >
+              <Check size={12} />
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className={`grid grid-cols-3 gap-3 flex-1 text-xs font-mono transition-all duration-300 ${
+          disabled
+            ? "opacity-30 blur-[1px] pointer-events-none"
+            : `opacity-90 cursor-default ${
+                isDark ? "text-white" : "text-black/80"
+              }`
+        }`}
+      >
+        {componentValues.map((val, idx) => (
+          <button
+            key={idx}
+            onClick={(e) => {
+              e.stopPropagation();
+              startSlider(idx);
+            }}
+            className={`px-0.5 rounded transition-colors w-full ${
+              idx === 2 ? "text-left pl-2" : "text-right"
+            } ${
+              isDark
+                ? "hover:bg-white/10 hover:text-white"
+                : "hover:bg-black/10 hover:text-black"
+            }`}
+            title={`Adjust ${type.toUpperCase()} value`}
+            disabled={disabled}
+          >
+            {val}
+            {type !== "rgb" && idx > 0 ? "%" : ""}
+            {idx < 2 && (
+              <span
+                className={`opacity-30 ml-px ${
+                  isDark ? "text-white" : "text-black"
+                }`}
+              >
+                ,
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div
+      className={`flex items-center ${
+        type === "hex" || isEditing || activeComponent !== null
+          ? "justify-center"
+          : "justify-between"
+      } px-12 gap-1 group/field w-full relative h-7 ${
+        disabled ? "pointer-events-none" : ""
+      } ${isEditing || activeComponent !== null ? "z-[100]" : "z-auto"}`}
+    >
+      {label && (
+        <span
+          className={`text-[9px] font-mono w-8 text-left transition-all duration-300 ${
+            disabled
+              ? "opacity-10"
+              : isDark
+              ? "text-white opacity-40"
+              : "text-black opacity-50"
+          } ${isEditing || activeComponent !== null ? "absolute left-2" : ""}`}
+        >
+          {label}
+        </span>
+      )}
+
+      {renderContent()}
+
+      {/* Copy Button (Only if NOT active slider/editing AND not hidden) */}
+      {!isEditing && activeComponent === null && !hideCopy && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!disabled) onCopy();
+          }}
+          disabled={disabled}
+          className={`
+                        p-1.5 rounded-lg transition-all absolute right-2
+                        ${
+                          isCopied
+                            ? "opacity-100"
+                            : "opacity-0 group-hover/field:opacity-100"
+                        }
+                        ${
+                          isDark
+                            ? "text-white hover:bg-white/10"
+                            : "text-black hover:bg-black/10"
+                        }
+                        ${disabled ? "hidden" : ""}
+                    `}
+          title={`Copy ${type.toUpperCase()}`}
+        >
+          {isCopied ? (
+            <Check size={12} className="text-green-500" />
+          ) : (
+            <Copy size={12} className={isDark ? "text-white" : "text-black"} />
+          )}
+        </button>
+      )}
     </div>
   );
 };

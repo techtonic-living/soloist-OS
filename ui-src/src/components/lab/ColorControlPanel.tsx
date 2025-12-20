@@ -1041,13 +1041,14 @@ const SmartColorInput = ({
       );
     }
 
-    // COMPONENT Mode (Read-only view with clickable parts)
     return (
       <div
         className={`grid grid-cols-3 gap-3 flex-1 text-xs font-mono transition-all duration-300 ${
           disabled
             ? "opacity-30 blur-[1px] pointer-events-none"
-            : "opacity-80 cursor-default"
+            : `opacity-90 cursor-default ${
+                isDark ? "text-white" : "text-black/80"
+              }`
         }`}
       >
         {componentValues.map((val, idx) => (
@@ -1057,13 +1058,27 @@ const SmartColorInput = ({
               e.stopPropagation();
               startSlider(idx);
             }}
-            className="hover:bg-white/10 hover:text-white px-0.5 rounded transition-colors text-right w-full"
+            className={`px-0.5 rounded transition-colors w-full ${
+              idx === 2 ? "text-left pl-2" : "text-right"
+            } ${
+              isDark
+                ? "hover:bg-white/10 hover:text-white"
+                : "hover:bg-black/10 hover:text-black"
+            }`}
             title={`Adjust ${type.toUpperCase()} value`}
             disabled={disabled}
           >
             {val}
             {type !== "rgb" && idx > 0 ? "%" : ""}
-            <span className="opacity-30 ml-px">{idx < 2 ? "," : ""}</span>
+            {idx < 2 && (
+              <span
+                className={`opacity-30 ml-px ${
+                  isDark ? "text-white" : "text-black"
+                }`}
+              >
+                ,
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -1083,7 +1098,11 @@ const SmartColorInput = ({
       {label && (
         <span
           className={`text-[9px] font-mono w-8 text-left transition-all duration-300 ${
-            disabled ? "opacity-10" : "opacity-40"
+            disabled
+              ? "opacity-10"
+              : isDark
+              ? "text-white opacity-40"
+              : "text-black opacity-50"
           } ${isEditing || activeComponent !== null ? "absolute left-2" : ""}`}
         >
           {label}
@@ -1105,7 +1124,12 @@ const SmartColorInput = ({
                         ${
                           isCopied
                             ? "opacity-100"
-                            : "opacity-0 group-hover/field:opacity-100 hover:bg-black/10"
+                            : "opacity-0 group-hover/field:opacity-100"
+                        }
+                        ${
+                          isDark
+                            ? "text-white hover:bg-white/10"
+                            : "text-black hover:bg-black/10"
                         }
                         ${disabled ? "hidden" : ""}
                     `}
@@ -1114,7 +1138,10 @@ const SmartColorInput = ({
           {isCopied ? (
             <Check size={type === "hex" ? 14 : 12} className="text-green-500" />
           ) : (
-            <Copy size={type === "hex" ? 14 : 12} />
+            <Copy
+              size={type === "hex" ? 14 : 12}
+              className={isDark ? "text-white" : "text-black"}
+            />
           )}
         </button>
       )}

@@ -14,6 +14,8 @@ interface PaletteGeneratorProps {
     color: string,
     existingMetadata?: PresetColor
   ) => void;
+  inspectedIndex?: number | null;
+  onInspectColor?: (index: number | null) => void;
 }
 
 export const PaletteGenerator = ({
@@ -22,6 +24,8 @@ export const PaletteGenerator = ({
   setColors,
   favoriteColors = [],
   onToggleFavoriteColor,
+  inspectedIndex,
+  onInspectColor,
 }: PaletteGeneratorProps) => {
   // We need to track locked state locally.
   // When colors array changes length externally (if ever), we might desync, but since we control it here mostly:
@@ -72,12 +76,6 @@ export const PaletteGenerator = ({
     const newLocked = [...locked];
     newLocked[index] = !newLocked[index];
     setLocked(newLocked);
-  };
-
-  const updateColor = (index: number, newColor: string) => {
-    const newColors = [...colors];
-    newColors[index] = newColor;
-    setColors(newColors);
   };
 
   const addSlot = () => {
@@ -168,8 +166,13 @@ export const PaletteGenerator = ({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9, width: 0 }}
               transition={{ duration: 0.3, ease: "backOut" }}
-              className="flex-1 h-full relative group flex flex-col items-center justify-center border-r border-white/5 last:border-0 hover:flex-[1.5] transition-all duration-500 ease-[cubic-bezier(0.32,0.12,0.0,1)] min-w-0"
+              className={`flex-1 h-full relative group flex flex-col items-center justify-center border-r border-white/5 last:border-0 hover:flex-[1.5] transition-all duration-500 ease-[cubic-bezier(0.32,0.12,0.0,1)] min-w-0 cursor-pointer ${
+                inspectedIndex === i
+                  ? "ring-4 ring-accent-cyan inset-0 z-20"
+                  : ""
+              }`}
               style={{ backgroundColor: color }}
+              onClick={() => onInspectColor?.(i === inspectedIndex ? null : i)}
             >
               {/* Controls Overlay */}
               <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
@@ -200,21 +203,9 @@ export const PaletteGenerator = ({
 
                   <div className="w-full h-px bg-white/10 my-1" />
 
-                  <div className="relative group/input mb-1">
-                    <input
-                      type="text"
-                      value={color.replace("#", "")}
-                      onChange={(e) => {
-                        // Basic Hex Validation
-                        const val = e.target.value;
-                        if (/^[0-9A-Fa-f]{0,6}$/.test(val)) {
-                          updateColor(i, `#${val}`);
-                        }
-                      }}
-                      className="w-20 bg-black/20 border border-white/10 rounded px-2 py-1 text-center font-mono text-sm font-bold text-white focus:outline-none focus:border-accent-cyan transition-colors uppercase"
-                    />
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-white/30 font-mono text-sm pointer-events-none">
-                      #
+                  <div className="flex items-center justify-center py-1 mb-1">
+                    <span className="font-mono text-sm font-bold text-white uppercase tracking-wider">
+                      {color}
                     </span>
                   </div>
 

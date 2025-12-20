@@ -2,11 +2,12 @@ import { useState } from "react";
 import { ExploreView } from "./components/ExploreView";
 import { AssistantPanel } from "./components/AssistantPanel";
 import { useSoloist } from "./context/SoloistContext";
+import { useToast } from "./context/ToastContext";
 import { PresetColor } from "./data/colorPresets";
 
 const App = () => {
-  // Keep context for settings/state persistence
-  const {} = useSoloist();
+  const { setSeedColor, setHarmonyMode } = useSoloist();
+  const { showToast } = useToast();
 
   // --- Local UI State for ExploreView ---
   const [exploreTab, setExploreTab] = useState<
@@ -17,6 +18,9 @@ const App = () => {
   );
 
   const [inspectedPalette, setInspectedPalette] = useState<any | null>(null);
+  const [inspectedRemixIndex, setInspectedRemixIndex] = useState<number | null>(
+    null
+  );
   const [generatorColors, setGeneratorColors] = useState<string[]>(["#FFBE0B"]);
 
   // Active Slot State for Manual Mode
@@ -27,6 +31,49 @@ const App = () => {
   const handleLoadRemix = (colors: string[]) => {
     setGeneratorColors(colors);
     setExploreTab("remix");
+    setInspectedColor(null);
+    setInspectedPalette(null);
+  };
+
+  const handleAddToRemix = (color: string) => {
+    if (generatorColors.length >= 10) {
+      showToast(
+        <div className="flex flex-col">
+          <span className="font-bold text-red-400">Remix Palette Full</span>
+          <span className="text-[10px] opacity-70">
+            Free up a slot to add more colors.
+          </span>
+        </div>
+      );
+      // Still navigate to remix so they can see the full palette to free up slots
+      setExploreTab("remix");
+      return;
+    }
+
+    setGeneratorColors((prev) => {
+      if (prev.includes(color)) return prev;
+      return [...prev, color];
+    });
+    setExploreTab("remix");
+    setInspectedColor(null);
+    setInspectedPalette(null);
+  };
+
+  const handleUpdateRemixColor = (index: number, color: string) => {
+    setGeneratorColors((prev) => {
+      const next = [...prev];
+      next[index] = color;
+      return next;
+    });
+  };
+
+  const handleLoadStudio = (color: string) => {
+    setSeedColor(color);
+    setHarmonyMode("manual");
+    setExploreTab("studio");
+    setActiveColorSlot("primary");
+    setInspectedColor(null);
+    setInspectedPalette(null);
   };
 
   return (
@@ -52,9 +99,12 @@ const App = () => {
               // Clear inspected color/palette on tab change for clean slate
               setInspectedColor(null);
               setInspectedPalette(null);
+              setInspectedRemixIndex(null);
             }}
             onInspectColor={setInspectedColor}
             onInspectPalette={setInspectedPalette}
+            inspectedRemixIndex={inspectedRemixIndex}
+            onInspectRemixColor={setInspectedRemixIndex}
             generatorColors={generatorColors}
             setGeneratorColors={setGeneratorColors}
             activeColorSlot={activeColorSlot}
@@ -71,7 +121,12 @@ const App = () => {
           activeExploreTab={exploreTab}
           selectedInsightColor={inspectedColor}
           selectedInsightPalette={inspectedPalette}
+          inspectedRemixIndex={inspectedRemixIndex}
+          generatorColors={generatorColors}
+          onUpdateRemixColor={handleUpdateRemixColor}
           onLoadPalette={handleLoadRemix}
+          onAddToRemix={handleAddToRemix}
+          onLoadStudio={handleLoadStudio}
           activeColorSlot={activeColorSlot}
           setActiveColorSlot={setActiveColorSlot}
         />
