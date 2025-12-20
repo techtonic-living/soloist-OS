@@ -8,17 +8,22 @@ import {
 	Check,
 	Pencil,
 	X,
+	Wand2,
 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { HeartToggle } from "./common/HeartToggle";
 import { useCopyFeedback } from "../hooks/useCopyFeedback";
 import { ColorControlPanel } from "./lab/ColorControlPanel";
+import { MagicBadge } from "./common/MagicBadge";
 import { colord } from "colord";
-import { toggleFavoriteWithMetadata } from "../utils/favorites";
+import {
+	toggleFavoriteWithMetadata,
+	ToggleFavoriteResult,
+} from "../utils/favorites";
 import { PresetColor } from "../data/colorPresets";
-import { useState, useEffect } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 
 import { useSoloist } from "../context/SoloistContext";
+import { useToast } from "../context/ToastContext";
 
 interface AssistantPanelProps {
 	// Context Props
@@ -29,6 +34,8 @@ interface AssistantPanelProps {
 	activeExploreTab?: string;
 	selectedInsightColor?: any;
 	selectedInsightPalette?: any;
+	// Updated to match implementation
+	onToggleFavorite?: (color: string) => Promise<ToggleFavoriteResult | void>;
 	onLoadPalette?: (colors: string[]) => void;
 }
 
@@ -61,58 +68,77 @@ export const AssistantPanel = ({
 	// Lifted State for Interaction Lock
 	const [isEditing, setIsEditing] = useState(false);
 
-	// Toggle Favorite with shared metadata-aware helper
-	const toggleFavoriteColor = async (color: string) =>
-		toggleFavoriteWithMetadata({
-			color,
-			settings,
-			updateSettings,
-		});
+	const { showToast } = useToast();
+	// useSoloistSystem doesn't expose onUpdateColor directly, we might need to implement it here or usage was wrong.
+	// Checking the hook file, it returns { settings, updateSettings, updateData, dataStore }.
+	// Assuming onUpdateColor is NOT in the hook, we will implement the updater manually using updateSettings.
 
-	// Update Favorite Color Logic (Name & Description)
-	const updateFavoriteColor = (
-		color: string,
-		newName: string,
-		newDescription: string,
-		newMeaning?: string,
-		newUsage?: string
-	) => {
+	const updateColorInLibrary = (colorVal: string, updates: any) => {
 		const library = settings.library || {
 			colors: [],
 			fonts: [],
 			palettes: [],
 		};
-
-		const updatedColors = library.colors.map((c: string | PresetColor) => {
-			const hexValue = typeof c === "string" ? c : c.value;
-			if (hexValue.toUpperCase() === color.toUpperCase()) {
+		const updatedColors = library.colors.map((c: any) => {
+			const cVal = typeof c === "string" ? c : c.value;
+			if (cVal.toUpperCase() === colorVal.toUpperCase()) {
 				if (typeof c === "string") {
-					return {
-						name: newName,
-						value: c, // Original value
-						description: newDescription,
-						meaning: newMeaning,
-						usage: newUsage,
-					};
-				} else {
-					return {
-						...c,
-						name: newName,
-						description: newDescription,
-						meaning: newMeaning,
-						usage: newUsage,
-					};
+					return { value: c, ...updates };
 				}
+				return { ...c, ...updates };
 			}
 			return c;
 		});
 
 		updateSettings({
-			library: {
-				...library,
-				colors: updatedColors,
-			},
+			library: { ...library, colors: updatedColors },
 		});
+	};
+
+	// Toggle Favorite with shared metadata-aware helper
+	const toggleFavoriteColor = async (color: string) => {
+		const result = await toggleFavoriteWithMetadata({
+			color,
+			settings,
+			updateSettings,
+		});
+
+		if (
+			result &&
+			result.action === "added" &&
+			typeof result.color !== "string" &&
+			result.color.isAutoRenamed
+		) {
+			showToast(
+				<div className="flex flex-col">
+					<span>
+						Auto-renamed to{" "}
+						<span className="text-accent-cyan">
+							{result.color.name}
+						</span>
+					</span>
+					<span className="text-[10px] opacity-60 font-normal">
+						Prevention: Duplicate Found
+					</span>
+				</div>
+			);
+		}
+	};
+
+	const handleUpdateColor = (
+		colorVal: string,
+		newName: string,
+		newDesc: string,
+		newMeaning?: string,
+		newUsage?: string
+	) => {
+		updateColorInLibrary(colorVal, {
+			name: newName,
+			description: newDesc,
+			meaning: newMeaning,
+			usage: newUsage,
+		});
+		showToast("Color updated");
 	};
 
 	// Content Mapping
@@ -218,7 +244,7 @@ export const AssistantPanel = ({
 										}
 									) || selectedInsightColor
 								}
-								onUpdate={updateFavoriteColor}
+								onUpdate={handleUpdateColor}
 								onToggleFavorite={() =>
 									toggleFavoriteColor(
 										selectedInsightColor.value
@@ -250,9 +276,7 @@ export const AssistantPanel = ({
 					<div className="pt-4 border-t border-white/5">
 						<InspectedPaletteCard
 							palette={selectedInsightPalette}
-							onLoad={onLoadPalette}
-							onToggleFavorite={() => {}} // Placeholder
-							isFavorite={false} // Placeholder
+							onLoad={onLoadPalette || (() => {})}
 						/>
 					</div>
 				)}
@@ -463,130 +487,68 @@ const getContentForView = (
 const InspectedPaletteCard = ({
 	palette,
 	onLoad,
-	onToggleFavorite,
-	isFavorite,
 }: {
 	palette: any;
-	onLoad?: (colors: string[]) => void;
-	onToggleFavorite: () => void;
-	isFavorite: boolean;
+	onLoad: (colors: string[]) => void;
 }) => {
-	const { isCopied, copy } = useCopyFeedback();
-	const [copiedColor, setCopiedColor] = useState<string | null>(null);
-
-	// Reset local copied color when global feedback resets
-	useEffect(() => {
-		if (!isCopied) setCopiedColor(null);
-	}, [isCopied]);
-
-	const handleCopy = (c: string) => {
-		copy(c, c); // Message is optional
-		setCopiedColor(c);
-	};
-
 	return (
-		<div className="space-y-4">
-			<div className="flex items-start justify-between">
-				<div>
-					<span className="text-xs font-mono text-accent-cyan uppercase tracking-wider block mb-1 opacity-60">
+		<div className="space-y-6">
+			<div className="space-y-2">
+				<div className="flex items-center justify-between">
+					<span className="text-[10px] font-mono text-accent-purple uppercase tracking-wider border border-accent-purple/30 px-1.5 py-0.5 rounded">
 						Palette
 					</span>
-					<h3 className="text-white font-bold text-lg leading-tight">
-						{palette.name}
-					</h3>
-					{palette.description && (
-						<p className="text-gray-400 text-xs mt-1 leading-relaxed">
-							{palette.description}
-						</p>
-					)}
+					<span className="text-xs text-white/40 font-mono">
+						{palette.colors.length} Colors
+					</span>
 				</div>
-				{/* Actions */}
-				<div className="flex gap-1">
-					<button
-						onClick={onToggleFavorite}
-						className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors border border-white/5"
-						title={
-							isFavorite
-								? "Remove from Favorites"
-								: "Add to Favorites"
-						}
-					>
-						<HeartToggle
-							isFavorite={isFavorite}
-							onToggle={onToggleFavorite}
-							size={14}
-							className={
-								isFavorite
-									? "scale-110"
-									: "text-gray-400 hover:text-white hover:scale-110"
-							}
-						/>
-					</button>
-				</div>
+				<h3 className="text-xl font-bold text-white leading-tight">
+					{palette.name}
+				</h3>
+				<p className="text-xs text-gray-400 leading-relaxed">
+					{palette.description}
+				</p>
 			</div>
 
-			{/* Color Strip */}
-			<div className="flex h-12 rounded-lg overflow-hidden border border-white/10">
-				{palette.colors.map((c: string, i: number) => (
-					<div
-						key={i}
-						className="flex-1 h-full relative group/color"
-						style={{ backgroundColor: c }}
-						onClick={() => handleCopy(c)}
-						title={`Click to Copy ${c}`}
-					>
-						<AnimatePresence>
-							{isCopied && copiedColor === c ? (
-								<motion.div
-									initial={{ opacity: 0 }}
-									animate={{ opacity: 1 }}
-									exit={{ opacity: 0 }}
-									className="absolute inset-0 bg-black/40 flex items-center justify-center cursor-default"
-								>
-									<Check size={14} className="text-white" />
-								</motion.div>
-							) : (
-								<div className="absolute inset-0 opacity-0 group-hover/color:opacity-100 bg-black/20 flex items-center justify-center transition-opacity cursor-pointer">
-									<Copy size={10} className="text-white" />
-								</div>
-							)}
-						</AnimatePresence>
-					</div>
-				))}
-			</div>
-
-			{/* Primary Action */}
-			{onLoad && (
-				<button
-					onClick={() => onLoad(palette.colors)}
-					className="w-full py-2.5 px-4 bg-accent-cyan/10 hover:bg-accent-cyan/20 border border-accent-cyan/30 rounded-lg text-accent-cyan text-xs font-mono font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 group"
-				>
-					<Zap
-						size={14}
-						className="group-hover:text-white transition-colors"
-					/>
-					<span>Send to Remix</span>
-				</button>
-			)}
-
-			{/* Tags */}
-			{palette.tags && palette.tags.length > 0 && (
-				<div className="flex flex-wrap gap-1.5 pt-2 border-t border-white/5">
-					{palette.tags.map((tag: string, i: number) => (
-						<span
+			<div className="space-y-2">
+				<div className="grid grid-cols-5 gap-1.5">
+					{palette.colors.map((c: any, i: number) => (
+						<div
 							key={i}
-							className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] text-gray-500 border border-white/5"
+							className="aspect-square rounded-md sticky top-0"
+							style={{ backgroundColor: c.value }}
+							title={`${c.name} (${c.value})`}
+						/>
+					))}
+				</div>
+			</div>
+
+			<div className="pt-4 border-t border-white/10">
+				<button
+					onClick={() =>
+						onLoad(palette.colors.map((c: any) => c.value))
+					}
+					className="w-full py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
+				>
+					<BookOpen size={14} />
+					Load Palette
+				</button>
+			</div>
+			<div className="space-y-4 pt-4">
+				<div className="flex flex-wrap gap-2">
+					{palette.tags.map((tag: string) => (
+						<span
+							key={tag}
+							className="px-2 py-1 rounded bg-white/5 text-[10px] text-gray-400 border border-white/10"
 						>
 							{tag}
 						</span>
 					))}
 				</div>
-			)}
+			</div>
 		</div>
 	);
 };
-
-// --- Subcomponents ---
 
 const InspectedColorCard = ({
 	color,
@@ -609,31 +571,66 @@ const InspectedColorCard = ({
 	isEditing: boolean;
 	setIsEditing: (v: boolean) => void;
 }) => {
+	const { settings } = useSoloist();
+	const library = settings.library || { colors: [] };
 	const isDark = colord(color.value).isDark();
-	// Lifted isEditing state
-	const [editName, setEditName] = useState(color.name);
-	const [editDesc, setEditDesc] = useState(color.description || "");
+
+	// Local state for editing
+	const [localName, setLocalName] = useState(color.name);
+	const [localDesc, setLocalDesc] = useState(color.description || "");
 	const [editMeaning, setEditMeaning] = useState(color.meaning || "");
 	const [editUsage, setEditUsage] = useState(color.usage || "");
-	const { isCopied, copy } = useCopyFeedback();
 
-	// Sync local state when selected color changes
+	const { isCopied, copy } = useCopyFeedback();
+	const nameInputRef = useRef<HTMLInputElement>(null);
+
+	// Sync local state when color changes or mode toggles
 	useEffect(() => {
-		setEditName(color.name);
-		setEditDesc(color.description || "");
-		setEditMeaning(color.meaning || "");
-		setEditUsage(color.usage || "");
-		setIsEditing(false); // Reset edit mode on color switch
-	}, [color]);
+		if (!isEditing) {
+			setLocalName(color.name);
+			setLocalDesc(color.description || "");
+			setEditMeaning(color.meaning || "");
+			setEditUsage(color.usage || "");
+		}
+	}, [color, isEditing]);
+
+	// Validation Logic
+	const isDuplicate = library.colors.some((c: any) => {
+		const cName = typeof c === "string" ? c : c.name;
+		const cVal = typeof c === "string" ? c : c.value;
+		// Skip self
+		if (cVal.toUpperCase() === color.value.toUpperCase()) return false;
+		return (
+			cName.trim().toLowerCase() ===
+			(localName || "").trim().toLowerCase()
+		);
+	});
+	const isValid = (localName || "").trim().length > 0 && !isDuplicate;
 
 	const handleSave = () => {
-		onUpdate(color.value, editName, editDesc, editMeaning, editUsage);
+		if (!isValid) return;
+
+		// Only update if changes were made
+		if (
+			localName !== color.name ||
+			localDesc !== color.description ||
+			editMeaning !== color.meaning ||
+			editUsage !== color.usage
+		) {
+			onUpdate(
+				color.value,
+				localName.trim(),
+				localDesc.trim(),
+				editMeaning,
+				editUsage
+			);
+		}
 		setIsEditing(false);
 	};
 
 	const handleCancel = () => {
-		setEditName(color.name);
-		setEditDesc(color.description || "");
+		setLocalName(color.name);
+		setLocalDesc(color.description || "");
 		setEditMeaning(color.meaning || "");
 		setEditUsage(color.usage || "");
 		setIsEditing(false);
@@ -655,19 +652,6 @@ const InspectedColorCard = ({
 					className="absolute inset-0"
 					style={{ backgroundColor: color.value }}
 				/>
-				{/* Static Label (Hidden in Edit Mode if overlay covers it, but here we overlay inputs later or below) */}
-				{/* Let's keep the swatch clean and put edit controls below? Or overlay?
-		    The previous design had overlay. Let's stick to overlay for the swatch part if we edit name there,
-		    BUT the component splits Name into the swatch overlay and Description below.
-		    Let's make the WHOLE container editable or just the fields.
-
-		    Actually, the user asked to move inline editing to right sidebar where name and description are displayed.
-		    Currently InspectedColorCard displays name over the swatch and description below.
-
-		    Let's make the Name and Description fields turn into inputs when "Edit" is clicked.
-		*/}
-
-				{/* Header Actions */}
 				{/* Header Actions */}
 				<div className="absolute top-2 right-2 flex gap-1 z-[100]">
 					{!isEditing ? (
@@ -708,7 +692,7 @@ const InspectedColorCard = ({
 							>
 								<HeartToggle
 									isFavorite={isFavorite}
-									onToggle={onToggleFavorite}
+									onToggle={() => onToggleFavorite()}
 									size={12}
 									className={
 										isFavorite
@@ -729,8 +713,19 @@ const InspectedColorCard = ({
 							</button>
 							<button
 								onClick={handleSave}
-								className="p-1.5 rounded-full bg-green-500/80 hover:bg-green-500 text-white transition-colors backdrop-blur-sm"
-								title="Save"
+								disabled={!isValid}
+								className={`p-1.5 rounded-full text-white transition-colors backdrop-blur-sm ${
+									!isValid
+										? "bg-gray-500 opacity-50"
+										: "bg-green-500/80 hover:bg-green-500"
+								}`}
+								title={
+									!isValid
+										? isDuplicate
+											? "Name taken"
+											: "Name cannot be empty"
+										: "Save"
+								}
 							>
 								<Check size={12} />
 							</button>
@@ -745,31 +740,42 @@ const InspectedColorCard = ({
 				>
 					{isEditing ? (
 						<div className="pointer-events-auto mb-1 relative z-[100]">
-							<input
-								type="text"
-								value={editName}
-								onChange={(e) => setEditName(e.target.value)}
-								onKeyDown={(e) => {
-									if (e.key === "Enter") {
-										e.preventDefault();
-										// Move focus to description
-										const descInput =
-											e.currentTarget.parentElement?.parentElement?.parentElement?.querySelector(
-												"textarea"
-											) as HTMLTextAreaElement;
-										if (descInput) descInput.focus();
-									} else if (e.key === "Escape") {
-										handleCancel();
+							<div className="relative">
+								<input
+									ref={nameInputRef}
+									value={localName}
+									onChange={(e) =>
+										setLocalName(e.target.value)
 									}
-								}}
-								className="bg-black/40 backdrop-blur-md border border-white/20 rounded px-2 py-1 text-xs font-bold font-brand text-white w-full focus:outline-none focus:border-accent-cyan placeholder-white/50"
-								placeholder="Color Name"
-								autoFocus
-							/>
+									onKeyDown={(e) => {
+										if (e.key === "Enter") {
+											e.preventDefault();
+											if (isValid) handleSave();
+										} else if (e.key === "Escape") {
+											handleCancel();
+										}
+									}}
+									className={`bg-black/40 backdrop-blur-md border rounded px-2 py-1 text-xs font-bold font-brand text-white w-full focus:outline-none focus:border-accent-cyan placeholder-white/50 ${
+										isDuplicate
+											? "border-red-500 bg-red-500/10"
+											: "border-white/20"
+									}`}
+									placeholder="Color Name"
+									autoFocus
+								/>
+								{isDuplicate && (
+									<div className="absolute -top-6 left-0 right-0 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded shadow-lg animate-in fade-in slide-in-from-bottom-1">
+										Name taken
+									</div>
+								)}
+							</div>
 						</div>
 					) : (
-						<span className="text-xs font-bold uppercase opacity-70 tracking-wider mb-0.5">
+						<span className="text-xs font-bold uppercase opacity-70 tracking-wider mb-0.5 flex items-center gap-1">
 							{color.name}
+							{color.isAutoRenamed && (
+								<MagicBadge className="w-3 h-3 text-accent-cyan animate-pulse" />
+							)}
 						</span>
 					)}
 					<span className="text-[10px] font-mono opacity-75">
@@ -786,8 +792,8 @@ const InspectedColorCard = ({
 							Description
 						</span>
 						<textarea
-							value={editDesc}
-							onChange={(e) => setEditDesc(e.target.value)}
+							value={localDesc}
+							onChange={(e) => setLocalDesc(e.target.value)}
 							onKeyDown={(e) => {
 								if (e.key === "Enter" && !e.shiftKey) {
 									e.preventDefault();
@@ -920,7 +926,7 @@ const TagDisplayEdit = ({
 				{tags.map((tag, i) => (
 					<span
 						key={i}
-						className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-cyan/20 text-[10px] text-accent-cyan border border-accent-cyan/30 group cursor-pointer hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 transition-colors"
+						className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-cyan/20 text-[10px] text-accent-cyan border border-accent-cyan/30 group cursor-pointer hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 transition-colors capitalize"
 						onClick={() => removeTag(tag)}
 					>
 						{tag}
@@ -929,50 +935,53 @@ const TagDisplayEdit = ({
 				))}
 
 				{/* Ghost Pills (Suggestions) */}
-				{unselectedSuggestions.map((tag, i) => (
-					<button
-						key={`ghost-${i}`}
-						onClick={() => addTag(tag)}
-						className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] text-gray-500 border border-white/5 hover:bg-white/10 hover:text-gray-300 hover:border-white/10 transition-colors"
-					>
-						+ {tag}
-					</button>
-				))}
+				{unselectedSuggestions.length > 0 && (
+					<>
+						{unselectedSuggestions.slice(0, 3).map((tag, i) => (
+							<span
+								key={`ghost-${i}`}
+								onClick={() => addTag(tag)}
+								className="flex items-center gap-1 px-2 py-0.5 rounded-full border border-white/5 text-[10px] text-gray-500 hover:border-accent-cyan/30 hover:text-accent-cyan hover:bg-accent-cyan/5 transition-colors cursor-pointer capitalize border-dashed opacity-60 hover:opacity-100"
+							>
+								+ {tag}
+							</span>
+						))}
+					</>
+				)}
 
-				{/* Create New Pill / Input */}
+				{/* Add Custom Tag Input */}
 				{isCreating ? (
-					<div className="relative flex items-center min-w-[60px]">
-						<input
-							type="text"
-							value={inputValue}
-							onChange={(e) => setInputValue(e.target.value)}
-							onKeyDown={(e) => {
-								if (e.key === "Enter" && inputValue.trim()) {
-									e.preventDefault();
-									addTag(inputValue.trim());
-								} else if (e.key === "Escape") {
-									setIsCreating(false);
-									setInputValue("");
-								}
-							}}
-							onBlur={() => {
+					<input
+						autoFocus
+						type="text"
+						value={inputValue}
+						onChange={(e) => setInputValue(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") {
+								e.preventDefault();
 								if (inputValue.trim()) {
 									addTag(inputValue.trim());
-								} else {
-									setIsCreating(false);
 								}
-							}}
-							autoFocus
-							placeholder="Type tag..."
-							className="bg-transparent border-b border-accent-cyan text-[10px] text-white focus:outline-none w-20 px-1 pb-0.5 placeholder-white/30"
-						/>
-					</div>
+							} else if (e.key === "Escape") {
+								setIsCreating(false);
+							}
+						}}
+						onBlur={() => {
+							if (inputValue.trim()) {
+								addTag(inputValue.trim());
+							}
+							setIsCreating(false);
+						}}
+						className="bg-transparent border-b border-accent-cyan text-[10px] text-white w-20 focus:outline-none"
+						placeholder="Add tag..."
+					/>
 				) : (
 					<button
 						onClick={() => setIsCreating(true)}
-						className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] text-gray-500 border border-white/5 hover:bg-white/10 hover:text-gray-300 hover:border-white/10 transition-colors"
+						className="px-2 py-0.5 rounded-full bg-white/5 hover:bg-white/10 text-[10px] text-gray-400 hover:text-white transition-colors flex items-center gap-1"
 					>
-						+ Create New
+						<Wand2 size={8} />
+						Add Custom
 					</button>
 				)}
 			</div>

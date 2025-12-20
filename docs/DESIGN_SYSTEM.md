@@ -72,6 +72,9 @@ Buttons generally follow these styles (though currently implemented as ad-hoc cl
 -   **Glass Button** (Standard): `bg-white/5 hover:bg-white/10 text-white border border-white/5`
 -   **Ghost Button** (Secondary): `text-gray-500 hover:text-white`
 -   **Icon Button**: `p-2 rounded-full hover:bg-white/10`
+    75:
+    76: > [!CAUTION]
+    77: > **Disabled State Cursor**: Do NOT use `cursor-not-allowed` on disabled buttons. Users find the cursor style change on hover aesthetically displeasing. Maintain the standard cursor (or `cursor-default`) but indicate disabled state via opacity (e.g., `opacity-50`) and removing pointer events or hover styles.
 
 ### Inputs
 

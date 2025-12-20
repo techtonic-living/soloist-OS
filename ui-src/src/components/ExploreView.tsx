@@ -267,7 +267,7 @@ export const ExploreView = ({
 								}
 								onLoadColor={setSeedColor}
 								onInspectColor={onInspectColor}
-								onRemoveColor={toggleFavoriteColor}
+								onToggleFavorite={toggleFavoriteColor}
 								onRemovePalette={() => {}}
 								onAddColors={bulkAddColors}
 								onRemoveColors={bulkRemoveColors}
@@ -281,6 +281,20 @@ export const ExploreView = ({
 										library: {
 											...(settings.library || {}),
 											colors: newColors,
+										},
+									});
+								}}
+								uiPreferences={settings.uiPreferences}
+								onUpdateUiPreferences={(prefs) => {
+									updateSettings({
+										uiPreferences: {
+											...(settings.uiPreferences || {
+												colorGridDensity: {
+													favorites: 2,
+													presets: 2,
+												},
+											}),
+											...prefs,
 										},
 									});
 								}}

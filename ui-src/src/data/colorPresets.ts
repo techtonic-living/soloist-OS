@@ -4,6 +4,7 @@ export interface PresetColor {
 	description?: string;
 	meaning?: string;
 	usage?: string;
+	isAutoRenamed?: boolean;
 }
 
 export interface PresetLibrary {
@@ -33,14 +34,14 @@ export const PRESET_LIBRARIES: PresetLibrary[] = [
 				usage: "App backgrounds, cards",
 			},
 			{
-				name: "Gim Gray",
+				name: "Dim Gray",
 				value: "#696969",
 				description: "Moody charcoal-gray for grounded UI.",
 				meaning: "Depth, Balance, Utility",
 				usage: "Text on light, subdued surfaces",
 			},
 			{
-				name: "Neutral Gray",
+				name: "Everday Gray",
 				value: "#9F9F9F",
 				description: "Neutral mid-gray for balanced UI.",
 				meaning: "Neutrality, Balance, Utility",

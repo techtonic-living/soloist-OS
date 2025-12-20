@@ -463,7 +463,7 @@ export const ColorAtelier = ({
 									}
 								}
 								onLoadColor={setSeedColor}
-								onRemoveColor={toggleFavoriteColor}
+								onToggleFavorite={toggleFavoriteColor}
 								onRemovePalette={removePalette}
 								onAddColors={bulkAddColors}
 								onRemoveColors={bulkRemoveColors}

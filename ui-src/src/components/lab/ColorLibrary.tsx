@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
 	Heart,
 	Book,
@@ -19,46 +19,22 @@ import {
 } from "lucide-react";
 import { PRESET_LIBRARIES, PresetColor } from "../../data/colorPresets";
 import { colord } from "colord";
-import { ColorGroup } from "../../hooks/useSoloistSystem";
+import { ColorGroup, UiPreferences } from "../../hooks/useSoloistSystem";
 import { ConfirmationModal } from "../common/ConfirmationModal";
 import { HeartToggle } from "../common/HeartToggle";
 import { useCopyFeedback } from "../../hooks/useCopyFeedback";
+import { useToast } from "../../context/ToastContext";
+import { ToggleFavoriteResult } from "../../utils/favorites";
 
 // --- Helper Functions ---
 // Ensure labels are unique within a render pass (case-insensitive)
 // Instead of "Teal (2)", pick a playful variant for duplicates.
-const getUniqueLabel = (
-	baseName: string,
-	registry: Record<string, number>
-): string => {
-	const key = baseName.toLowerCase();
-	const next = (registry[key] || 0) + 1;
-	registry[key] = next;
-
-	if (next === 1) return baseName;
-
-	// Creative / Natural Variants (removed "Real Deal" from pool)
-	const variants = [
-		`Astral ${baseName}`,
-		`Cosmic ${baseName}`,
-		`Eternal ${baseName}`,
-		`Phantom ${baseName}`,
-		`Velvet ${baseName}`,
-		`Electric ${baseName}`,
-		`Neon ${baseName}`,
-		`Mystic ${baseName}`,
-		`Radiant ${baseName}`,
-		`Deep ${baseName}`,
-	];
-
-	// If we run out of fun variants, fall back to numbered suffix
-	return variants[next - 2] || `${baseName} (${next})`;
-};
+// --- Helper Functions ---
+// (No longer needed: Unique naming is handled at save time in utils/favorites.ts)
 
 interface ColorLibraryProps {
 	library: any;
 	onLoadColor: (c: string) => void;
-	onRemoveColor: (c: string, metadata?: PresetColor) => void;
 	onRemovePalette: (i: number) => void;
 	onInspectColor?: (c: PresetColor) => void;
 	onAddColors?: (colors: PresetColor[]) => void;
@@ -70,15 +46,21 @@ interface ColorLibraryProps {
 	onMoveColor?: (colorHex: string, targetGroupId: string | null) => void;
 	onReorderGroups?: (newOrder: ColorGroup[]) => void;
 	onReorderColors?: (newColors: (string | PresetColor)[]) => void;
+	onToggleFavorite: (
+		color: string,
+		metadata?: PresetColor
+	) => Promise<ToggleFavoriteResult | void>;
+	uiPreferences?: UiPreferences;
+	onUpdateUiPreferences?: (prefs: Partial<UiPreferences>) => void;
 	view?: "all" | "colors" | "palettes";
 }
 
 export const ColorLibrary = ({
 	library,
 	onLoadColor,
-	onRemoveColor,
 	onRemovePalette,
 	onInspectColor,
+	onToggleFavorite,
 	onAddColors,
 	onRemoveColors,
 	onCreateGroup,
@@ -87,6 +69,8 @@ export const ColorLibrary = ({
 	onMoveColor,
 	onReorderGroups,
 	onReorderColors,
+	uiPreferences,
+	onUpdateUiPreferences,
 	view = "all",
 }: ColorLibraryProps) => {
 	// Group State
@@ -102,7 +86,14 @@ export const ColorLibrary = ({
 	const [newGroupDesc, setNewGroupDesc] = useState("");
 
 	// Move Color State
-	const [colorToMove, setColorToMove] = useState<string | null>(null);
+	const [colorToMove, setColorToMove] = useState<{
+		value: string;
+		groupId: string | null;
+	} | null>(null);
+
+	// Sort State
+	type SortOption = "custom" | "name" | "hue";
+	const [sortOption, setSortOption] = useState<SortOption>("custom");
 
 	// Confirmation Modal State
 	const [confirmState, setConfirmState] = useState<{
@@ -110,11 +101,13 @@ export const ColorLibrary = ({
 		title: string;
 		message: React.ReactNode;
 		onConfirm: () => void;
+		variant?: "danger" | "info" | "warning";
 	}>({
 		isOpen: false,
 		title: "",
 		message: null,
 		onConfirm: () => {},
+		variant: undefined,
 	});
 
 	const closeConfirm = () =>
@@ -213,15 +206,47 @@ export const ColorLibrary = ({
 			groupMap[g.id] = groupColors;
 		});
 
-		return { unassignedColors: unassigned, groupColorsMap: groupMap };
-	}, [library.colors, library.colorGroups]);
+		// Apply Sorting
+		const sortColors = (
+			list: (string | PresetColor)[]
+		): (string | PresetColor)[] => {
+			if (sortOption === "name") {
+				return [...list].sort((a, b) => {
+					const nameA = typeof a === "string" ? a : a.name;
+					const nameB = typeof b === "string" ? b : b.name;
+					return nameA.localeCompare(nameB);
+				});
+			} else if (sortOption === "hue") {
+				return [...list].sort((a, b) => {
+					const hexA = typeof a === "string" ? a : a.value;
+					const hexB = typeof b === "string" ? b : b.value;
+					return colord(hexA).toHsl().h - colord(hexB).toHsl().h;
+				});
+			}
+			return list;
+		};
+
+		// Sort Groups Internal Colors
+		Object.keys(groupMap).forEach((gid) => {
+			groupMap[gid] = sortColors(groupMap[gid]);
+		});
+
+		return {
+			unassignedColors: sortColors(unassigned),
+			groupColorsMap: groupMap,
+		};
+	}, [library.colors, library.colorGroups, sortOption]);
 
 	const [activeSubTab, setActiveSubTab] = useState<"favorites" | "presets">(
 		"favorites"
 	);
 
-	// Registry shared across this render to avoid duplicate names across sections
-	const nameRegistry: Record<string, number> = {};
+	// Reset sort to 'hue' if switching to presets while in 'custom'
+	useEffect(() => {
+		if (activeSubTab === "presets" && sortOption === "custom") {
+			setSortOption("hue");
+		}
+	}, [activeSubTab, sortOption]);
 
 	// Toggling favorite checks if it exists in the library prop
 	const isFavorite = (color: string) => {
@@ -233,8 +258,36 @@ export const ColorLibrary = ({
 		});
 	};
 
+	// Toast
+	const { showToast } = useToast();
+
 	// Grid Density State (Columns)
 	const [density, setDensity] = useState(2);
+
+	// Sync Density with Preferences
+	useEffect(() => {
+		if (uiPreferences && uiPreferences.colorGridDensity) {
+			const savedDensity =
+				activeSubTab === "favorites"
+					? uiPreferences.colorGridDensity.favorites
+					: uiPreferences.colorGridDensity.presets;
+
+			if (savedDensity) {
+				setDensity(savedDensity);
+			}
+		}
+	}, [activeSubTab, uiPreferences]);
+
+	const commitDensityChange = (newDensity: number) => {
+		if (onUpdateUiPreferences && uiPreferences) {
+			onUpdateUiPreferences({
+				colorGridDensity: {
+					...uiPreferences.colorGridDensity,
+					[activeSubTab]: newDensity,
+				},
+			});
+		}
+	};
 
 	const handleBulkFavorite = (colorsToProcess: PresetColor[]) => {
 		// If targetGroupId is provided, we might be emptying a specific group
@@ -312,8 +365,52 @@ export const ColorLibrary = ({
 							onChange={(e) =>
 								setDensity(parseInt(e.target.value))
 							}
+							onMouseUp={(e) =>
+								commitDensityChange(
+									parseInt(e.currentTarget.value)
+								)
+							}
+							onTouchEnd={(e) =>
+								commitDensityChange(
+									parseInt(e.currentTarget.value)
+								)
+							}
 							className="w-20 accent-accent-cyan h-1 bg-white/20 rounded-full appearance-none cursor-pointer"
 						/>
+					</div>
+
+					{/* Sort Control */}
+					<div className="flex items-center gap-2 pb-2 border-l border-white/10 pl-4 ml-2">
+						<span className="text-[10px] text-gray-500 font-mono uppercase">
+							Sort
+						</span>
+						<div className="relative group">
+							<select
+								value={sortOption}
+								onChange={(e) =>
+									setSortOption(e.target.value as SortOption)
+								}
+								className="appearance-none bg-black/20 border border-white/10 rounded px-2 py-0.5 text-[10px] text-gray-300 font-mono uppercase focus:outline-none focus:border-accent-cyan cursor-pointer pr-6 hover:bg-white/5 transition-colors"
+							>
+								{activeSubTab === "favorites" && (
+									<option value="custom">Custom</option>
+								)}
+								<option value="name">Name (A-Z)</option>
+								<option value="hue">Hue</option>
+							</select>
+							<div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
+								<svg
+									width="8"
+									height="8"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="2"
+								>
+									<path d="M6 9l6 6 6-6" />
+								</svg>
+							</div>
+						</div>
 					</div>
 				</div>
 			)}
@@ -439,18 +536,25 @@ export const ColorLibrary = ({
 											)}
 											{/* Organize / Edit Mode Toggle */}
 											<button
+												disabled={
+													sortOption !== "custom"
+												}
 												onClick={() =>
 													setIsEditingLibrary(
 														!isEditingLibrary
 													)
 												}
-												className={`p-1.5 rounded-full transition-colors ${
-													isEditingLibrary
+												className={`p-1.5 rounded-full transition-all ${
+													sortOption !== "custom"
+														? "opacity-30 text-gray-500"
+														: isEditingLibrary
 														? "text-accent-cyan bg-accent-cyan/10 ring-1 ring-accent-cyan/30"
 														: "text-gray-500 hover:text-white hover:bg-white/10"
 												}`}
 												title={
-													isEditingLibrary
+													sortOption !== "custom"
+														? "Switch to Custom sort to organize"
+														: isEditingLibrary
 														? "Done Organizing"
 														: "Organize Colors and Groups"
 												}
@@ -533,65 +637,113 @@ export const ColorLibrary = ({
 								</div>
 
 								{/* Create Group Input */}
-								{isCreatingGroup && (
-									<div className="bg-black/20 p-3 rounded-lg space-y-3 mb-4 border border-glass-stroke">
-										<input
-											autoFocus
-											type="text"
-											placeholder="Group Name"
-											className="w-full bg-transparent border-b border-white/20 text-sm text-white focus:outline-none focus:border-accent-cyan pb-1"
-											value={newGroupName}
-											onChange={(e) =>
-												setNewGroupName(e.target.value)
+								{isCreatingGroup &&
+									(() => {
+										const isDuplicate = (
+											(library.colorGroups as ColorGroup[]) ||
+											[]
+										).some(
+											(g) =>
+												g.name.trim().toLowerCase() ===
+												newGroupName
+													.trim()
+													.toLowerCase()
+										);
+										const isValid =
+											newGroupName.trim().length > 0 &&
+											!isDuplicate;
+
+										const handleCreate = () => {
+											if (isValid && onCreateGroup) {
+												onCreateGroup(
+													newGroupName.trim(),
+													newGroupDesc
+												);
+												setIsCreatingGroup(false);
+												setNewGroupName("");
+												setNewGroupDesc("");
 											}
-										/>
-										<input
-											type="text"
-											placeholder="Description (Optional)"
-											className="w-full bg-transparent border-b border-white/10 text-xs text-gray-400 focus:outline-none focus:border-white/40 pb-1"
-											value={newGroupDesc}
-											onChange={(e) =>
-												setNewGroupDesc(e.target.value)
+										};
+
+										const handleKeyDown = (
+											e: React.KeyboardEvent
+										) => {
+											if (e.key === "Enter") {
+												e.preventDefault();
+												handleCreate();
+											} else if (e.key === "Escape") {
+												e.preventDefault();
+												setIsCreatingGroup(false);
 											}
-										/>
-										<div className="flex justify-end gap-2">
-											<button
-												onClick={() =>
-													setIsCreatingGroup(false)
-												}
-												className="text-xs text-gray-500 hover:text-white px-2 py-1"
-											>
-												Cancel
-											</button>
-											<button
-												disabled={!newGroupName.trim()}
-												onClick={() => {
-													if (
-														newGroupName.trim() &&
-														onCreateGroup
-													) {
-														onCreateGroup(
-															newGroupName.trim(),
-															newGroupDesc
-														);
-														setIsCreatingGroup(
-															false
-														);
-														setNewGroupName("");
-														setNewGroupDesc("");
+										};
+
+										return (
+											<div className="bg-black/20 p-3 rounded-lg space-y-3 mb-4 border border-glass-stroke">
+												<div className="space-y-1">
+													<input
+														autoFocus
+														type="text"
+														placeholder="Group Name"
+														className={`w-full bg-transparent border-b text-sm text-white focus:outline-none pb-1 transition-colors ${
+															isDuplicate
+																? "border-red-500 focus:border-red-500"
+																: "border-white/20 focus:border-accent-cyan"
+														}`}
+														value={newGroupName}
+														onChange={(e) =>
+															setNewGroupName(
+																e.target.value
+															)
+														}
+														onKeyDown={
+															handleKeyDown
+														}
+													/>
+													{isDuplicate && (
+														<p className="text-[10px] text-red-400 font-medium">
+															Group name already
+															exists
+														</p>
+													)}
+												</div>
+												<input
+													type="text"
+													placeholder="Description (Optional)"
+													className="w-full bg-transparent border-b border-white/10 text-xs text-gray-400 focus:outline-none focus:border-white/40 pb-1"
+													value={newGroupDesc}
+													onChange={(e) =>
+														setNewGroupDesc(
+															e.target.value
+														)
 													}
-												}}
-												className={`text-xs px-3 py-1 rounded transition-colors ${
-													!newGroupName.trim()
-														? "bg-accent-cyan/5 text-accent-cyan/50 cursor-not-allowed"
-														: "bg-accent-cyan/20 text-accent-cyan hover:bg-accent-cyan/30"
-												}`}
-											>
-												Create
-											</button>
-										</div>
-									</div>
-								)}
+													onKeyDown={handleKeyDown}
+												/>
+												<div className="flex justify-end gap-2">
+													<button
+														onClick={() =>
+															setIsCreatingGroup(
+																false
+															)
+														}
+														className="text-xs text-gray-500 hover:text-white px-2 py-1"
+													>
+														Cancel
+													</button>
+													<button
+														disabled={!isValid}
+														onClick={handleCreate}
+														className={`text-xs px-3 py-1 rounded transition-colors ${
+															!isValid
+																? "bg-accent-cyan/5 text-accent-cyan/50 cursor-default"
+																: "bg-accent-cyan/20 text-accent-cyan hover:bg-accent-cyan/30"
+														}`}
+													>
+														Create
+													</button>
+												</div>
+											</div>
+										);
+									})()}
 
 								{unassignedColors.length === 0 ? (
 									<p className="text-gray-600 italic text-sm">
@@ -615,37 +767,27 @@ export const ColorLibrary = ({
 													"string"
 														? colorItem
 														: colorItem.value;
-												const baseLabel =
+												const finalName =
 													typeof colorItem ===
 													"string"
-														? hexValue.toUpperCase()
+														? "Custom Color"
 														: colorItem.name;
-												const uniqueLabel =
-													getUniqueLabel(
-														baseLabel,
-														nameRegistry
-													);
-												const colorObject: PresetColor =
-													typeof colorItem ===
-													"string"
-														? {
-																name: baseLabel,
-																value: hexValue,
-														  }
-														: colorItem;
-
 												return (
 													<SmartColorCard
 														key={`${hexValue}-${idx}`}
 														color={hexValue}
-														label={uniqueLabel}
-														name={uniqueLabel}
+														label={finalName}
+														name={finalName}
 														isFavorite={true}
 														draggable={
-															isEditingLibrary
+															isEditingLibrary &&
+															sortOption ===
+																"custom"
 														}
 														onDragStart={
-															isEditingLibrary
+															isEditingLibrary &&
+															sortOption ===
+																"custom"
 																? (e) =>
 																		handleDragStart(
 																			e,
@@ -654,13 +796,11 @@ export const ColorLibrary = ({
 																		)
 																: undefined
 														}
-														onMoveRequest={
-															isEditingLibrary
-																? () =>
-																		setColorToMove(
-																			hexValue
-																		)
-																: undefined
+														onMoveRequest={() =>
+															setColorToMove({
+																value: hexValue,
+																groupId: null,
+															})
 														}
 														onDrop={
 															isEditingLibrary
@@ -779,19 +919,76 @@ export const ColorLibrary = ({
 															onLoadColor(
 																hexValue
 															);
+
+															// Use stored name directly
+
 															if (onInspectColor)
 																onInspectColor(
-																	colorObject
+																	typeof c ===
+																		"string"
+																		? {
+																				name: finalName,
+																				value: hexValue,
+																		  }
+																		: c
 																);
 														}}
-														onToggleFavorite={() => {
+														onToggleFavorite={async () => {
+															const res =
+																await onToggleFavorite(
+																	hexValue,
+																	{
+																		name: finalName,
+																		value: hexValue,
+																	}
+																);
 															if (
-																window.confirm(
-																	"Remove this color from your favorites?"
-																)
+																res &&
+																res.action ===
+																	"removed"
 															) {
-																onRemoveColor(
-																	hexValue
+																showToast(
+																	<div className="flex flex-col">
+																		<span>
+																			Removed
+																			favorite
+																		</span>
+																		<span className="text-[10px] opacity-60 font-normal">
+																			{
+																				finalName
+																			}
+																		</span>
+																	</div>
+																);
+															} else if (
+																res &&
+																res.action ===
+																	"added" &&
+																(
+																	res.color as PresetColor
+																).isAutoRenamed
+															) {
+																// ... (existing auto-rename toast logic)
+																showToast(
+																	<div className="flex flex-col">
+																		<span>
+																			Auto-renamed
+																			to{" "}
+																			<span className="text-accent-cyan">
+																				{
+																					(
+																						res.color as PresetColor
+																					)
+																						.name
+																				}
+																			</span>
+																		</span>
+																		<span className="text-[10px] opacity-60 font-normal">
+																			Prevention:
+																			Duplicate
+																			Found
+																		</span>
+																	</div>
 																);
 															}
 														}}
@@ -854,161 +1051,223 @@ export const ColorLibrary = ({
 													<div className="flex items-start gap-2 flex-1 relative">
 														{group.id ===
 														editingGroupId ? (
-															<>
-																<div className="fixed inset-0 z-40 bg-transparent cursor-default" />
-																<div className="relative z-50 flex flex-col gap-1 flex-1">
-																	<input
-																		autoFocus
-																		type="text"
-																		className="bg-black/40 text-white text-sm font-brand tracking-widest px-3 py-2 rounded-md border border-accent-cyan/50 focus:outline-none focus:border-accent-cyan focus:ring-1 focus:ring-accent-cyan/50 w-full shadow-lg"
-																		defaultValue={
-																			group.name
-																		}
-																		placeholder="GROUP NAME"
-																		onKeyDown={(
-																			e
-																		) => {
-																			if (
-																				e.key ===
-																				"Enter"
-																			) {
-																				e.preventDefault();
-																				// Focus textarea
-																				const next =
-																					e.currentTarget.parentElement?.querySelector(
-																						"textarea"
-																					) as HTMLTextAreaElement;
-																				if (
-																					next
-																				)
-																					next.focus();
-																			} else if (
-																				e.key ===
-																				"Escape"
-																			) {
-																				setEditingGroupId(
-																					null
-																				);
-																			}
-																		}}
-																		onChange={(
-																			e
-																		) => {
-																			setTempEditData(
-																				(
-																					prev
-																				) => ({
-																					name: e
-																						.target
-																						.value,
-																					description:
-																						prev?.description ||
-																						"",
-																				})
-																			);
-																		}}
-																	/>
-																	<textarea
-																		className="w-full bg-black/40 text-xs text-gray-400 px-3 py-2 rounded-md border border-white/10 focus:outline-none focus:border-accent-cyan resize-none shadow-inner font-mono leading-relaxed mt-2"
-																		defaultValue={
-																			group.description
-																		}
-																		placeholder="Add a description..."
-																		rows={2}
-																		onKeyDown={(
-																			e
-																		) => {
-																			if (
-																				e.key ===
-																					"Enter" &&
-																				!e.shiftKey
-																			) {
-																				e.preventDefault();
-																				// Save on Enter in textarea
-																				if (
-																					onUpdateGroup &&
-																					tempEditData
-																				) {
-																					onUpdateGroup(
-																						group.id,
-																						tempEditData
+															(() => {
+																// Validation Logic
+																const currentName =
+																	tempEditData?.name ??
+																	group.name;
+																const isDuplicate =
+																	(
+																		(library.colorGroups as ColorGroup[]) ||
+																		[]
+																	).some(
+																		(g) =>
+																			g.id !==
+																				group.id &&
+																			g.name
+																				.trim()
+																				.toLowerCase() ===
+																				currentName
+																					.trim()
+																					.toLowerCase()
+																	);
+																const isValid =
+																	currentName.trim()
+																		.length >
+																		0 &&
+																	!isDuplicate;
+
+																return (
+																	<>
+																		<div className="fixed inset-0 z-40 bg-transparent cursor-default" />
+																		<div className="relative z-50 flex flex-col gap-1 flex-1">
+																			<div className="relative">
+																				<input
+																					autoFocus
+																					type="text"
+																					className={`bg-black/40 text-white text-sm font-brand tracking-widest px-3 py-2 rounded-md border focus:outline-none focus:ring-1 w-full shadow-lg transition-colors ${
+																						isDuplicate
+																							? "border-red-500 focus:border-red-500 focus:ring-red-500/50"
+																							: "border-accent-cyan/50 focus:border-accent-cyan focus:ring-accent-cyan/50"
+																					}`}
+																					defaultValue={
+																						group.name
+																					}
+																					placeholder="GROUP NAME"
+																					onKeyDown={(
+																						e
+																					) => {
+																						if (
+																							e.key ===
+																							"Enter"
+																						) {
+																							e.preventDefault();
+																							if (
+																								isValid
+																							) {
+																								// Focus textarea
+																								const next =
+																									e.currentTarget.parentElement?.parentElement?.parentElement?.querySelector(
+																										"textarea"
+																									) as HTMLTextAreaElement;
+																								if (
+																									next
+																								)
+																									next.focus();
+																							}
+																						} else if (
+																							e.key ===
+																							"Escape"
+																						) {
+																							setEditingGroupId(
+																								null
+																							);
+																						}
+																					}}
+																					onChange={(
+																						e
+																					) => {
+																						setTempEditData(
+																							(
+																								prev
+																							) => ({
+																								name: e
+																									.target
+																									.value,
+																								description:
+																									prev?.description ||
+																									"",
+																							})
+																						);
+																					}}
+																				/>
+																				{isDuplicate && (
+																					<div className="absolute top-full left-0 mt-1 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded shadow-lg z-[60]">
+																						Name
+																						taken
+																					</div>
+																				)}
+																			</div>
+																			<textarea
+																				className="w-full bg-black/40 text-xs text-gray-400 px-3 py-2 rounded-md border border-white/10 focus:outline-none focus:border-accent-cyan resize-none shadow-inner font-mono leading-relaxed mt-2"
+																				defaultValue={
+																					group.description
+																				}
+																				placeholder="Add a description..."
+																				rows={
+																					2
+																				}
+																				onKeyDown={(
+																					e
+																				) => {
+																					if (
+																						e.key ===
+																							"Enter" &&
+																						!e.shiftKey
+																					) {
+																						e.preventDefault();
+																						// Save on Enter in textarea
+																						if (
+																							isValid &&
+																							onUpdateGroup &&
+																							tempEditData
+																						) {
+																							onUpdateGroup(
+																								group.id,
+																								tempEditData
+																							);
+																							setEditingGroupId(
+																								null
+																							);
+																						}
+																					} else if (
+																						e.key ===
+																						"Escape"
+																					) {
+																						setEditingGroupId(
+																							null
+																						);
+																					}
+																				}}
+																				onChange={(
+																					e
+																				) => {
+																					setTempEditData(
+																						(
+																							prev
+																						) => ({
+																							name:
+																								prev?.name ||
+																								"",
+																							description:
+																								e
+																									.target
+																									.value,
+																						})
 																					);
+																				}}
+																			/>
+																		</div>
+
+																		{/* Actions (Outside) */}
+																		<div className="relative z-50 flex flex-row items-center gap-1 pt-0.5">
+																			<button
+																				onClick={() =>
 																					setEditingGroupId(
 																						null
-																					);
+																					)
 																				}
-																			} else if (
-																				e.key ===
-																				"Escape"
-																			) {
-																				setEditingGroupId(
-																					null
-																				);
-																			}
-																		}}
-																		onChange={(
-																			e
-																		) => {
-																			setTempEditData(
-																				(
-																					prev
-																				) => ({
-																					name:
-																						prev?.name ||
-																						"",
-																					description:
-																						e
-																							.target
-																							.value,
-																				})
-																			);
-																		}}
-																	/>
-																</div>
-
-																{/* Actions (Outside) */}
-																<div className="relative z-50 flex flex-row items-center gap-1 pt-0.5">
-																	<button
-																		onClick={() =>
-																			setEditingGroupId(
-																				null
-																			)
-																		}
-																		className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors backdrop-blur-sm"
-																		title="Cancel"
-																	>
-																		<X
-																			size={
-																				12
-																			}
-																		/>
-																	</button>
-																	<button
-																		onClick={() => {
-																			if (
-																				onUpdateGroup &&
-																				tempEditData
-																			) {
-																				onUpdateGroup(
-																					group.id,
-																					tempEditData
-																				);
-																				setEditingGroupId(
-																					null
-																				);
-																			}
-																		}}
-																		className="p-1.5 rounded-full bg-green-500/80 hover:bg-green-500 text-white transition-colors backdrop-blur-sm"
-																		title="Save"
-																	>
-																		<Check
-																			size={
-																				12
-																			}
-																		/>
-																	</button>
-																</div>
-															</>
+																				className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors backdrop-blur-sm"
+																				title="Cancel"
+																			>
+																				<X
+																					size={
+																						12
+																					}
+																				/>
+																			</button>
+																			<button
+																				disabled={
+																					!isValid
+																				}
+																				onClick={() => {
+																					if (
+																						isValid &&
+																						onUpdateGroup &&
+																						tempEditData
+																					) {
+																						onUpdateGroup(
+																							group.id,
+																							tempEditData
+																						);
+																						setEditingGroupId(
+																							null
+																						);
+																					}
+																				}}
+																				className={`p-1.5 rounded-full text-white transition-colors backdrop-blur-sm ${
+																					!isValid
+																						? "bg-gray-500 opacity-50"
+																						: "bg-green-500/80 hover:bg-green-500"
+																				}`}
+																				title={
+																					!isValid
+																						? isDuplicate
+																							? "Name taken"
+																							: "Name cannot be empty"
+																						: "Save"
+																				}
+																			>
+																				<Check
+																					size={
+																						12
+																					}
+																				/>
+																			</button>
+																		</div>
+																	</>
+																);
+															})()
 														) : (
 															// Display Mode
 															<>
@@ -1135,6 +1394,8 @@ export const ColorLibrary = ({
 																)}
 															</div>
 														)}
+
+														{/* Edit/Delete Group Buttons */}
 														{onUpdateGroup && (
 															<>
 																<button
@@ -1195,15 +1456,27 @@ export const ColorLibrary = ({
 														{onDeleteGroup && (
 															<button
 																onClick={() => {
-																	if (
-																		window.confirm(
-																			"Are you sure you want to delete this group? Colors will be returned to your main library."
-																		)
-																	) {
-																		onDeleteGroup(
-																			group.id
-																		);
-																	}
+																	setConfirmState(
+																		{
+																			isOpen: true,
+																			title: `Delete ${group.name}?`,
+																			message:
+																				"Are you sure you want to delete this group? Colors will be returned to your main library.",
+																			variant:
+																				"danger",
+																			onConfirm:
+																				() => {
+																					if (
+																						onDeleteGroup
+																					) {
+																						onDeleteGroup(
+																							group.id
+																						);
+																					}
+																					closeConfirm();
+																				},
+																		}
+																	);
 																}}
 																className="p-1.5 text-gray-500 hover:text-red-500"
 																title="Delete Group (Colors return to Global)"
@@ -1216,29 +1489,71 @@ export const ColorLibrary = ({
 														{onRemoveColors && (
 															<button
 																onClick={() => {
-																	if (
-																		window.confirm(
-																			"Are you sure you want to remove all these colors from your favorites?"
-																		)
-																	) {
-																		onRemoveColors(
-																			groupItems.map(
+																	setConfirmState(
+																		{
+																			isOpen: true,
+																			title: `Remove ${group.name}`,
+																			message:
 																				(
-																					c:
-																						| string
-																						| PresetColor
-																				) =>
-																					typeof c ===
-																					"string"
-																						? {
-																								name: c,
-																								value: c,
-																								id: c,
-																						  }
-																						: c
-																			) as PresetColor[]
-																		);
-																	}
+																					<span className="text-gray-300">
+																						Are
+																						you
+																						sure
+																						you
+																						want
+																						to
+																						remove
+																						all
+																						saved
+																						colors
+																						from{" "}
+																						<strong className="text-white">
+																							Favorites{" "}
+																							{
+																								">"
+																							}{" "}
+																							{
+																								group.name
+																							}
+																						</strong>{" "}
+																						(
+																						<span className="text-accent-cyan font-mono">
+																							{
+																								groupItems.length
+																							}
+																						</span>
+																						)?
+																					</span>
+																				),
+																			onConfirm:
+																				() => {
+																					if (
+																						onRemoveColors
+																					) {
+																						onRemoveColors(
+																							groupItems.map(
+																								(
+																									c:
+																										| string
+																										| PresetColor
+																								) =>
+																									typeof c ===
+																									"string"
+																										? {
+																												name: c,
+																												value: c,
+																												id: c,
+																										  }
+																										: c
+																							) as PresetColor[]
+																						);
+																					}
+																					closeConfirm();
+																				},
+																			variant:
+																				"danger",
+																		}
+																	);
 																}}
 																className="p-1.5 text-gray-500 hover:text-red-400 group-btn-heart"
 																title="Unfavorite All in Group"
@@ -1289,11 +1604,11 @@ export const ColorLibrary = ({
 																"string"
 																	? hexValue.toUpperCase()
 																	: colorItem.name;
-															const uniqueLabel =
-																getUniqueLabel(
-																	baseLabel,
-																	nameRegistry
-																);
+															const finalName =
+																typeof colorItem ===
+																"string"
+																	? "Custom Color"
+																	: colorItem.name;
 															const colorObject: PresetColor =
 																typeof colorItem ===
 																"string"
@@ -1310,19 +1625,23 @@ export const ColorLibrary = ({
 																		hexValue
 																	}
 																	label={
-																		uniqueLabel
+																		finalName
 																	}
 																	name={
-																		uniqueLabel
+																		finalName
 																	}
 																	isFavorite={
 																		true
 																	}
 																	draggable={
-																		isEditingLibrary
+																		isEditingLibrary &&
+																		sortOption ===
+																			"custom"
 																	}
 																	onDragStart={
-																		isEditingLibrary
+																		isEditingLibrary &&
+																		sortOption ===
+																			"custom"
 																			? (
 																					e
 																			  ) =>
@@ -1334,13 +1653,14 @@ export const ColorLibrary = ({
 																					)
 																			: undefined
 																	}
-																	onMoveRequest={
-																		isEditingLibrary
-																			? () =>
-																					setColorToMove(
-																						hexValue
-																					)
-																			: undefined
+																	onMoveRequest={() =>
+																		setColorToMove(
+																			{
+																				value: hexValue,
+																				groupId:
+																					group.id,
+																			}
+																		)
 																	}
 																	onDrop={
 																		isEditingLibrary
@@ -1349,39 +1669,40 @@ export const ColorLibrary = ({
 																			  ) => {
 																					e.preventDefault();
 																					e.stopPropagation();
-																					const sourceIndexStr =
-																						e.dataTransfer.getData(
-																							"sourceIndex"
-																						);
-																					const sourceGroupId =
-																						e.dataTransfer.getData(
-																							"sourceGroupId"
-																						);
+																					e.dataTransfer.dropEffect =
+																						"move";
+
 																					const colorHex =
 																						e.dataTransfer.getData(
 																							"text/plain"
 																						);
-
-																					// Check if Reorder
+																					// Robust Value-Based Reordering
 																					if (
-																						sourceGroupId ===
-																							group.id &&
-																						sourceIndexStr
+																						colorHex &&
+																						onUpdateGroup
 																					) {
+																						// 1. Find indices based on VALUES, not drag indices
 																						const sourceIndex =
-																							parseInt(
-																								sourceIndexStr
+																							group.colorIds.findIndex(
+																								(
+																									cid
+																								) =>
+																									cid.toUpperCase() ===
+																									colorHex.toUpperCase()
 																							);
+																						// Target is THIS card's index (idx)
 																						const targetIndex =
 																							idx;
 
 																						if (
 																							sourceIndex ===
-																							targetIndex
+																								-1 ||
+																							sourceIndex ===
+																								targetIndex
 																						)
 																							return;
 
-																						// Reorder logic
+																						// 2. Perform Move
 																						const newColorIds =
 																							[
 																								...group.colorIds,
@@ -1399,32 +1720,14 @@ export const ColorLibrary = ({
 																							moved
 																						);
 
-																						if (
-																							onUpdateGroup
-																						) {
-																							onUpdateGroup(
-																								group.id,
-																								{
-																									colorIds:
-																										newColorIds,
-																								}
-																							);
-																						}
-																					}
-																					// Check if Cross-Group Move (Drop on Card)
-																					else if (
-																						sourceGroupId !==
-																						group.id
-																					) {
-																						// Call standard move handler
-																						if (
-																							onMoveColor
-																						) {
-																							onMoveColor(
-																								colorHex,
-																								group.id
-																							);
-																						}
+																						// 3. Update Group
+																						onUpdateGroup(
+																							group.id,
+																							{
+																								colorIds:
+																									newColorIds,
+																							}
+																						);
 																					}
 																			  }
 																			: undefined
@@ -1452,11 +1755,65 @@ export const ColorLibrary = ({
 																				colorObject
 																			);
 																	}}
-																	onToggleFavorite={() =>
-																		onRemoveColor(
-																			hexValue
-																		)
-																	}
+																	onToggleFavorite={async () => {
+																		const res =
+																			await onToggleFavorite(
+																				hexValue,
+																				colorObject
+																			);
+																		if (
+																			res &&
+																			res.action ===
+																				"removed"
+																		) {
+																			showToast(
+																				<div className="flex flex-col">
+																					<span>
+																						Removed
+																						favorite
+																					</span>
+																					<span className="text-[10px] opacity-60 font-normal">
+																						{(
+																							res.color as PresetColor
+																						)
+																							.name ||
+																							hexValue}
+																					</span>
+																				</div>
+																			);
+																		}
+																		if (
+																			res &&
+																			res.action ===
+																				"added" &&
+																			(
+																				res.color as PresetColor
+																			)
+																				.isAutoRenamed
+																		) {
+																			showToast(
+																				<div className="flex flex-col">
+																					<span>
+																						Auto-renamed
+																						to{" "}
+																						<span className="text-accent-cyan">
+																							{
+																								(
+																									res.color as PresetColor
+																								)
+																									.name
+																							}
+																						</span>
+																					</span>
+																					<span className="text-[10px] opacity-60 font-normal">
+																						Prevention:
+																						Duplicate
+																						Found
+																					</span>
+																				</div>
+																			);
+																		}
+																	}}
 																/>
 															);
 														}
@@ -1510,12 +1867,20 @@ export const ColorLibrary = ({
 										Available Groups
 									</div>
 									<button
+										disabled={colorToMove?.groupId === null}
 										onClick={() => {
-											if (onMoveColor)
-												onMoveColor(colorToMove, null); // Move to Global
+											if (onMoveColor && colorToMove)
+												onMoveColor(
+													colorToMove.value,
+													null
+												); // Move to Global
 											setColorToMove(null);
 										}}
-										className="w-full text-left px-3 py-2 rounded-md text-xs text-gray-300 hover:bg-white/5 hover:text-white flex items-center justify-between group"
+										className={`w-full text-left px-3 py-2 rounded-md text-xs flex items-center justify-between group ${
+											colorToMove?.groupId === null
+												? "opacity-30 text-gray-500"
+												: "text-gray-300 hover:bg-white/5 hover:text-white"
+										}`}
 									>
 										<span className="flex items-center gap-2">
 											<Globe
@@ -1524,21 +1889,35 @@ export const ColorLibrary = ({
 											/>
 											Global Favorites
 										</span>
+										{colorToMove?.groupId === null && (
+											<span className="text-[9px] opacity-50 uppercase tracking-wider">
+												Current
+											</span>
+										)}
 									</button>
 
 									{(library.colorGroups || []).map(
 										(g: ColorGroup) => (
 											<button
 												key={g.id}
+												disabled={
+													colorToMove?.groupId ===
+													g.id
+												}
 												onClick={() => {
 													if (onMoveColor)
 														onMoveColor(
-															colorToMove,
+															colorToMove.value,
 															g.id
 														);
 													setColorToMove(null);
 												}}
-												className="w-full text-left px-3 py-2 rounded-md text-xs text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2 truncate"
+												className={`w-full text-left px-3 py-2 rounded-md text-xs flex items-center gap-2 truncate ${
+													colorToMove?.groupId ===
+													g.id
+														? "opacity-30 text-gray-500"
+														: "text-gray-300 hover:bg-white/5 hover:text-white"
+												}`}
 											>
 												<FolderOpen
 													size={12}
@@ -1547,6 +1926,12 @@ export const ColorLibrary = ({
 												<span className="truncate">
 													{g.name}
 												</span>
+												{colorToMove?.groupId ===
+													g.id && (
+													<span className="text-[9px] opacity-50 ml-auto uppercase tracking-wider">
+														Current
+													</span>
+												)}
 											</button>
 										)
 									)}
@@ -1569,6 +1954,24 @@ export const ColorLibrary = ({
 										preset.colors.every((c) =>
 											isFavorite(c.value)
 										);
+
+									// Logic: Sort Presets based on sortOption
+									// Note: We create a copy to avoid mutating the original preset constant
+									const sortedPresetColors = [
+										...preset.colors,
+									].sort((a, b) => {
+										if (sortOption === "hue") {
+											// Use HSL hue for robust sorting
+											return (
+												colord(a.value).toHsl().h -
+												colord(b.value).toHsl().h
+											);
+										}
+										if (sortOption === "name") {
+											return a.name.localeCompare(b.name);
+										}
+										return 0; // Default/Custom preserves original order (though Presets don't use Custom sort)
+									});
 
 									return (
 										<div
@@ -1626,37 +2029,74 @@ export const ColorLibrary = ({
 													gridTemplateColumns: `repeat(${density}, minmax(0, 1fr))`,
 												}}
 											>
-												{preset.colors.map((c, idx) => {
-													const uniqueLabel = c.name;
-													return (
-														<SmartColorCard
-															key={`${c.value}-${idx}`}
-															color={c.value}
-															label={uniqueLabel}
-															name={uniqueLabel}
-															isFavorite={isFavorite(
-																c.value
-															)}
-															onClick={() => {
-																onLoadColor(
+												{sortedPresetColors.map(
+													(c, idx) => {
+														const finalName =
+															c.name;
+														return (
+															<SmartColorCard
+																key={`${c.value}-${idx}`}
+																color={c.value}
+																label={
+																	finalName
+																}
+																name={finalName}
+																isFavorite={isFavorite(
 																	c.value
-																);
-																if (
-																	onInspectColor
-																)
-																	onInspectColor(
-																		c
+																)}
+																onClick={() => {
+																	onLoadColor(
+																		c.value
 																	);
-															}}
-															onToggleFavorite={() =>
-																onRemoveColor(
-																	c.value,
-																	c
-																)
-															}
-														/>
-													);
-												})}
+																	if (
+																		onInspectColor
+																	)
+																		onInspectColor(
+																			c
+																		);
+																}}
+																onToggleFavorite={async () => {
+																	const res =
+																		await onToggleFavorite(
+																			c.value,
+																			c
+																		);
+																	if (
+																		res &&
+																		res.action ===
+																			"added" &&
+																		(
+																			res.color as PresetColor
+																		)
+																			.isAutoRenamed
+																	) {
+																		showToast(
+																			<div className="flex flex-col">
+																				<span>
+																					Auto-renamed
+																					to{" "}
+																					<span className="text-accent-cyan">
+																						{
+																							(
+																								res.color as PresetColor
+																							)
+																								.name
+																						}
+																					</span>
+																				</span>
+																				<span className="text-[10px] opacity-60 font-normal">
+																					Prevention:
+																					Duplicate
+																					Found
+																				</span>
+																			</div>
+																		);
+																	}
+																}}
+															/>
+														);
+													}
+												)}
 											</div>
 										</div>
 									);
@@ -1699,7 +2139,11 @@ const SmartColorCard = ({
 	name?: string;
 	isFavorite: boolean;
 	onClick: () => void;
-	onToggleFavorite: () => void;
+	// Updated to support new return type and metadata passing
+	onToggleFavorite: (
+		color: string,
+		metadata?: PresetColor
+	) => Promise<ToggleFavoriteResult | void>;
 	draggable?: boolean;
 	onDragStart?: (e: React.DragEvent) => void;
 	onMoveRequest?: () => void;
@@ -1737,9 +2181,9 @@ const SmartColorCard = ({
 				/>
 
 				{/* Content Overlay */}
-				<div className="absolute inset-0 z-10 p-2">
-					{/* Text Info (Bottom Left) */}
-					<div className="absolute bottom-1 left-2 max-w-[calc(100%-50px)]">
+				<div className="absolute inset-0 z-10 p-2 pointer-events-none">
+					{/* Name (Middle Left) */}
+					<div className="absolute top-1/2 -translate-y-1/2 left-2 max-w-[calc(100%-12px)]">
 						<span
 							className={`text-[9px] font-bold uppercase tracking-wider block truncate ${
 								isDark ? "text-white/90" : "text-black/80"
@@ -1747,8 +2191,12 @@ const SmartColorCard = ({
 						>
 							{label}
 						</span>
+					</div>
+
+					{/* Hex (Bottom Left) */}
+					<div className="absolute bottom-1 left-2">
 						<span
-							className={`text-[8px] font-mono opacity-75 block mt-[-2px] ${
+							className={`text-[8px] font-mono opacity-75 block ${
 								isDark ? "text-white/80" : "text-black/70"
 							}`}
 						>
@@ -1758,7 +2206,7 @@ const SmartColorCard = ({
 
 					{/* Actions Row (Top Right) */}
 					<div
-						className={`absolute top-1 right-1 flex items-center gap-0.5 z-20 opacity-0 group-hover/minicard:opacity-100 transition-opacity ${
+						className={`absolute top-1 right-1 flex items-center gap-0.5 z-20 opacity-0 group-hover/minicard:opacity-100 transition-opacity pointer-events-auto ${
 							isDark ? "text-white" : "text-black/60"
 						}`}
 					>
@@ -1791,7 +2239,7 @@ const SmartColorCard = ({
 						{/* Favorite Toggle */}
 						<HeartToggle
 							isFavorite={isFavorite}
-							onToggle={onToggleFavorite}
+							onToggle={() => onToggleFavorite(color)}
 							size={10}
 							className={
 								isDark ? "text-white hover:bg-white/20" : ""
