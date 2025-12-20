@@ -47,6 +47,8 @@
 -   [x] **Color Studio:** Unified creation, harmony, and preset library.
 -   [x] **Robust Clipboard:** Cross-environment copy support (Figma/Web).
 -   [x] **Presets Library:** "Explore" tab with selectable color sets.
+-   [x] **Input Validation:** Inline validation for Group Renaming and Color Inspector (Duplicate/Empty checks).
+-   [x] **Design System Polish:** Refined cursor behaviors and disabled states (No `cursor-not-allowed`).
 
 ---
 

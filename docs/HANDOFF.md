@@ -11,6 +11,8 @@
 ✅ Build System (Vite + React + Tailwind)
 ✅ Color Studio (Harmonies + Presets)
 ✅ Robust Clipboard (Cross-Environment)
+✅ Input Validation (Groups/Inspector)
+✅ Design System Refinements (Cursors/States)
 
 **Missing/Todo:**
 🔴 Export Terminal is hardcoded (Needs state link verification)
