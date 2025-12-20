@@ -213,19 +213,19 @@ export const ColorControlPanel = ({
               <span className="text-[10px] font-bold tracking-widest uppercase opacity-60">
                 Primary
               </span>
-              <div className="flex items-center gap-1 -mr-2 -mt-2">
+              <div className="flex items-center gap-0.5">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     copyHex(seedColor.toUpperCase(), seedColor.toUpperCase());
                   }}
-                  className="p-2 hover:bg-black/10 rounded-full transition-colors group/copy"
+                  className="p-1.5 hover:bg-black/10 rounded-full transition-colors"
                   title="Copy Hex"
                 >
                   {isHexCopied ? (
-                    <Check size={16} className="text-green-500" />
+                    <Check size={14} className="text-green-500" />
                   ) : (
-                    <Copy size={16} />
+                    <Copy size={14} />
                   )}
                 </button>
                 <HeartToggle
@@ -234,10 +234,14 @@ export const ColorControlPanel = ({
                   showPending={elementStatus === "pending"}
                   className={
                     isPrimaryFavorite
-                      ? "scale-110"
-                      : "group-hover/heart:scale-110"
+                      ? isDark
+                        ? "text-white hover:bg-white/20"
+                        : "text-black/80 hover:bg-black/10"
+                      : isDark
+                      ? "text-white hover:bg-white/20"
+                      : "text-black/80 hover:bg-black/10"
                   }
-                  size={18}
+                  size={14}
                 />
               </div>
             </div>
@@ -265,6 +269,7 @@ export const ColorControlPanel = ({
                 }
                 isCopied={isHexCopied}
                 hideCopy={true}
+                isDark={isDark}
               />
 
               {/* RGB Input */}
@@ -398,6 +403,10 @@ export const ColorControlPanel = ({
                     <svg className="absolute inset-0 w-full h-full">
                       <rect width="100%" height="100%" fill={item.color} />
                     </svg>
+                    {/* Divider (except after last item) */}
+                    {idx < 2 && (
+                      <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-white/20 z-10" />
+                    )}
                     <div
                       className={`absolute inset-0 p-2 flex flex-col justify-end ${
                         isItemDark ? "text-white/90" : "text-black/80"
@@ -504,7 +513,11 @@ const MiniColorCard = ({
             isFavorite={!!isFavorite}
             onToggle={onToggleFavorite}
             size={14}
-            className={isDark ? "text-white hover:bg-white/20" : ""}
+            className={
+              isDark
+                ? "text-white hover:bg-white/20"
+                : "text-black/80 hover:bg-black/10"
+            }
           />
         </div>
       </div>
@@ -540,6 +553,7 @@ const SmartColorInput = ({
   onEditStart,
   onEditEnd,
   hideCopy = false,
+  isDark,
 }: {
   id: string;
   value: string;
@@ -553,6 +567,7 @@ const SmartColorInput = ({
   onEditStart: (id: string) => void;
   onEditEnd: () => void;
   hideCopy?: boolean;
+  isDark?: boolean;
 }) => {
   // Local state
   const [localValue, setLocalValue] = useState(value);
@@ -763,7 +778,9 @@ const SmartColorInput = ({
                             ${
                               disabled
                                 ? "opacity-30 blur-[1px]"
-                                : "opacity-80 text-white/90"
+                                : isDark
+                                ? "opacity-90 text-white"
+                                : "opacity-90 text-black/80"
                             }
                         `}
           >
@@ -847,7 +864,7 @@ const SmartColorInput = ({
     // COMPONENT Mode (Read-only view with clickable parts)
     return (
       <div
-        className={`grid grid-cols-3 gap-2 flex-1 text-xs font-mono transition-all duration-300 ${
+        className={`grid grid-cols-3 gap-3 flex-1 text-xs font-mono transition-all duration-300 ${
           disabled
             ? "opacity-30 blur-[1px] pointer-events-none"
             : "opacity-80 cursor-default"
@@ -879,7 +896,7 @@ const SmartColorInput = ({
         type === "hex" || isEditing || activeComponent !== null
           ? "justify-center"
           : "justify-between"
-      } px-12 gap-2 group/field w-full relative h-7 ${
+      } px-12 gap-1 group/field w-full relative h-7 ${
         disabled ? "pointer-events-none" : ""
       } ${isEditing || activeComponent !== null ? "z-[100]" : "z-auto"}`}
     >

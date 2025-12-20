@@ -113,6 +113,10 @@ Must handle asynchronous API latency (metadata generation) gracefully.
 -   **State 2 (Pending)**: Animate scale/pulse while awaiting API response.
 -   **State 3 (Active)**: Filled icon (`fill-red-500`) with "pop" animation.
 -   **Rule**: Never snap instantly without feedback; use the animation to bridge the API delay.
+-   **Contrast Pattern (Swatches)**: Heart toggles appearing on/within color swatches must follow the text color of their labels:
+    -   **Dark swatches**: `text-white hover:bg-white/20`
+    -   **Light swatches**: `text-black/80 hover:bg-black/10`
+    -   Applies to: Color Studio cards, Color Library cards, palette previews
 
 #### Copy Actions
 
@@ -138,6 +142,18 @@ Inline editing should prioritize quick confirmation without navigation friction.
 -   **Escape**: Cancels edits, restores previous values, and exits edit mode.
 -   **Validation**: Prevent submission if invalid and surface a validator message following the conventions above.
 
+#### Hex Value Editing (Color Studio)
+
+Specialized inline editing for hex color values with live preview.
+
+-   **Format**: 6-character hex values only (no # symbol during editing)
+-   **Validation**: Dual validation using regex (`/^[A-Fa-f0-9]{6}$/`) and `colord.isValid()`
+-   **Live Preview**: Color card updates in real-time as user types valid hex values
+-   **Normalization**: Auto-strip # on input, auto-add # on commit
+-   **Error Feedback**: Visual only (red border on invalid), no inline error text
+-   **Save State**: Disabled when invalid, prevents commit of malformed values
+-   **Cancel Behavior**: Restores initial hex value from edit start
+
 ## 4. Layout & Spacing
 
 ### The Grid
@@ -145,6 +161,14 @@ Inline editing should prioritize quick confirmation without navigation friction.
 -   **Base Unit**: 4px.
 -   **Common Padding**: `p-4` (16px) for panels, `p-6` (24px) for main views.
 -   **Gap**: `gap-4` is the standard rhythm between related elements.
+
+#### Color Studio Specific Spacing
+
+-   **RGB/HSL/HSB Values**:
+    -   Label-to-values gap: `gap-1` (4px) – tight grouping
+    -   Inter-value spacing: `gap-3` (12px) – breathing room for readability
+-   **Button Groups**: `gap-0.5` (2px) for compact icon button clusters
+-   **Color Cards**: `gap-3` (12px) between primary/secondary/tertiary cards
 
 ### Structure
 

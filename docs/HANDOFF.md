@@ -20,6 +20,14 @@
   - Added accessibility labels (titles, aria-labels)
   - Input field styling aligned with design system
   - ESLint v9 configuration with TypeScript support
+✅ Color Studio Refinements (Dec 20, 2025)
+  - Hex validation: 6-character only, no # symbol, live preview
+  - Dynamic color updates during inline editing (pre-save)
+  - Heart toggle contrast: Text-color-based pattern (white on dark, black/80 on light)
+  - RGB/HSL/HSB spacing optimization (gap-1 labels, gap-3 values)
+  - Palette preview dividers (consistent bg-white/20 separators)
+  - Primary card button alignment (size 14px, consistent with secondary/tertiary)
+  - Clean error UX (visual feedback only, no inline text)
 
 **Missing/Todo:**
 🔴 Export Terminal is hardcoded (Needs state link verification)

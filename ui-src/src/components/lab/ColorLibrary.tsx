@@ -596,17 +596,12 @@ export const ColorLibrary = ({
                               isOpen: true,
                               title: "Remove Global Favorites",
                               message: (
-                                <span>
-                                  Are you sure you want to remove all saved
-                                  colors from{" "}
+                                <span className="text-gray-300">
+                                  Are you sure you want to remove all colors in{" "}
                                   <strong className="text-white">
                                     Favorites &gt; Global
-                                  </strong>{" "}
-                                  (
-                                  <span className="text-accent-cyan font-mono">
-                                    {unassignedColors.length}
-                                  </span>
-                                  )?
+                                  </strong>
+                                  ?
                                 </span>
                               ),
                               onConfirm: () => {
@@ -1756,7 +1751,11 @@ const SmartColorCard = ({
               isFavorite={isFavorite}
               onToggle={() => onToggleFavorite(color)}
               size={10}
-              className={isDark ? "text-white hover:bg-white/20" : ""}
+              className={
+                isDark
+                  ? "text-white hover:bg-white/20"
+                  : "text-black/80 hover:bg-black/10"
+              }
             />
           </div>
         </div>

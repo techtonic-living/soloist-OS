@@ -59,6 +59,13 @@
     -   Updated inline edit behavior: Enter key submits, Escape cancels
     -   ESLint v9 flat config with TypeScript support and design system rules
     -   VS Code workspace settings for proper error flagging/ignoring
+-   [x] **Color Studio UX Refinements (Dec 20, 2025):**
+    -   Hex validation with live preview (6-char only, no # symbol)
+    -   Text-color-based heart toggle contrast pattern across all swatches
+    -   Optimized RGB/HSL/HSB spacing (gap-1 labels, gap-3 values)
+    -   Consistent palette preview dividers (bg-white/20)
+    -   Primary card button alignment with secondary/tertiary (14px icons)
+    -   Clean error UX (visual feedback only, no inline messages)
 
 ---
 
