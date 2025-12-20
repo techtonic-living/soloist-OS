@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import { colord } from "colord";
-import { Copy, Check, ArrowUpDown, Heart, X } from "lucide-react";
+import {
+  Copy,
+  Check,
+  ArrowUpDown,
+  X,
+  ArrowLeftRight,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { HeartToggle } from "../common/HeartToggle";
 import { useCopyFeedback } from "../../hooks/useCopyFeedback";
 import { useAsyncToggle } from "../../hooks/useAsyncToggle";
@@ -10,24 +18,35 @@ interface ColorControlPanelProps {
   seedColor: string;
   setSeedColor: (color: string) => void;
   secondaryColor: string;
+  setSecondaryColor?: (color: string) => void;
   tertiaryColor: string;
+  setTertiaryColor?: (color: string) => void;
   harmonyMode?: string;
-  settings?: any; // Todo: Import proper type
+  activeColorSlot?: "primary" | "secondary" | "tertiary";
+  setActiveColorSlot?: (slot: "primary" | "secondary" | "tertiary") => void;
+  settings?: any;
   updateSettings?: (settings: any) => void;
   toggleFavorite?: (color: string) => Promise<void>;
+  togglePalette?: (colors: string[]) => Promise<void>;
 }
 
 export const ColorControlPanel = ({
   seedColor,
   setSeedColor,
   secondaryColor,
+  setSecondaryColor,
   tertiaryColor,
+  setTertiaryColor,
   harmonyMode,
+  activeColorSlot,
+  setActiveColorSlot,
   settings = { library: { colors: [], palettes: [] } },
   updateSettings = () => {},
   toggleFavorite: toggleFavoriteProp,
+  togglePalette: togglePaletteProp,
 }: ColorControlPanelProps) => {
   const [activeEditorId, setActiveEditorId] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState<1 | 2 | 3>(3);
 
   // Hooks
   const { isCopied: isHexCopied, copy: copyHex } = useCopyFeedback();
@@ -39,7 +58,9 @@ export const ColorControlPanel = ({
   const { showToast } = useToast();
 
   // Async Toggle for Favorites
-  const { status: elementStatus, toggle: toggleElement } = useAsyncToggle();
+  const { status: primaryStatus, toggle: togglePrimary } = useAsyncToggle();
+  const { status: paletteStatus, toggle: togglePaletteAsync } =
+    useAsyncToggle();
 
   // Parse Colors
   const color = colord(seedColor);
@@ -50,7 +71,7 @@ export const ColorControlPanel = ({
 
   // Toggle Favorite With Async Feedback
   const handleFavoriteToggle = async (colorHex: string) => {
-    await toggleElement(async () => {
+    await togglePrimary(async () => {
       // Use the prop function if provided (with AI metadata), fallback to simple toggle
       if (toggleFavoriteProp) {
         await toggleFavoriteProp(colorHex);
@@ -108,21 +129,60 @@ export const ColorControlPanel = ({
     }
   };
 
-  // Check if current palette exists
+  // Swap Logic for Manual Mode
+  const handleSwap = (
+    slotA: "primary" | "secondary" | "tertiary",
+    slotB: "primary" | "secondary" | "tertiary"
+  ) => {
+    // Only allow if we have setters
+    if (!setSecondaryColor || !setTertiaryColor) return;
+
+    const colors = {
+      primary: seedColor,
+      secondary: secondaryColor,
+      tertiary: tertiaryColor,
+    };
+
+    const setters = {
+      primary: setSeedColor,
+      secondary: setSecondaryColor,
+      tertiary: setTertiaryColor,
+    };
+
+    // Swap values
+    const valA = colors[slotA];
+    const valB = colors[slotB];
+
+    // Apply
+    setters[slotA](valB);
+    setters[slotB](valA);
+  };
+
+  // Check if current palette exists (respecting visible count)
   const currentColors = [
     seedColor.toUpperCase(),
     secondaryColor.toUpperCase(),
     tertiaryColor.toUpperCase(),
-  ];
+  ].slice(0, visibleCount);
+
   const isPaletteFavorite = settings.library?.palettes.some(
     (p: any) =>
-      p.colors.length === 3 &&
-      p.colors[0].toUpperCase() === currentColors[0] &&
-      p.colors[1].toUpperCase() === currentColors[1] &&
-      p.colors[2].toUpperCase() === currentColors[2]
+      p.colors.length === currentColors.length &&
+      p.colors.every(
+        (c: string, i: number) => c.toUpperCase() === currentColors[i]
+      )
   );
 
-  const savePalette = () => {
+  const savePalette = async () => {
+    // If prop provided (with AI logic), use it
+    if (togglePaletteProp) {
+      await togglePaletteAsync(async () => {
+        await togglePaletteProp(currentColors);
+      });
+      return;
+    }
+
+    // Fallback Local Logic
     const currentLib = settings.library || { colors: [], palettes: [] };
 
     if (isPaletteFavorite) {
@@ -133,10 +193,10 @@ export const ColorControlPanel = ({
           palettes: currentLib.palettes.filter(
             (p: any) =>
               !(
-                p.colors.length === 3 &&
-                p.colors[0].toUpperCase() === currentColors[0] &&
-                p.colors[1].toUpperCase() === currentColors[1] &&
-                p.colors[2].toUpperCase() === currentColors[2]
+                p.colors.length === currentColors.length &&
+                p.colors.every(
+                  (c: string, i: number) => c.toUpperCase() === currentColors[i]
+                )
               )
           ),
         },
@@ -146,6 +206,7 @@ export const ColorControlPanel = ({
       // Add
       const palette = {
         name: `Palette ${currentLib.palettes.length + 1}`,
+        description: "Custom palette",
         colors: currentColors,
         createdAt: new Date().toISOString(),
       };
@@ -201,10 +262,27 @@ export const ColorControlPanel = ({
           <div
             className={`absolute inset-0 z-10 p-4 flex flex-col justify-between pointer-events-none ${
               isDark ? "text-white" : "text-black/80"
-            }`}
+            } ${harmonyMode === "manual" ? "cursor-pointer" : ""}`}
+            onClick={
+              harmonyMode === "manual" && setActiveColorSlot
+                ? (e) => {
+                    // Only trigger if clicking background, not buttons/inputs
+                    if (e.target === e.currentTarget) {
+                      setActiveColorSlot("primary");
+                    }
+                  }
+                : undefined
+            }
+            style={{
+              pointerEvents: harmonyMode === "manual" ? "auto" : "none",
+            }}
           >
+            {/* Active Ring for Primary */}
+            {harmonyMode === "manual" && activeColorSlot === "primary" && (
+              <div className="absolute inset-0 border-4 border-accent-cyan rounded-2xl pointer-events-none z-50 animate-pulse" />
+            )}
             <div
-              className={`flex justify-between items-start transition-opacity duration-300 ${
+              className={`flex justify-between items-start transition-opacity duration-300 pointer-events-auto ${
                 activeEditorId
                   ? "pointer-events-none opacity-20"
                   : "pointer-events-auto"
@@ -231,7 +309,7 @@ export const ColorControlPanel = ({
                 <HeartToggle
                   isFavorite={!!isPrimaryFavorite}
                   onToggle={() => handleFavoriteToggle(seedColor.toUpperCase())}
-                  showPending={elementStatus === "pending"}
+                  showPending={primaryStatus === "pending"}
                   className={
                     isPrimaryFavorite
                       ? isDark
@@ -344,44 +422,91 @@ export const ColorControlPanel = ({
             {/* Spacer to balance layout since we removed footer */}
             <div className="h-4"></div>
           </div>
-
-          {/* Invisible Color Input Trigger */}
-          <input
-            type="color"
-            value={seedColor}
-            onChange={(e) => setSeedColor(e.target.value)}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-0"
-            title="Pick Color"
-          />
         </div>
       </div>
 
-      {/* SECONDARY & TERTIARY CARDS */}
-      {harmonyMode !== "manual" && (
-        <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-4 duration-500 delay-75">
-          <MiniColorCard
-            label="Secondary"
-            color={secondaryColor}
-            isFavorite={isSecondaryFavorite}
-            onMakePrimary={() => setSeedColor(secondaryColor)}
-            onToggleFavorite={() =>
-              handleFavoriteToggle(secondaryColor.toUpperCase())
-            }
-          />
-          <MiniColorCard
-            label="Tertiary"
-            color={tertiaryColor}
-            isFavorite={isTertiaryFavorite}
-            onMakePrimary={() => setSeedColor(tertiaryColor)}
-            onToggleFavorite={() =>
-              handleFavoriteToggle(tertiaryColor.toUpperCase())
-            }
-          />
-        </div>
-      )}
+      {/* SECONDARY & TERTIARY CARDS (Rendered Always, Editable if Manual) */}
+      <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-4 duration-500 delay-75">
+        <MiniColorCard
+          label="Secondary"
+          color={secondaryColor}
+          isFavorite={isSecondaryFavorite}
+          isActive={harmonyMode === "manual" && activeColorSlot === "secondary"}
+          onMakePrimary={
+            harmonyMode === "manual"
+              ? () => handleSwap("secondary", "primary")
+              : () => setSeedColor(secondaryColor)
+          }
+          onAction={
+            harmonyMode === "manual"
+              ? () => {
+                  if (visibleCount === 3) handleSwap("secondary", "tertiary");
+                  else if (visibleCount === 2) setVisibleCount(1);
+                  else setVisibleCount(2);
+                }
+              : undefined
+          }
+          ActionIcon={
+            visibleCount === 3
+              ? ArrowLeftRight
+              : visibleCount === 2
+              ? Eye
+              : EyeOff
+          }
+          actionTitle={
+            visibleCount === 3
+              ? "Swap with Tertiary"
+              : visibleCount === 2
+              ? "Hide"
+              : "Show"
+          }
+          isHidden={visibleCount === 1}
+          onToggleFavorite={() =>
+            handleFavoriteToggle(secondaryColor.toUpperCase())
+          }
+          onClick={
+            harmonyMode === "manual" && setActiveColorSlot
+              ? () => setActiveColorSlot("secondary")
+              : undefined
+          }
+          isHoverEnabled={harmonyMode === "manual"}
+        />
+        <MiniColorCard
+          label="Tertiary"
+          color={tertiaryColor}
+          isFavorite={isTertiaryFavorite}
+          isActive={harmonyMode === "manual" && activeColorSlot === "tertiary"}
+          onMakePrimary={
+            harmonyMode === "manual"
+              ? () => handleSwap("tertiary", "primary")
+              : () => setSeedColor(tertiaryColor)
+          }
+          onAction={
+            harmonyMode === "manual"
+              ? () => {
+                  if (visibleCount === 3) setVisibleCount(2);
+                  else setVisibleCount(3);
+                }
+              : undefined
+          }
+          ActionIcon={visibleCount === 3 ? Eye : EyeOff}
+          actionTitle={visibleCount === 3 ? "Hide" : "Show"}
+          actionDisabled={visibleCount === 1}
+          isHidden={visibleCount < 3}
+          onToggleFavorite={() =>
+            handleFavoriteToggle(tertiaryColor.toUpperCase())
+          }
+          onClick={
+            harmonyMode === "manual" && setActiveColorSlot
+              ? () => setActiveColorSlot("tertiary")
+              : undefined
+          }
+          isHoverEnabled={harmonyMode === "manual"}
+        />
+      </div>
 
-      {/* PALETTE ACTION */}
-      {harmonyMode !== "manual" && (
+      {/* PALETTE ACTION - Only show if > 1 color visible */}
+      {visibleCount > 1 && (
         <div className="pt-2 animate-in fade-in slide-in-from-top-4 duration-500 delay-100">
           <div className="w-full relative aspect-[8/3] rounded-xl overflow-hidden border border-white/30 shadow-sm transition-all hover:shadow-lg group">
             {/* Color Bars */}
@@ -393,55 +518,54 @@ export const ColorControlPanel = ({
                   label: "Secondary",
                 },
                 { color: tertiaryColor, label: "Tertiary" },
-              ].map((item, idx) => {
-                const isItemDark = colord(item.color).isDark();
-                return (
-                  <div
-                    key={idx}
-                    className="flex-1 h-full relative overflow-hidden"
-                  >
-                    <svg className="absolute inset-0 w-full h-full">
-                      <rect width="100%" height="100%" fill={item.color} />
-                    </svg>
-                    {/* Divider (except after last item) */}
-                    {idx < 2 && (
-                      <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-white/20 z-10" />
-                    )}
+              ]
+                .slice(0, visibleCount)
+                .map((item, idx) => {
+                  const isItemDark = colord(item.color).isDark();
+                  return (
                     <div
-                      className={`absolute inset-0 p-2 flex flex-col justify-end ${
-                        isItemDark ? "text-white/90" : "text-black/80"
-                      }`}
+                      key={idx}
+                      className="flex-1 h-full relative overflow-hidden"
                     >
-                      <span className="text-[10px] font-bold uppercase opacity-60 tracking-wider mb-0.5">
-                        {item.label}
-                      </span>
-                      <span className="text-[10px] font-mono opacity-90">
-                        {item.color.toUpperCase()}
-                      </span>
+                      <svg className="absolute inset-0 w-full h-full">
+                        <rect width="100%" height="100%" fill={item.color} />
+                      </svg>
+                      {/* Divider (except after last item) */}
+                      {idx < 2 && (
+                        <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-white/20 z-10" />
+                      )}
+                      <div
+                        className={`absolute inset-0 p-2 flex flex-col justify-end ${
+                          isItemDark ? "text-white/90" : "text-black/80"
+                        }`}
+                      >
+                        <span className="text-[10px] font-bold uppercase opacity-60 tracking-wider mb-0.5">
+                          {item.label}
+                        </span>
+                        <span className="text-[10px] font-mono opacity-90">
+                          {item.color.toUpperCase()}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
 
             {/* Save Toggle */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                savePalette();
-              }}
-              className={`absolute top-1 right-1 p-2 rounded-full hover:bg-black/10 transition-colors ${
-                colord(tertiaryColor).isDark() ? "text-white" : "text-black/60"
-              }`}
-              title={isPaletteFavorite ? "Remove Palette" : "Save Palette"}
-            >
-              <Heart
+            {/* Save Toggle */}
+            <div className="absolute top-1 right-1 z-10">
+              <HeartToggle
+                isFavorite={!!isPaletteFavorite}
+                onToggle={() => savePalette()}
+                showPending={paletteStatus === "pending"}
+                className={`p-2 rounded-full hover:bg-black/10 transition-colors ${
+                  colord(tertiaryColor).isDark()
+                    ? "text-white"
+                    : "text-black/60"
+                } ${isPaletteFavorite ? "text-red-500" : ""}`}
                 size={14}
-                className={
-                  isPaletteFavorite ? "fill-red-500" : "fill-transparent"
-                }
               />
-            </button>
+            </div>
           </div>
         </div>
       )}
@@ -457,13 +581,30 @@ const MiniColorCard = ({
   isFavorite,
   onMakePrimary,
   onToggleFavorite,
+  onColorChange,
+  onClick,
+  isActive,
+  ActionIcon,
+  onAction,
+  actionTitle,
+  actionDisabled = false,
+  isHidden = false,
+  isHoverEnabled = true,
 }: {
   label: string;
   color: string;
   isFavorite?: boolean;
+  isActive?: boolean;
   onMakePrimary: () => void;
   onToggleFavorite: () => void;
-  // onCopy removed as it logic is handled internally
+  onColorChange?: (color: string) => void;
+  onClick?: () => void;
+  ActionIcon?: React.ElementType;
+  onAction?: () => void;
+  actionTitle?: string;
+  actionDisabled?: boolean;
+  isHidden?: boolean;
+  isHoverEnabled?: boolean;
 }) => {
   const { isCopied, copy } = useCopyFeedback();
   const isDark = colord(color).isDark();
@@ -475,26 +616,52 @@ const MiniColorCard = ({
 
   return (
     <div
-      className={`relative rounded-xl overflow-hidden aspect-[4/3] shadow-sm transition-all hover:shadow-lg group/minicard ${
-        isDark ? "border border-white/40" : "border border-black/20"
-      }`}
+      onClick={onClick}
+      className={`relative rounded-xl overflow-hidden aspect-[4/3] shadow-sm transition-all group/minicard ${
+        isActive
+          ? "ring-4 ring-accent-cyan transform scale-[1.02] z-10 shadow-xl"
+          : isHoverEnabled && !isHidden
+          ? "hover:shadow-lg hover:scale-[1.02]"
+          : ""
+      } ${isDark ? "border border-white/40" : "border border-black/20"} ${
+        onClick ? "cursor-pointer" : ""
+      } ${isHidden ? "opacity-40 grayscale" : ""}`}
     >
       {/* Interactive Color Area */}
-      <div className="absolute inset-0 cursor-pointer">
+      <div className={`absolute inset-0 ${onClick ? "cursor-pointer" : ""}`}>
         <svg className="absolute inset-0 z-0 w-full h-full">
           <rect width="100%" height="100%" fill={color} />
         </svg>
 
-        {/* Actions Row (Top Right, Always Visible) */}
         <div
           className={`absolute top-1 right-1 flex items-center gap-0.5 z-10 ${
             isDark ? "text-white" : "text-black/60"
           }`}
         >
+          {onAction && ActionIcon && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!actionDisabled) onAction();
+              }}
+              className={`p-1.5 rounded-full transition-colors ${
+                actionDisabled
+                  ? "opacity-50 cursor-default"
+                  : "hover:bg-black/10"
+              }`}
+              title={actionTitle}
+              disabled={actionDisabled}
+            >
+              <ActionIcon size={14} />
+            </button>
+          )}
           <button
-            onClick={onMakePrimary}
+            onClick={(e) => {
+              e.stopPropagation();
+              onMakePrimary();
+            }}
             className="p-1.5 rounded-full hover:bg-black/10 transition-colors"
-            title="Swap to Primary"
+            title={onAction ? "Swap with Primary" : "Make Primary"}
           >
             <ArrowUpDown size={14} />
           </button>
@@ -520,17 +687,30 @@ const MiniColorCard = ({
             }
           />
         </div>
+
+        {/* Manual Color Input Trigger (Only if onColorChange provided) */}
+        {onColorChange && (
+          <input
+            type="color"
+            value={color}
+            onChange={(e) => onColorChange(e.target.value)}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-0"
+            title="Change Color"
+          />
+        )}
       </div>
 
-      {/* Static Label (Always Visible, blocks hover) */}
       {/* Static Label (Always Visible) */}
       <div
         className={`absolute inset-0 p-2 flex flex-col justify-end pointer-events-none ${
           isDark ? "text-white/90" : "text-black/80"
         }`}
       >
-        <span className="text-[10px] font-bold uppercase opacity-60 tracking-wider mb-0.5">
+        <span className="text-[10px] font-bold uppercase opacity-60 tracking-wider mb-0.5 flex items-center gap-1">
           {label}
+          {onColorChange && (
+            <span className="opacity-50 text-[8px]">(Edit)</span>
+          )}
         </span>
         <span className="text-[10px] font-mono opacity-90">
           {color.toUpperCase()}

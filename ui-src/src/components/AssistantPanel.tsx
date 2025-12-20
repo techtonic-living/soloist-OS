@@ -18,6 +18,7 @@ import { MagicBadge } from "./common/MagicBadge";
 import { colord } from "colord";
 import {
   toggleFavoriteWithMetadata,
+  togglePaletteWithMetadata,
   ToggleFavoriteResult,
 } from "../utils/favorites";
 import { PresetColor } from "../data/colorPresets";
@@ -37,6 +38,8 @@ interface AssistantPanelProps {
   // Updated to match implementation
   onToggleFavorite?: (color: string) => Promise<ToggleFavoriteResult | void>;
   onLoadPalette?: (colors: string[]) => void;
+  activeColorSlot?: "primary" | "secondary" | "tertiary";
+  setActiveColorSlot?: (slot: "primary" | "secondary" | "tertiary") => void;
 }
 
 export const AssistantPanel = ({
@@ -48,6 +51,8 @@ export const AssistantPanel = ({
   selectedInsightColor,
   selectedInsightPalette,
   onLoadPalette,
+  activeColorSlot,
+  setActiveColorSlot,
 }: AssistantPanelProps) => {
   // --- Context Consumption ---
   const {
@@ -59,6 +64,8 @@ export const AssistantPanel = ({
     secondaryRamp,
     tertiaryRamp,
     harmonyMode,
+    setSecondaryColor,
+    setTertiaryColor,
   } = useSoloist();
 
   const aiLevel = settings.aiLevel;
@@ -137,6 +144,21 @@ export const AssistantPanel = ({
       usage: newUsage,
     });
     showToast("Color updated");
+  };
+
+  // Toggle Palette with AI Metadata
+  const handleTogglePalette = async (colors: string[]) => {
+    const result = await togglePaletteWithMetadata({
+      colors,
+      settings,
+      updateSettings,
+    });
+
+    if (result.action === "added") {
+      showToast("Palette saved to Favorites");
+    } else {
+      showToast("Palette removed from Favorites");
+    }
   };
 
   // Content Mapping
@@ -274,11 +296,16 @@ export const AssistantPanel = ({
               seedColor={seedColor}
               setSeedColor={setSeedColor}
               secondaryColor={secondaryColor || "#000000"}
+              setSecondaryColor={setSecondaryColor}
               tertiaryColor={tertiaryColor || "#000000"}
+              setTertiaryColor={setTertiaryColor}
               harmonyMode={harmonyMode}
+              activeColorSlot={activeColorSlot}
+              setActiveColorSlot={setActiveColorSlot}
               settings={settings}
               updateSettings={updateSettings}
               toggleFavorite={toggleFavoriteColor}
+              togglePalette={handleTogglePalette}
             />
           </div>
         )}

@@ -20,6 +20,7 @@ interface ColorCreatorProps {
   setHarmonyMode?: (
     mode: "complementary" | "analogous" | "triadic" | "manual"
   ) => void;
+  activeColorSlot?: "primary" | "secondary" | "tertiary";
 }
 
 export const ColorCreator = ({
@@ -31,6 +32,7 @@ export const ColorCreator = ({
   setTertiaryColor,
   harmonyMode = "complementary",
   setHarmonyMode = () => {},
+  activeColorSlot = "primary",
 }: ColorCreatorProps) => {
   // 1. Calculate Harmonies Instantly (Visual Feedack)
   const harmonies = useMemo(() => {
@@ -54,7 +56,6 @@ export const ColorCreator = ({
     return { sec: null, tert: null };
   }, [seedColor, harmonyMode]);
 
-  // 2. Sync Global State (Side Effect)
   // 2. Sync Global State (Side Effect)
   useEffect(() => {
     if (harmonyMode === "manual") return;
@@ -83,17 +84,52 @@ export const ColorCreator = ({
     tertiaryColor,
   ]);
 
-  // 3. Determine Display Colors (Use calculated if harmony is active, otherwise props)
-  // Actually, for the Wheel, if we are in a harmony mode, we MUST show the harmony positions.
-  // If we are in manual, we show the prop positions.
-  const activeSecondary =
+  // 3. Determine Display Colors
+  // If Manual Mode:
+  // - activeColor is whatever slot is selected (Primary, Secondary, or Tertiary)
+  // - "Secondary" prop passed to Wheel becomes one of the NON-selected colors
+  // - "Tertiary" prop passed to Wheel becomes the other NON-selected color
+  // This essentially rotates the wheel's focus.
+
+  let activeColor = seedColor;
+  let activeSecondary =
     harmonyMode !== "manual" ? harmonies.sec || secondaryColor : secondaryColor;
-  const activeTertiary =
+  let activeTertiary =
     harmonyMode !== "manual" ? harmonies.tert || tertiaryColor : tertiaryColor;
 
+  if (harmonyMode === "manual") {
+    if (activeColorSlot === "secondary") {
+      activeColor = secondaryColor;
+      activeSecondary = seedColor; // Show Primary as marker
+      activeTertiary = tertiaryColor; // Show Tertiary as marker
+    } else if (activeColorSlot === "tertiary") {
+      activeColor = tertiaryColor;
+      activeSecondary = seedColor; // Show Primary as marker
+      activeTertiary = secondaryColor; // Show Secondary as marker
+    }
+    // if Primary, simple default logic applies (Active=Primary, Sec=Sec, Tert=Tert)
+  }
+
   // Parse Colors
-  const color = colord(seedColor);
+  const color = colord(activeColor);
   const hsla = color.toHsl();
+
+  // Handle Main Change
+  const handleColorChange = (h: number, s: number, l?: number) => {
+    const newColor = colord({
+      h,
+      s,
+      l: l !== undefined ? l : hsla.l,
+    }).toHex();
+
+    if (harmonyMode === "manual") {
+      if (activeColorSlot === "secondary") setSecondaryColor(newColor);
+      else if (activeColorSlot === "tertiary") setTertiaryColor(newColor);
+      else setSeedColor(newColor);
+    } else {
+      setSeedColor(newColor); // Always drive primary in harmony modes
+    }
+  };
 
   return (
     <div className="h-full flex flex-col items-center gap-6 p-6 overflow-y-auto custom-scrollbar bg-bg-surface/30 backdrop-blur-sm">
@@ -129,13 +165,13 @@ export const ColorCreator = ({
             size={420}
             hue={hsla.h}
             saturation={hsla.s}
-            onChange={(h, s) => {
-              setSeedColor(colord({ h, s, l: hsla.l }).toHex());
-            }}
+            onChange={(h, s) => handleColorChange(h, s)}
             secondaryColor={activeSecondary}
             tertiaryColor={activeTertiary}
             harmonyMode={harmonyMode}
             lightness={hsla.l}
+            // In manual mode, we always want to see markers for context
+            showMarkers={true}
           />
         </div>
       </div>
@@ -203,6 +239,7 @@ interface ColorWheelProps {
   secondaryColor?: string;
   tertiaryColor?: string;
   harmonyMode: string;
+  showMarkers?: boolean;
 }
 
 const ColorWheel = ({
@@ -214,6 +251,7 @@ const ColorWheel = ({
   tertiaryColor,
   harmonyMode,
   lightness = 50, // Default to 50 if not provided
+  showMarkers = false,
 }: ColorWheelProps & { lightness?: number }) => {
   const wheelRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -332,7 +370,7 @@ const ColorWheel = ({
       <div className="absolute inset-0 rounded-full saturation-overlay pointer-events-none" />
 
       {/* Harmony Handles (Non-interactive for now, just visual indicators) */}
-      {harmonyMode !== "manual" && secPos && (
+      {(harmonyMode !== "manual" || showMarkers) && secPos && (
         <svg
           className="absolute w-5 h-5 pointer-events-none drop-shadow-lg"
           style={{
@@ -355,7 +393,7 @@ const ColorWheel = ({
           <circle cx="8" cy="8" r="4" fill={secondaryColor} opacity="0.95" />
         </svg>
       )}
-      {harmonyMode !== "manual" && tertPos && (
+      {(harmonyMode !== "manual" || showMarkers) && tertPos && (
         <svg
           className="absolute w-5 h-5 pointer-events-none drop-shadow-lg"
           style={{
