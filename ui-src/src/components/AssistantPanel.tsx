@@ -158,9 +158,10 @@ export const AssistantPanel = ({
   };
 
   // Toggle Palette with AI Metadata
-  const handleTogglePalette = async (colors: string[]) => {
+  const handleTogglePalette = async (colors: string[], name?: string) => {
     const result = await togglePaletteWithMetadata({
       colors,
+      name,
       settings,
       updateSettings,
     });
@@ -327,6 +328,12 @@ export const AssistantPanel = ({
             <InspectedPaletteCard
               palette={selectedInsightPalette}
               onLoad={onLoadPalette || (() => {})}
+              onLoadStudio={onLoadStudio}
+              onAddToRemix={onAddToRemix}
+              onToggleFavoritePalette={handleTogglePalette}
+              onToggleFavoriteColor={toggleFavoriteColor}
+              isEditing={isEditing}
+              setIsEditing={setIsEditing}
             />
           </div>
         )}
@@ -530,64 +537,458 @@ const getContentForView = (
 const InspectedPaletteCard = ({
   palette,
   onLoad,
+  onLoadStudio,
+  onAddToRemix,
+  onToggleFavoritePalette,
+  onToggleFavoriteColor,
+  isEditing,
+  setIsEditing,
 }: {
   palette: any;
   onLoad: (colors: string[]) => void;
+  onLoadStudio?: (color: string) => void;
+  onAddToRemix?: (color: string) => void;
+  onToggleFavoritePalette: (colors: string[], name?: string) => void;
+  onToggleFavoriteColor: (
+    color: string
+  ) => Promise<ToggleFavoriteResult | void>;
+  isEditing: boolean;
+  setIsEditing: (v: boolean) => void;
 }) => {
-  return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-mono text-accent-purple uppercase tracking-wider border border-accent-purple/30 px-1.5 py-0.5 rounded">
-            Palette
-          </span>
-          <span className="text-xs text-white/40 font-mono">
-            {palette.colors.length} Colors
+  const { settings, updateSettings } = useSoloist();
+  const { showToast } = useToast();
+  const library = settings.library || { palettes: [], colors: [] };
+
+  const normalizeHex = (v: any) => {
+    if (!v) return "";
+    if (typeof v === "string") return v;
+    return v.value || v.hex || "";
+  };
+
+  const paletteHexes: string[] = Array.isArray(palette?.colors)
+    ? palette.colors.map(normalizeHex).filter(Boolean)
+    : [];
+
+  const isSamePaletteByColors = (a: any, bHexes: string[]) => {
+    const aHexes: string[] = Array.isArray(a?.colors)
+      ? a.colors.map(normalizeHex).filter(Boolean)
+      : [];
+    if (aHexes.length !== bHexes.length) return false;
+    return aHexes.every(
+      (c, i) => String(c).toUpperCase() === String(bHexes[i]).toUpperCase()
+    );
+  };
+
+  const savedPalette = (library.palettes || []).find((p: any) =>
+    isSamePaletteByColors(p, paletteHexes)
+  );
+  const isFavorite = Boolean(savedPalette);
+
+  const displayName = String(
+    (savedPalette || palette)?.name || "Untitled Palette"
+  );
+  const displayDescription = String(
+    (savedPalette || palette)?.description || ""
+  );
+  // Legacy support: some saved palettes may still have `tags: string[]`
+  const legacyTags: string[] = Array.isArray((savedPalette || palette)?.tags)
+    ? (savedPalette || palette).tags
+    : [];
+  const displayMeaning = String(
+    (savedPalette || palette)?.meaning ||
+      (legacyTags.length ? legacyTags.join(", ") : "")
+  );
+  const displayUsage = String((savedPalette || palette)?.usage || "");
+
+  // Local state for editing
+  const [localName, setLocalName] = useState(displayName);
+  const [localDesc, setLocalDesc] = useState(displayDescription);
+  const [editMeaning, setEditMeaning] = useState(displayMeaning);
+  const [editUsage, setEditUsage] = useState(displayUsage);
+
+  const { isCopied: isPaletteCopied, copy: copyPalette } = useCopyFeedback();
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setLocalName(displayName);
+      setLocalDesc(displayDescription);
+      setEditMeaning(displayMeaning);
+      setEditUsage(displayUsage);
+    }
+  }, [
+    displayName,
+    displayDescription,
+    displayMeaning,
+    displayUsage,
+    isEditing,
+  ]);
+
+  const isDuplicateName = (library.palettes || []).some((p: any) => {
+    const pName = String(p?.name || "");
+    if (!pName.trim()) return false;
+    // Skip self by exact colors match
+    if (isSamePaletteByColors(p, paletteHexes)) return false;
+    return (
+      pName.trim().toLowerCase() === (localName || "").trim().toLowerCase()
+    );
+  });
+  const isValidName = (localName || "").trim().length > 0 && !isDuplicateName;
+
+  const handleCancel = () => {
+    setLocalName(displayName);
+    setLocalDesc(displayDescription);
+    setEditMeaning(displayMeaning);
+    setEditUsage(displayUsage);
+    setIsEditing(false);
+  };
+
+  const handleSave = () => {
+    if (!isValidName) return;
+
+    if (!isFavorite || !savedPalette) {
+      // Only saved palettes can be edited (mirrors Color Inspector behavior)
+      setIsEditing(false);
+      return;
+    }
+
+    const nextName = localName.trim();
+    const nextDesc = localDesc.trim();
+    const nextMeaning = (editMeaning || "").trim();
+    const nextUsage = (editUsage || "").trim();
+
+    const palettesNext = (library.palettes || []).map((p: any) => {
+      if (!isSamePaletteByColors(p, paletteHexes)) return p;
+      return {
+        ...p,
+        name: nextName,
+        description: nextDesc,
+        meaning: nextMeaning,
+        usage: nextUsage,
+      };
+    });
+
+    updateSettings({
+      library: {
+        ...library,
+        palettes: palettesNext,
+      },
+    });
+    showToast("Palette updated");
+    setIsEditing(false);
+  };
+
+  const handleCopyAll = () => {
+    const text = paletteHexes.map((h) => String(h).toUpperCase()).join(", ");
+    // Match mini-card behavior: copy hex values and show those as the toast label.
+    copyPalette(text, text);
+  };
+
+  const PaletteColorCell = ({ hex }: { hex: string }) => {
+    const isDark = colord(hex).isDark();
+    const { isCopied, copy } = useCopyFeedback();
+    const isColorFavorite = settings.library?.colors?.some((c: any) => {
+      const storedHex = typeof c === "string" ? c : c.value;
+      return String(storedHex).toUpperCase() === String(hex).toUpperCase();
+    });
+
+    const stopEvent = (e: React.SyntheticEvent) => {
+      // Stop bubbling so these buttons never trigger selection/inspection changes.
+      // IMPORTANT: Don't use capture-phase stopPropagation here; it can prevent the
+      // event from ever reaching the button target.
+      e.stopPropagation();
+    };
+
+    const handleCopy = (e: React.MouseEvent<HTMLButtonElement>) => {
+      stopEvent(e);
+      copy(String(hex).toUpperCase(), String(hex).toUpperCase());
+    };
+
+    return (
+      <div className="group relative flex-1 basis-0 hover:flex-[4] transition-[flex] duration-200 min-w-0 hover:min-w-[152px] overflow-hidden">
+        <svg className="absolute inset-0 w-full h-full" aria-hidden="true">
+          <rect width="100%" height="100%" fill={hex} />
+        </svg>
+
+        {/* Always-visible hex label (bottom-left). Truncates until the stripe expands. */}
+        <div className="absolute bottom-2 left-2 text-white mix-blend-difference min-w-0 max-w-full pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity duration-150">
+          <span className="text-xs font-mono truncate block">
+            {String(hex).toUpperCase()}
           </span>
         </div>
-        <h3 className="text-xl font-bold text-white leading-tight">
-          {palette.name}
-        </h3>
-        <p className="text-xs text-gray-400 leading-relaxed">
-          {palette.description}
-        </p>
-      </div>
 
-      <div className="space-y-2">
-        <div className="grid grid-cols-5 gap-1.5">
-          {palette.colors.map((c: any, i: number) => (
+        {/* Hover reveal: tools vertically centered, right-aligned to stripe edge */}
+        <div className="absolute inset-0 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150">
+          <div className="absolute inset-0 flex items-center justify-end pr-2">
             <div
-              key={i}
-              className="aspect-square rounded-md sticky top-0 overflow-hidden"
-              title={`${c.name} (${c.value})`}
+              className="flex items-center gap-1 text-white mix-blend-difference"
+              onPointerDown={stopEvent}
+              onClick={stopEvent}
             >
-              <svg className="w-full h-full">
-                <rect width="100%" height="100%" fill={c.value} />
-              </svg>
+              {onLoadStudio && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    stopEvent(e);
+                    onLoadStudio(hex);
+                  }}
+                  className="p-1.5 rounded-full hover:opacity-80 transition-opacity"
+                  title="Send to Studio"
+                >
+                  <SlidersHorizontal size={12} />
+                </button>
+              )}
+              {onAddToRemix && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    stopEvent(e);
+                    onAddToRemix(hex);
+                  }}
+                  className="p-1.5 rounded-full hover:opacity-80 transition-opacity"
+                  title="Send to Remix"
+                >
+                  <Wand2 size={12} />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="p-1.5 rounded-full hover:opacity-80 transition-opacity"
+                title="Copy Hex"
+              >
+                {isCopied ? (
+                  <Check size={12} className="text-green-500" />
+                ) : (
+                  <Copy size={12} />
+                )}
+              </button>
+              <span onPointerDown={stopEvent} onClick={stopEvent}>
+                <HeartToggle
+                  isFavorite={Boolean(isColorFavorite)}
+                  onToggle={() => onToggleFavoriteColor(hex)}
+                  size={12}
+                  className="mix-blend-difference"
+                />
+              </span>
             </div>
+          </div>
+        </div>
+
+        {/* Divider between stripes */}
+        <div
+          className={`absolute right-0 top-0 bottom-0 w-px ${
+            isDark ? "bg-white/10" : "bg-black/10"
+          }`}
+          aria-hidden="true"
+        />
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Palette Card (same primary dimensions as Color Inspector) */}
+      <div className="relative rounded-xl overflow-hidden aspect-[4/3] shadow-sm border border-white/10">
+        {/* Palette colors: full-height vertical stripes, hover-expand */}
+        <div className="absolute inset-0 flex items-stretch">
+          {paletteHexes.map((hex, i) => (
+            <PaletteColorCell key={`${hex}-${i}`} hex={hex} />
           ))}
+        </div>
+
+        {/* Palette name (bottom-left, no scrim). Aligned above stripe hex labels (mini-card feel). */}
+        <div className="absolute bottom-7 left-2 right-14 text-white mix-blend-difference z-[90]">
+          {isEditing ? (
+            <div className="pointer-events-auto relative">
+              <div className="relative">
+                <input
+                  ref={nameInputRef}
+                  value={localName}
+                  onChange={(e) => setLocalName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (isValidName) handleSave();
+                    } else if (e.key === "Escape") {
+                      handleCancel();
+                    }
+                  }}
+                  className={`bg-black/40 border rounded px-2 py-1 text-xs font-bold font-brand text-white w-full focus:outline-none focus:border-accent-cyan placeholder-white/50 ${
+                    isDuplicateName
+                      ? "border-red-500 bg-red-500/10"
+                      : "border-white/20"
+                  }`}
+                  placeholder="Palette Name"
+                  autoFocus
+                  title="Palette Name"
+                />
+                {isDuplicateName && (
+                  <div className="absolute -top-6 left-0 right-0 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded shadow-lg animate-in fade-in slide-in-from-bottom-1">
+                    Palette name must be unique.
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <span className="text-xs font-bold uppercase opacity-80 tracking-wider block truncate pointer-events-none">
+              {displayName}
+            </span>
+          )}
+        </div>
+
+        {/* Header Actions */}
+        <div className="absolute top-2 right-2 flex gap-1 z-[100]">
+          {!isEditing ? (
+            <>
+              {isFavorite && (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors"
+                  title="Edit Details"
+                >
+                  <Pencil size={12} />
+                </button>
+              )}
+
+              <button
+                onClick={() => onLoad(paletteHexes)}
+                className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors"
+                title="Send to Remix"
+              >
+                <Wand2 size={12} />
+              </button>
+
+              <button
+                onClick={handleCopyAll}
+                className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors"
+                title="Copy Palette Hex"
+              >
+                {isPaletteCopied ? (
+                  <Check size={12} className="text-green-500" />
+                ) : (
+                  <Copy size={12} />
+                )}
+              </button>
+
+              <HeartToggle
+                isFavorite={isFavorite}
+                onToggle={() =>
+                  onToggleFavoritePalette(
+                    paletteHexes,
+                    String(palette?.name || "")
+                  )
+                }
+                size={12}
+                className="bg-black/20 hover:bg-black/40"
+              />
+            </>
+          ) : (
+            <>
+              <button
+                onClick={handleCancel}
+                className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors"
+                title="Cancel"
+              >
+                <X size={12} />
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={!isValidName}
+                className={`p-1.5 rounded-full text-white transition-colors ${
+                  !isValidName
+                    ? "bg-gray-500 opacity-50"
+                    : "bg-green-500/80 hover:bg-green-500"
+                }`}
+                title={
+                  !isValidName
+                    ? isDuplicateName
+                      ? "Palette Name Must Be Unique"
+                      : "Name Cannot Be Empty"
+                    : "Save"
+                }
+              >
+                <Check size={12} />
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      <div className="pt-4 border-t border-white/10">
-        <button
-          onClick={() => onLoad(palette.colors.map((c: any) => c.value))}
-          className="w-full py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
-        >
-          <BookOpen size={14} />
-          Load Palette
-        </button>
-      </div>
-      <div className="space-y-4 pt-4">
-        <div className="flex flex-wrap gap-2">
-          {palette.tags.map((tag: string) => (
-            <span
-              key={tag}
-              className="px-2 py-1 rounded bg-white/5 text-[10px] text-gray-400 border border-white/10"
-            >
-              {tag}
+      {/* Palette details / editing (mirrors Color Inspector layout) */}
+      <div className="space-y-2 text-sm relative z-[100]">
+        {isEditing ? (
+          <div>
+            <span className="text-xs font-mono text-accent-cyan uppercase tracking-wider block mb-1 opacity-60">
+              Description
             </span>
-          ))}
+            <textarea
+              value={localDesc}
+              onChange={(e) => setLocalDesc(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSave();
+                } else if (e.key === "Escape") {
+                  handleCancel();
+                }
+              }}
+              className="w-full bg-bg-void/50 border border-glass-stroke rounded-lg p-2 text-xs text-gray-300 resize-none h-20 focus:outline-none focus:border-accent-cyan"
+              placeholder="Add a description..."
+            />
+          </div>
+        ) : (
+          <>
+            {displayDescription && (
+              <div>
+                <span className="text-xs font-mono text-accent-cyan uppercase tracking-wider block mb-1 opacity-60">
+                  Description
+                </span>
+                <p className="text-gray-300 text-xs leading-relaxed">
+                  {displayDescription}
+                </p>
+              </div>
+            )}
+          </>
+        )}
+
+        <div className="pt-2 border-t border-white/5 space-y-4">
+          <TagDisplayEdit
+            label="Meaning"
+            value={editMeaning}
+            onChange={setEditMeaning}
+            isEditing={isEditing}
+            suggestions={[
+              "Calm",
+              "Energy",
+              "Trust",
+              "Luxury",
+              "Focus",
+              "Playful",
+              "Bold",
+              "Neutral",
+              "Warm",
+              "Cool",
+            ]}
+          />
+          <TagDisplayEdit
+            label="Usage"
+            value={editUsage}
+            onChange={setEditUsage}
+            isEditing={isEditing}
+            suggestions={[
+              "Backgrounds",
+              "Text",
+              "Buttons",
+              "Borders",
+              "Accents",
+              "Cards",
+              "Charts",
+              "Dark Mode",
+              "Light Mode",
+              "Brand",
+            ]}
+          />
         </div>
       </div>
     </div>

@@ -82,9 +82,9 @@ Buttons generally follow these styles (though currently implemented as ad-hoc cl
 - **Glass Button** (Standard): `bg-white/5 hover:bg-white/10 text-white border border-white/5`
 - **Ghost Button** (Secondary): `text-gray-500 hover:text-white`
 - **Icon Button**: `p-2 rounded-full hover:bg-white/10`
-  75:
-  76: > [!CAUTION]
-  77: > **Disabled State Cursor**: Do NOT use `cursor-not-allowed` on disabled buttons. Users find the cursor style change on hover aesthetically displeasing. Maintain the standard cursor (or `cursor-default`) but indicate disabled state via opacity (e.g., `opacity-50`) and removing pointer events or hover styles.
+
+> [!CAUTION]
+> **Disabled State Cursor**: Do NOT use `cursor-not-allowed` on disabled buttons. Users find the cursor style change on hover aesthetically displeasing. Maintain the standard cursor (or `cursor-default`) but indicate disabled state via opacity (e.g., `opacity-50`) and removing pointer events or hover styles.
 
 ### Inputs
 
@@ -121,6 +121,18 @@ Standardized container for library categories (Global, Custom Groups).
 - **Description**: `text-xs text-white/80 leading-relaxed border-b border-glass-stroke pb-2`.
 - **Requirement**: The description border serves as the primary visual divider between the header and the grid content.
 
+### Library Parity & Ordering (Colors + Palettes)
+
+Saved Colors and Saved Palettes must behave as siblings.
+
+- **Parity Rule**: Any affordance present in one library should exist in the other unless there is a clear, documented reason (density, sorting, grouping, empty states, organize/edit, dropdown behaviors).
+- **Stable Order**: In manual mode, item order must be deterministic and persisted.
+  - Group membership and ordering must respect the stored ID lists (e.g., `colorGroups[].colorIds`, `paletteGroups[].paletteIds`).
+  - Avoid “implicit” ordering derived from map iteration or creation time.
+- **Global Always First**: Global/Unassigned section always renders first (above groups), even when empty.
+- **Group Creation Placement**: New groups are prepended (immediately below Global).
+- **Unfavorite Clears Group Memory**: If a palette (or color) is unfavorited while assigned to a custom group, its group association must be cleared. Re-favoriting returns it to Global by default.
+
 ### Empty State / Drop Zones
 
 Used when a category or search result is empty, serving as both a message and a landing target.
@@ -130,6 +142,17 @@ Used when a category or search result is empty, serving as both a message and a 
 - **Style**: `border-2 border-dashed border-white/10 p-6 rounded-lg bg-black/5`.
 - **Hover State**: `hover:border-accent-cyan/30 hover:text-accent-cyan/70` (indicates interactivity).
 - **Content**: Large icon (`size={24}` or `32`), `opacity-30/50`, followed by `text-xs font-mono uppercase tracking-wider`.
+
+### Organize / Edit Mode (Libraries)
+
+Organize mode is a *precision interaction mode*.
+
+- **Pointer-Based Dragging**: Prefer pointer-driven dragging logic over native HTML5 drag-and-drop for library reordering and cross-section moves.
+  - Rationale: avoids browser drag previews/cursors and inconsistent click/drag thresholds.
+- **Mode-Gated Drop Zones**: Drop zones and “Drop here” affordances only appear when Organize/Edit is active.
+- **Sort Compatibility**:
+  - Organize controls may remain visible for discoverability, but must be **disabled** (opacity + no hover affordance) when a non-manual sort is active.
+  - Never allow reorder writes while the view is in a computed sort (e.g., by size/saturation/date).
 
 ### Micro-Interactions
 
@@ -178,6 +201,8 @@ All copy buttons must use a standardized feedback loop.
 - **Duration**: Return to default state after 2000ms.
 - **Animation**: Smooth fade/scale transition (aligns with `transition-all duration-300`).
 
+- **Palette Copy Semantics**: Copying a palette should copy its color hex values as a comma-separated list (e.g., `#111111, #222222, #333333`) rather than copying the palette name.
+
 #### Toasts & Feedback
 
 Feedback messages must be explicit.
@@ -185,6 +210,42 @@ Feedback messages must be explicit.
 - **Requirement**: Display the _actual value_ acted upon.
   - _Incorrect_: "Copied to clipboard"
   - _Correct_: "Copied **#3D8BFF** to clipboard"
+
+- **Palette Toasts**: If copying multiple values (palette), show the actual string being copied (or a clearly truncated representation) rather than a label like the palette name.
+
+#### Nested Click Targets (Preventing “Click-Through”)
+
+Many UI surfaces are both *selectable* (card/stripe click selects) and contain *buttons* (copy, favorite, actions).
+
+- **Rule**: Buttons inside a clickable/selectable container must not trigger the parent selection.
+- **Propagation Guidance**:
+  - Prefer stopping propagation in the **bubble phase** on the button (and/or its immediate wrapper) to prevent click-through.
+  - Avoid capture-phase “blanket” handlers (`onClickCapture`, `onPointerDownCapture`) that can inadvertently suppress the button’s own events.
+  - Use `preventDefault()` only when you are intentionally preventing a default browser behavior (e.g., text selection, focus quirks), not as a general click-through fix.
+
+#### Swatch / Stripe Accuracy (Color Analysis)
+
+When the UI is used to judge color/contrast, do not add visual manipulation to the swatch surface.
+
+- **No Scrims/Gradients**: Avoid gradients, overlays, or scrims on the actual color fill area in inspectors.
+- **Readable Labels Without Distortion**: If labels must sit on top of swatches, prefer contrast-preserving techniques that don’t change the underlying color (e.g., `mix-blend-difference`, subtle text shadow) rather than overlay tints.
+
+#### Palette Inspector “Stripe Card” Standard
+
+The inspected palette card uses a stripe-based layout (mirrors mini-cards while scaling up):
+
+- **Stripes**: Full-height vertical stripes for each palette color.
+- **Hover Expand**:
+  - A stripe may expand on hover to reveal per-stripe tools.
+  - Non-hovered stripes compress but must keep the hex label visible.
+- **Hex Label Placement**:
+  - Always visible at the bottom-left of each stripe.
+  - Truncate with overflow hidden in the collapsed state; reveal on hover/expand.
+  - Use `font-mono` for hex.
+- **Palette Name Placement**: Align the palette name at the bottom-left of the card above the stripe hex labels (mini-card alignment).
+- **Tool Placement**:
+  - Per-stripe tool row is vertically centered and right-justified within the stripe.
+  - Ensure a minimum hover-expanded width sufficient for the full tool cluster (avoid wrapping/overlap).
 
 #### Inline Edits
 
@@ -205,6 +266,13 @@ Specialized inline editing for hex color values with live preview.
 - **Error Feedback**: Visual only (red border on invalid), no inline error text
 - **Save State**: Disabled when invalid, prevents commit of malformed values
 - **Cancel Behavior**: Restores initial hex value from edit start
+
+## 3.5 Inspector State & Navigation
+
+Selection in the right-side inspector should feel persistent and “workspace-like.”
+
+- **Session Persistence**: Switching tools/tabs (e.g., Explore sections) should not clear the inspected Color/Palette selection by default.
+- **Explicit Reset Only**: Only clear inspector selection via an explicit user action (e.g., close/deselect) or when the underlying item is deleted.
 
 ## 4. Layout & Spacing
 

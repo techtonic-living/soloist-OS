@@ -31,8 +31,6 @@ const App = () => {
   const handleLoadRemix = (colors: string[]) => {
     setGeneratorColors(colors);
     setExploreTab("remix");
-    setInspectedColor(null);
-    setInspectedPalette(null);
   };
 
   const handleAddToRemix = (color: string) => {
@@ -55,8 +53,6 @@ const App = () => {
       return [...prev, color];
     });
     setExploreTab("remix");
-    setInspectedColor(null);
-    setInspectedPalette(null);
   };
 
   const handleUpdateRemixColor = (index: number, color: string) => {
@@ -72,8 +68,6 @@ const App = () => {
     setHarmonyMode("manual");
     setExploreTab("studio");
     setActiveColorSlot("primary");
-    setInspectedColor(null);
-    setInspectedPalette(null);
   };
 
   return (
@@ -96,10 +90,7 @@ const App = () => {
             activeTab={exploreTab}
             setActiveTab={(tab) => {
               setExploreTab(tab);
-              // Clear inspected color/palette on tab change for clean slate
-              setInspectedColor(null);
-              setInspectedPalette(null);
-              setInspectedRemixIndex(null);
+              // Preserve inspector session state across tool switches.
             }}
             onInspectColor={setInspectedColor}
             onInspectPalette={setInspectedPalette}

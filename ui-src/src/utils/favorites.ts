@@ -26,6 +26,7 @@ const ensureLibrary = (settings: SystemSettings) => {
     colors: [] as (string | PresetColor)[],
     fonts: [],
     palettes: [],
+    paletteGroups: [],
     collections: [],
     projects: [],
     colorGroups: [],
@@ -74,11 +75,9 @@ const getUniqueLabel = (baseName: string, existingNames: string[]): string => {
   }
 
   // Fallback to numbering
-  let i = 2;
-  while (true) {
+  for (let i = 2; ; i++) {
     const numbered = `${baseName} (${i})`;
     if (!occupied.has(numbered.toLowerCase())) return numbered;
-    i++;
   }
 };
 
@@ -220,10 +219,22 @@ export const togglePaletteWithMetadata = async ({
     const newPalettes = [...library.palettes];
     const removed = newPalettes.splice(existingIndex, 1)[0];
 
+    // Also remove from any palette groups so a re-favorite returns to Global.
+    const removedName = String(removed?.name ?? "");
+    const updatedPaletteGroups = (library.paletteGroups || []).map(
+      (g: any) => ({
+        ...g,
+        paletteIds: (g.paletteIds || []).filter(
+          (id: string) => String(id) !== removedName
+        ),
+      })
+    );
+
     updateSettings({
       library: {
         ...library,
         palettes: newPalettes,
+        paletteGroups: updatedPaletteGroups,
       },
     });
     return { action: "removed", color: removed }; // reusing 'color' field for result object flexibility
@@ -259,7 +270,8 @@ export const togglePaletteWithMetadata = async ({
       name: `Palette ${library.palettes.length + 1}`,
       description: "Custom palette",
       colors,
-      tags: [],
+      meaning: "",
+      usage: "",
       createdAt: new Date().toISOString(),
     };
     updateSettings({

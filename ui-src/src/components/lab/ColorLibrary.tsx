@@ -99,10 +99,26 @@ export const ColorLibrary = ({
   } | null>(null);
 
   // Sort State
-  type SortOption = "custom" | "name" | "hue";
+  type SortOption = "custom" | "name" | "sat-asc" | "shade-asc";
   const [sortOption, setSortOption] = useState<SortOption>("custom");
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const getColorSaturation = (c: string | PresetColor) => {
+    const hex = typeof c === "string" ? c : c.value;
+    const parsed = colord(hex);
+    if (!parsed.isValid()) return 0;
+    return parsed.toHsl().s;
+  };
+
+  // "Shade" for our purposes = HSL lightness (0..1)
+  // Sort SHADE (D-B) as low->high lightness.
+  const getColorShade = (c: string | PresetColor) => {
+    const hex = typeof c === "string" ? c : c.value;
+    const parsed = colord(hex);
+    if (!parsed.isValid()) return 0;
+    return parsed.toHsl().l;
+  };
 
   // Confirmation Modal State
   const [confirmState, setConfirmState] = useState<{
@@ -420,17 +436,23 @@ export const ColorLibrary = ({
     const sortColors = (
       list: (string | PresetColor)[]
     ): (string | PresetColor)[] => {
+      const byName = (a: string | PresetColor, b: string | PresetColor) => {
+        const nameA = typeof a === "string" ? a : a.name;
+        const nameB = typeof b === "string" ? b : b.name;
+        return nameA.localeCompare(nameB);
+      };
+
       if (sortOption === "name") {
+        return [...list].sort(byName);
+      } else if (sortOption === "sat-asc") {
         return [...list].sort((a, b) => {
-          const nameA = typeof a === "string" ? a : a.name;
-          const nameB = typeof b === "string" ? b : b.name;
-          return nameA.localeCompare(nameB);
+          const d = getColorSaturation(a) - getColorSaturation(b);
+          return d !== 0 ? d : byName(a, b);
         });
-      } else if (sortOption === "hue") {
+      } else if (sortOption === "shade-asc") {
         return [...list].sort((a, b) => {
-          const hexA = typeof a === "string" ? a : a.value;
-          const hexB = typeof b === "string" ? b : b.value;
-          return colord(hexA).toHsl().h - colord(hexB).toHsl().h;
+          const d = getColorShade(a) - getColorShade(b);
+          return d !== 0 ? d : byName(a, b);
         });
       }
       return list;
@@ -718,8 +740,10 @@ export const ColorLibrary = ({
                 >
                   {sortOption === "custom"
                     ? "Custom"
-                    : sortOption === "hue"
-                    ? "Hue"
+                    : sortOption === "sat-asc"
+                    ? "SAT (L-H)"
+                    : sortOption === "shade-asc"
+                    ? "SHADE (D-B)"
                     : "Name (A-Z)"}
                 </button>
 
@@ -738,22 +762,32 @@ export const ColorLibrary = ({
                     <button
                       type="button"
                       onClick={() => {
-                        setSortOption("hue");
-                        setIsSortMenuOpen(false);
-                      }}
-                      className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
-                    >
-                      Hue
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
                         setSortOption("name");
                         setIsSortMenuOpen(false);
                       }}
                       className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
                     >
                       Name (A-Z)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSortOption("sat-asc");
+                        setIsSortMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
+                    >
+                      SAT (L-H)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSortOption("shade-asc");
+                        setIsSortMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
+                    >
+                      SHADE (D-B)
                     </button>
                   </div>
                 )}
@@ -1845,15 +1879,25 @@ export const ColorLibrary = ({
                     // Determine which colors to show & in what order
                     let sortedPresetColors = [...preset.colors];
 
-                    if (sortOption === "hue") {
-                      sortedPresetColors.sort(
-                        (a, b) =>
-                          colord(a.value).toHsl().h - colord(b.value).toHsl().h
-                      );
-                    } else if (sortOption === "name") {
+                    const byName = (a: PresetColor, b: PresetColor) =>
+                      a.name.localeCompare(b.name);
+
+                    if (sortOption === "name") {
                       sortedPresetColors.sort((a, b) =>
                         a.name.localeCompare(b.name)
                       );
+                    } else if (sortOption === "sat-asc") {
+                      sortedPresetColors.sort((a, b) => {
+                        const d =
+                          colord(a.value).toHsl().s - colord(b.value).toHsl().s;
+                        return d !== 0 ? d : byName(a, b);
+                      });
+                    } else if (sortOption === "shade-asc") {
+                      sortedPresetColors.sort((a, b) => {
+                        const d =
+                          colord(a.value).toHsl().l - colord(b.value).toHsl().l;
+                        return d !== 0 ? d : byName(a, b);
+                      });
                     }
 
                     if (sortOption === "custom" && !isEditingPresets) {

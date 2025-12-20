@@ -140,6 +140,15 @@ export const PaletteLibrary = ({
   });
   const [isEditingLibrary, setIsEditingLibrary] = useState(false);
 
+  const openCreateGroup = () => {
+    // Ensure we never leak inline-edit values into create flow.
+    setEditingGroupId(null);
+    setTempEditData({ name: "", description: "" });
+    setNewGroupName("");
+    setNewGroupDesc("");
+    setIsCreatingGroup(true);
+  };
+
   // Pointer-based organize drag (replaces native HTML5 drag so cursor can stay grabbing)
   // Organize can be enabled in any sort.
   // - Custom: allow reordering within a collection
@@ -997,7 +1006,7 @@ export const PaletteLibrary = ({
                     <div className="flex items-center gap-1.5">
                       {onCreateGroup && (
                         <button
-                          onClick={() => setIsCreatingGroup(true)}
+                          onClick={openCreateGroup}
                           className="p-1.5 hover:bg-white/10 rounded-full text-gray-500 hover:text-white transition-colors"
                           title="Create New Group"
                         >
@@ -1423,7 +1432,6 @@ export const PaletteLibrary = ({
                                   <button
                                     onClick={() => {
                                       setEditingGroupId(group.id);
-                                      setNewGroupName(group.name);
                                       setTempEditData({
                                         name: group.name,
                                         description: group.description || "",
