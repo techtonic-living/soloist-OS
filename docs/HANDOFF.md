@@ -13,6 +13,13 @@
 ✅ Robust Clipboard (Cross-Environment)
 ✅ Input Validation (Groups/Inspector)
 ✅ Design System Refinements (Cursors/States)
+✅ Design System Compliance (Dec 19, 2025)
+  - Removed all inline styles (replaced with SVG fills)
+  - Standardized tooltips (Title Case, no punctuation)
+  - Standardized validators (Sentence case with punctuation)
+  - Added accessibility labels (titles, aria-labels)
+  - Input field styling aligned with design system
+  - ESLint v9 configuration with TypeScript support
 
 **Missing/Todo:**
 🔴 Export Terminal is hardcoded (Needs state link verification)

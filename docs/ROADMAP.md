@@ -1,7 +1,7 @@
 # Soloist OS — Development Roadmap
 
 **Current Version:** v0.9 (Alpha)
-**Last Updated:** Dec 10, 2025
+**Last Updated:** Dec 19, 2025
 **Focus:** Infrastructure & "The Void" Aesthetic
 
 ---
@@ -49,6 +49,16 @@
 -   [x] **Presets Library:** "Explore" tab with selectable color sets.
 -   [x] **Input Validation:** Inline validation for Group Renaming and Color Inspector (Duplicate/Empty checks).
 -   [x] **Design System Polish:** Refined cursor behaviors and disabled states (No `cursor-not-allowed`).
+-   [x] **Design System Compliance (Dec 19, 2025):**
+    -   Removed all inline `style` props across components (ColorLibrary, AssistantPanel, TheLab, ColorControlPanel, ColorMixer, TypeSandbox, OrganizeView)
+    -   Replaced inline `backgroundColor` with SVG `<rect fill={color} />` elements
+    -   Replaced inline `color` and `fontFamily` styles with CSS variable classes
+    -   Standardized all tooltips to Title Case without end punctuation
+    -   Standardized all validator messages to Sentence case with end punctuation
+    -   Added accessible labels (`title`, `aria-label`, `placeholder`) to all form elements and icon buttons
+    -   Updated inline edit behavior: Enter key submits, Escape cancels
+    -   ESLint v9 flat config with TypeScript support and design system rules
+    -   VS Code workspace settings for proper error flagging/ignoring
 
 ---
 

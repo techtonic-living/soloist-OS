@@ -82,6 +82,15 @@ Inputs typically use transparent backgrounds with glass borders to blend into th
 
 -   **Standard**: `bg-black/20 border border-white/10 rounded-lg focus:border-accent-cyan`
 
+### Text & Messaging Conventions
+
+Consistent text casing and punctuation improves clarity and polish.
+
+-   **Tooltips**: Title Case, no end-of-line punctuation.
+    -   Examples: `Move Up`, `Edit Group Name and Description`
+-   **Validator error messages**: Sentence case with end-of-line punctuation.
+    -   Examples: `Color name must be unique.`, `Group name must be unique.`
+
 ### Micro-Interactions
 
 > [!IMPORTANT]
@@ -111,6 +120,14 @@ Feedback messages must be explicit.
 -   **Requirement**: Display the _actual value_ acted upon.
     -   _Incorrect_: "Copied to clipboard"
     -   _Correct_: "Copied **#3D8BFF** to clipboard"
+
+#### Inline Edits
+
+Inline editing should prioritize quick confirmation without navigation friction.
+
+-   **Enter**: Submits the current field if valid (e.g., Group Name), applies changes, and exits edit mode.
+-   **Escape**: Cancels edits, restores previous values, and exits edit mode.
+-   **Validation**: Prevent submission if invalid and surface a validator message following the conventions above.
 
 ## 4. Layout & Spacing
 
