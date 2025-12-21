@@ -11,6 +11,7 @@ interface ImageCanvasPickerProps {
 	// Transform props for Image mode
 	zoomVal?: number;
 	rotateVal?: number;
+	onHoverColor?: (hex: string | null) => void;
 }
 
 export const ImageCanvasPicker = ({
@@ -20,6 +21,7 @@ export const ImageCanvasPicker = ({
 	senseVal = 50,
 	zoomVal = 50,
 	rotateVal = 0,
+	onHoverColor,
 }: ImageCanvasPickerProps) => {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const [hoverColor, setHoverColor] = useState<string | null>(null);
@@ -214,6 +216,7 @@ export const ImageCanvasPicker = ({
 					b: pixel[2],
 				}).toHex();
 				setHoverColor(hex);
+				onHoverColor?.(hex);
 				canvas.style.cursor = "none";
 			}
 		} catch {
@@ -242,6 +245,7 @@ export const ImageCanvasPicker = ({
 					onMouseLeave={() => {
 						setIsHovering(false);
 						setHoverColor(null);
+						onHoverColor?.(null);
 					}}
 					onClick={handleClick}
 					className="w-full h-full object-contain cursor-crosshair active:scale-95 transition-transform duration-200"

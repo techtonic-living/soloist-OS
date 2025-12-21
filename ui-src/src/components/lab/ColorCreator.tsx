@@ -446,7 +446,7 @@ export const ColorCreator = ({
 	};
 
 	return (
-		<div className="h-full flex flex-col items-center gap-6 p-6 overflow-y-auto custom-scrollbar bg-bg-surface/30 backdrop-blur-sm relative">
+		<div className="h-full flex flex-col items-center gap-6 p-6 overflow-y-auto overflow-x-hidden custom-scrollbar bg-bg-surface/30 backdrop-blur-sm relative">
 			{/* Hidden File Input */}
 			<input
 				type="file"
@@ -586,32 +586,35 @@ export const ColorCreator = ({
 				{/* Center: The Core Interaction (Swappable Instrument) */}
 				<div className="relative w-[320px] h-[320px] flex-none flex items-center justify-center group scale-95 transition-all duration-300">
 					{pickerMode === "image" && activeImage ? (
-						<div className="absolute inset-0 w-full h-full flex items-center justify-center animate-in fade-in zoom-in duration-300">
-							<ImageCanvasPicker
-								onSelectColor={(hex) => {
-									commitHex(hex);
-									setSampledColors((prev) => {
-										if (prev.includes(hex)) return prev;
-										if (prev.length >= 10) {
-											toast.standard(
-												<span>
-													<span className="text-accent-cyan">
-														Orbit full
-													</span>{" "}
-													(10/10)
-												</span>
-											);
-											return prev;
-										}
-										return [...prev, hex];
-									});
-								}}
-								imageUrl={activeImage}
-								speedVal={speedVal}
-								senseVal={senseVal}
-								zoomVal={zoomVal}
-								rotateVal={rotateVal}
-							/>
+						<div className="absolute inset-0 w-full h-full flex items-center justify-center animate-in fade-in zoom-in duration-300 z-40 pointer-events-none">
+							<div className="pointer-events-auto w-full h-full flex items-center justify-center">
+								<ImageCanvasPicker
+									onSelectColor={(hex) => {
+										commitHex(hex);
+										setSampledColors((prev) => {
+											if (prev.includes(hex)) return prev;
+											if (prev.length >= 10) {
+												toast.standard(
+													<span>
+														<span className="text-accent-cyan">
+															Orbit full
+														</span>{" "}
+														(10/10)
+													</span>
+												);
+												return prev;
+											}
+											return [...prev, hex];
+										});
+									}}
+									imageUrl={activeImage}
+									speedVal={speedVal}
+									senseVal={senseVal}
+									zoomVal={zoomVal}
+									rotateVal={rotateVal}
+									onHoverColor={setHoverHex}
+								/>
+							</div>
 						</div>
 					) : (
 						<div className="absolute inset-0 flex items-center justify-center animate-in fade-in zoom-in duration-300 z-40 pointer-events-none">
@@ -771,14 +774,16 @@ export const ColorCreator = ({
 							}`}
 							title="Toggle Orbital Selection Mode"
 						>
-							<Crosshair
-								size={18}
-								className={
-									isSamplerActive
-										? "rotate-90 scale-110"
-										: "hover:rotate-90"
-								}
-							/>
+							{isSamplerActive ? (
+								<span className="font-mono text-[10px] font-bold">
+									{sampledColors.length}/10
+								</span>
+							) : (
+								<Crosshair
+									size={18}
+									className="hover:rotate-90 transition-transform duration-300"
+								/>
+							)}
 							{isSamplerActive && (
 								<div className="absolute inset-0 rounded-full animate-pulse bg-accent-cyan/20 -z-10" />
 							)}
@@ -926,7 +931,7 @@ export const ColorCreator = ({
 								id: "atmosphere",
 								icon: Orbit,
 								color: "text-accent-violet",
-								title: "Atmosphere",
+								title: "Kaleidoscope",
 								action: activateCrayons,
 							},
 							{
@@ -1008,7 +1013,7 @@ export const ColorCreator = ({
 														"*"
 													);
 												}}
-												className="absolute -top-1 -right-1 w-3 h-3 bg-accent-cyan rounded-full text-white flex items-center justify-center opacity-0 group-hover/modebtn:opacity-100 transition-all duration-200 scale-75 group-hover/modebtn:scale-100 shadow-sm hover:bg-cyan-400 z-20"
+												className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-white flex items-center justify-center opacity-0 group-hover/modebtn:opacity-100 transition-all duration-200 scale-75 group-hover/modebtn:scale-100 shadow-sm hover:bg-red-600 z-20"
 											>
 												<X size={7} strokeWidth={3} />
 											</button>
