@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { colord } from "colord";
 import {
 	RefreshCw,
@@ -16,6 +16,12 @@ import { PaletteGenerator } from "./lab/PaletteGenerator";
 import { ContrastLab } from "./lab/ContrastLab";
 import { ColorMixer } from "./lab/ColorMixer";
 import { ColorLibrary } from "./lab/ColorLibrary";
+import { PaletteLibrary } from "./lab/PaletteLibrary";
+import {
+	toggleFavoriteWithMetadata,
+	togglePaletteWithMetadata,
+} from "../utils/favorites";
+import { PresetColor } from "../data/colorPresets";
 
 interface ColorAtelierProps {
 	seedColor: string;
@@ -27,9 +33,21 @@ interface ColorAtelierProps {
 	onComplete: () => void;
 	settings: any;
 	updateSettings: (newSettings: any) => void;
-	activeTab: "atelier" | "generator" | "contrast" | "mixer" | "library";
+	activeTab:
+		| "atelier"
+		| "generator"
+		| "contrast"
+		| "mixer"
+		| "library"
+		| "palettes";
 	setActiveTab: (
-		tab: "atelier" | "generator" | "contrast" | "mixer" | "library"
+		tab:
+			| "atelier"
+			| "generator"
+			| "contrast"
+			| "mixer"
+			| "library"
+			| "palettes"
 	) => void;
 }
 
@@ -50,6 +68,14 @@ export const ColorAtelier = ({
 		"complementary" | "analogous" | "triadic" | "manual"
 	>("complementary");
 	const [locked, setLocked] = useState({ secondary: false, tertiary: false });
+
+	const [generatorColors, setGeneratorColors] = useState<string[]>([
+		"#3D8BFF",
+		"#00C2FF",
+		"#9D4EDD",
+		"#FF006E",
+		"#FFBE0B",
+	]);
 
 	// Auto-update harmonies if not manual/locked
 	useEffect(() => {
@@ -73,35 +99,154 @@ export const ColorAtelier = ({
 		if (!locked.tertiary && tert) setTertiaryColor(tert);
 	}, [seedColor, harmonyMode]);
 
-	const toggleFavoriteColor = (color: string) => {
+	const toggleFavoriteColor = (
+		color: string,
+		existingMetadata?: PresetColor
+	) =>
+		toggleFavoriteWithMetadata({
+			color,
+			existingMetadata,
+			settings,
+			updateSettings,
+		});
+
+	// Bulk add colors to library
+	const bulkAddColors = (colors: PresetColor[]) => {
 		const library = settings.library || {
 			colors: [],
 			fonts: [],
 			palettes: [],
 		};
-		const exists = library.colors.includes(color);
-		const newColors = exists
-			? library.colors.filter((c: string) => c !== color)
-			: [...library.colors, color];
 
-		updateSettings({ library: { ...library, colors: newColors } });
+		// Merge new colors with existing ones
+		const updatedColors = [...library.colors, ...colors];
+
+		updateSettings({
+			library: {
+				...library,
+				colors: updatedColors,
+			},
+		});
+	};
+
+	// Bulk remove colors from library
+	const bulkRemoveColors = (colorsToRemove: PresetColor[]) => {
+		const library = settings.library || {
+			colors: [],
+			fonts: [],
+			palettes: [],
+		};
+
+		// Create set of hex values to remove for O(1) lookup
+		const hexesToRemove = new Set(
+			colorsToRemove.map((c) => c.value.toUpperCase())
+		);
+
+		const updatedColors = library.colors.filter(
+			(c: string | PresetColor) => {
+				const hex = typeof c === "string" ? c : c.value;
+				return !hexesToRemove.has(hex.toUpperCase());
+			}
+		);
+
+		updateSettings({
+			library: {
+				...library,
+				colors: updatedColors,
+			},
+		});
 	};
 
 	const savePalette = (colors: string[]) => {
+		togglePaletteWithMetadata({
+			colors,
+			settings,
+			updateSettings,
+		});
+	};
+
+	const createGroup = (name: string, description?: string) => {
 		const library = settings.library || {
 			colors: [],
+			colorGroups: [],
 			fonts: [],
 			palettes: [],
 		};
-		const newPalette = {
-			name: `Palette ${library.palettes.length + 1}`,
-			colors,
+		const newGroup = {
+			id: `group-${Date.now()}-${Math.random()
+				.toString(36)
+				.slice(2, 11)}`,
+			name,
+			description,
+			colorIds: [],
+			isActive: true,
+			isHidden: false,
 		};
 		updateSettings({
 			library: {
 				...library,
-				palettes: [...library.palettes, newPalette],
+				colorGroups: [...(library.colorGroups || []), newGroup],
 			},
+		});
+	};
+
+	const updateGroup = (id: string, updates: Partial<any>) => {
+		const library = settings.library;
+		if (!library?.colorGroups) return;
+		const updatedGroups = library.colorGroups.map((g: any) =>
+			g.id === id ? { ...g, ...updates } : g
+		);
+		updateSettings({
+			library: { ...library, colorGroups: updatedGroups },
+		});
+	};
+
+	const deleteGroup = (id: string) => {
+		const library = settings.library;
+		if (!library?.colorGroups) return;
+		const updatedGroups = library.colorGroups.filter(
+			(g: any) => g.id !== id
+		);
+		updateSettings({
+			library: { ...library, colorGroups: updatedGroups },
+		});
+	};
+
+	const moveColor = (colorHex: string, targetGroupId: string | null) => {
+		const library = settings.library;
+		if (!library?.colorGroups) return;
+
+		// 1. Remove from all groups first (disjoint ownership)
+		let updatedGroups = library.colorGroups.map((g: any) => ({
+			...g,
+			colorIds: g.colorIds.filter(
+				(c: string) => c.toUpperCase() !== colorHex.toUpperCase()
+			),
+		}));
+
+		// 2. Add to target group if specified
+		if (targetGroupId) {
+			updatedGroups = updatedGroups.map((g: any) => {
+				if (g.id === targetGroupId) {
+					return {
+						...g,
+						colorIds: [...g.colorIds, colorHex],
+					};
+				}
+				return g;
+			});
+		}
+
+		updateSettings({
+			library: { ...library, colorGroups: updatedGroups },
+		});
+	};
+
+	const reorderGroups = (newOrder: any[]) => {
+		const library = settings.library;
+		if (!library) return;
+		updateSettings({
+			library: { ...library, colorGroups: newOrder },
 		});
 	};
 
@@ -116,15 +261,21 @@ export const ColorAtelier = ({
 		updateSettings({ library: { ...library, palettes: newPalettes } });
 	};
 
+	const backgroundRef = useRef<HTMLDivElement | null>(null);
+
+	useEffect(() => {
+		if (backgroundRef.current && activeTab === "atelier") {
+			backgroundRef.current.style.background = `radial-gradient(circle at 50% 50%, ${seedColor}, transparent 70%)`;
+		}
+	}, [activeTab, seedColor]);
+
 	return (
 		<div className="h-full flex flex-col gap-6 relative overflow-hidden">
 			{/* Background Ambience (Only in Atelier Mode) */}
 			{activeTab === "atelier" && (
 				<div
+					ref={backgroundRef}
 					className="absolute inset-0 opacity-20 blur-[100px] transition-colors duration-1000 pointer-events-none"
-					style={{
-						background: `radial-gradient(circle at 50% 50%, ${seedColor}, transparent 70%)`,
-					}}
 				/>
 			)}
 
@@ -159,7 +310,13 @@ export const ColorAtelier = ({
 					active={activeTab === "library"}
 					onClick={() => setActiveTab("library")}
 					icon={BookOpen}
-					label="Library"
+					label="Colors"
+				/>
+				<TabButton
+					active={activeTab === "palettes"}
+					onClick={() => setActiveTab("palettes")}
+					icon={Palette}
+					label="Palettes"
 				/>
 			</div>
 
@@ -273,6 +430,14 @@ export const ColorAtelier = ({
 						<PaletteGenerator
 							key="generator"
 							onSavePalette={savePalette}
+							colors={generatorColors}
+							setColors={setGeneratorColors}
+							favoriteColors={
+								settings.library?.colors?.map((c: any) =>
+									typeof c === "string" ? c : c.value
+								) || []
+							}
+							onToggleFavoriteColor={toggleFavoriteColor}
 						/>
 					)}
 
@@ -304,7 +469,39 @@ export const ColorAtelier = ({
 									}
 								}
 								onLoadColor={setSeedColor}
-								onRemoveColor={toggleFavoriteColor}
+								onToggleFavorite={toggleFavoriteColor}
+								onRemovePalette={removePalette}
+								onAddColors={bulkAddColors}
+								onRemoveColors={bulkRemoveColors}
+								onCreateGroup={createGroup}
+								onUpdateGroup={updateGroup}
+								onDeleteGroup={deleteGroup}
+								onMoveColor={moveColor}
+								onReorderGroups={reorderGroups}
+								view="colors"
+							/>
+						</div>
+					)}
+
+					{activeTab === "palettes" && (
+						<div className="p-8 h-full">
+							<PaletteLibrary
+								key="palettes"
+								library={
+									settings.library || {
+										colors: [],
+										fonts: [],
+										palettes: [],
+									}
+								}
+								onInspectPalette={(palette) => {
+									// Just load the first color as seed for now
+									if (
+										palette.colors &&
+										palette.colors.length > 0
+									)
+										setSeedColor(palette.colors[0]);
+								}}
 								onRemovePalette={removePalette}
 							/>
 						</div>
@@ -339,6 +536,14 @@ const Orb = ({
 	toggleLock,
 }: any) => {
 	const sizeClass = size === "lg" ? "w-48 h-48" : "w-32 h-32";
+	const orbRef = useRef<HTMLDivElement | null>(null);
+
+	useEffect(() => {
+		if (orbRef.current) {
+			orbRef.current.style.backgroundColor = color;
+			orbRef.current.style.boxShadow = `0 0 30px ${color}40, inset 0 0 20px rgba(0,0,0,0.2)`;
+		}
+	}, [color]);
 
 	return (
 		<div className="flex flex-col items-center gap-4 group relative">
@@ -360,10 +565,7 @@ const Orb = ({
 						? "z-10 shadow-[0_0_50px_rgba(0,0,0,0.5)]"
 						: "opacity-90 hover:opacity-100"
 				}`}
-				style={{
-					backgroundColor: color,
-					boxShadow: `0 0 30px ${color}40, inset 0 0 20px rgba(0,0,0,0.2)`,
-				}}
+				ref={orbRef}
 			>
 				{/* Invisible Inputs covering the orb */}
 				<input
@@ -372,6 +574,7 @@ const Orb = ({
 					onChange={(e) => setColor(e.target.value)}
 					className="absolute inset-0 w-full h-full opacity-0 cursor-pointer rounded-full"
 					disabled={locked}
+					title={`Set ${label} color`}
 				/>
 
 				{/* Hover Icon */}

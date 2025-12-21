@@ -1,27 +1,124 @@
-@import url('https://fonts.googleapis.com/css2?family=Hubballi&family=Inter:wght@300;400;500;600&family=Satoshi:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Hubballi&family=Inter:wght@300;400;500;600&family=Satoshi:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-  @apply bg-bg-void text-gray-300 font-sans antialiased overflow-hidden;
-  /* Cinematic Easing */
-  transition-timing-function: cubic-bezier(0.32, 0.12, 0.0, 1);
+	@apply bg-bg-void text-gray-300 font-sans antialiased overflow-hidden;
+	/* Cinematic Easing */
+	transition-timing-function: cubic-bezier(0.32, 0.12, 0, 1);
+}
+
+/*
+  During native HTML5 drag, some browsers will show a default arrow cursor.
+  We force a grabbing cursor globally while organizing/reordering.
+*/
+html.organize-dragging,
+html.organize-dragging body,
+html.organize-dragging body *,
+body.organize-dragging,
+body.organize-dragging * {
+	cursor: grabbing !important;
+	user-select: none !important;
+	-webkit-user-select: none !important;
+}
+
+/* Shared drop-target highlight for pointer-based organize DnD */
+.organize-drop-target-active {
+	/* Match Tailwind `rounded-lg` */
+	border-radius: 8px;
+	box-shadow:
+    /* Accent cyan ring */ 0 0 0 2px rgba(63, 227, 242, 0.8),
+		0 10px 26px rgba(0, 0, 0, 0.28),
+		/* Match the active-tab underline glow: shadow-[0_0_8px_rgba(63,227,242,0.8)] */
+			0 0 8px rgba(63, 227, 242, 0.8);
+	transition: box-shadow 160ms ease, transform 160ms ease;
+}
+
+html.organize-dragging .organize-drop-target-active {
+	animation: organizeDropTargetPulse 900ms ease-in-out infinite;
+}
+
+@keyframes organizeDropTargetPulse {
+	0%,
+	100% {
+		box-shadow: 0 0 0 2px rgba(63, 227, 242, 0.7),
+			0 10px 26px rgba(0, 0, 0, 0.28), 0 0 8px rgba(63, 227, 242, 0.7);
+	}
+	50% {
+		box-shadow: 0 0 0 2px rgba(63, 227, 242, 0.9),
+			0 10px 26px rgba(0, 0, 0, 0.28), 0 0 10px rgba(63, 227, 242, 0.9);
+	}
 }
 
 @layer components {
-  .depth-card {
-    @apply bg-bg-surface rounded-2xl border border-glass-stroke shadow-monolith transition-all duration-500 ease-out;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    @apply bg-transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-glass-stroke rounded-full hover:bg-glass-highlight;
-  }
+	.depth-card {
+		@apply bg-bg-surface rounded-2xl border border-glass-stroke shadow-monolith transition-all duration-500 ease-out;
+	}
+	/* Blueprint grid background used in edit mode */
+	.bg-blueprint-grid {
+		background-image: linear-gradient(
+				rgba(63, 227, 242, 0.1) 1px,
+				transparent 1px
+			),
+			linear-gradient(90deg, rgba(63, 227, 242, 0.1) 1px, transparent 1px);
+		background-size: 20px 20px;
+	}
+
+	.custom-scrollbar::-webkit-scrollbar {
+		width: 6px;
+	}
+	.custom-scrollbar::-webkit-scrollbar-track {
+		@apply bg-transparent;
+	}
+	.custom-scrollbar::-webkit-scrollbar-thumb {
+		@apply bg-glass-stroke rounded-full hover:bg-glass-highlight;
+	}
+
+	/* Dynamic text color using CSS variable */
+	.text-dynamic {
+		color: var(--dynamic-fg);
+	}
+
+	/* Dynamic font families using CSS variables */
+	.font-header-dynamic {
+		font-family: var(--header-font);
+	}
+	.font-body-dynamic {
+		font-family: var(--body-font);
+	}
+
+	/* Orbital Sampler Animations */
+	.animate-pulse-subtle {
+		animation: pulse-subtle 3s ease-in-out infinite;
+	}
+
+	@keyframes pulse-subtle {
+		0%,
+		100% {
+			opacity: 1;
+			transform: scale(1);
+		}
+		50% {
+			opacity: 0.8;
+			transform: scale(1.05);
+		}
+	}
+
+	.animate-orbit {
+		animation: swing-orbit var(--orbit-duration, 8s) linear infinite;
+		animation-delay: var(--orbit-delay, 0s);
+	}
+
+	@keyframes swing-orbit {
+		from {
+			transform: rotate(0deg) translateX(var(--orbit-radius, 32px))
+				rotate(0deg);
+		}
+		to {
+			transform: rotate(360deg) translateX(var(--orbit-radius, 32px))
+				rotate(-360deg);
+		}
+	}
 }

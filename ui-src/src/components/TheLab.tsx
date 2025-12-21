@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { colord } from "colord";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -6,7 +6,6 @@ import {
 	Sparkles,
 	GitMerge,
 	Copy,
-	Heart,
 	Type,
 	BookOpen,
 	Lock,
@@ -14,6 +13,7 @@ import {
 	Save,
 	Trash,
 } from "lucide-react";
+import { HeartToggle } from "./common/HeartToggle";
 
 interface TheLabProps {
 	settings: any;
@@ -243,8 +243,8 @@ const PaletteGenerator = ({
 				generate();
 			}
 		};
-		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
+		globalThis.addEventListener("keydown", handleKeyDown);
+		return () => globalThis.removeEventListener("keydown", handleKeyDown);
 	}, [generate]);
 
 	const toggleLock = (index: number) => {
@@ -282,8 +282,10 @@ const PaletteGenerator = ({
 							key={i}
 							layout
 							className="flex-1 h-full relative group flex flex-col items-center justify-center border-r border-white/5 last:border-0 hover:flex-[1.2] transition-all duration-300"
-							style={{ backgroundColor: color }}
 						>
+							<svg className="absolute inset-0 w-full h-full">
+								<rect width="100%" height="100%" fill={color} />
+							</svg>
 							<div className="bg-black/20 backdrop-blur-md p-4 rounded-xl flex flex-col items-center gap-4 opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0">
 								{/* Hex Input (Editable) */}
 								<div className="relative">
@@ -294,6 +296,8 @@ const PaletteGenerator = ({
 											updateColor(i, e.target.value)
 										}
 										className="bg-transparent text-white font-mono text-lg font-bold text-center w-24 focus:outline-none uppercase"
+										title="Hex Value"
+										placeholder="#000000"
 									/>
 									<input
 										type="color"
@@ -302,6 +306,7 @@ const PaletteGenerator = ({
 											updateColor(i, e.target.value)
 										}
 										className="absolute inset-0 opacity-0 cursor-pointer"
+										title="Pick Color"
 									/>
 								</div>
 
@@ -354,15 +359,19 @@ const ContrastLab = () => {
 	const [bg, setBg] = useState("#3D8BFF");
 
 	const contrast = colord(bg).contrast(fg);
-	const score =
-		contrast >= 7
-			? "AAA"
-			: contrast >= 4.5
-			? "AA"
-			: contrast >= 3
-			? "AA Large"
-			: "Fail";
+	const getContrastScore = (ratio: number) => {
+		if (ratio >= 7) return "AAA";
+		if (ratio >= 4.5) return "AA";
+		if (ratio >= 3) return "AA Large";
+		return "Fail";
+	};
+	const score = getContrastScore(contrast);
 	const isPass = contrast >= 4.5;
+
+	const textRef = useRef<HTMLDivElement>(null);
+	useEffect(() => {
+		textRef.current?.style.setProperty("--dynamic-fg", fg);
+	}, [fg]);
 
 	return (
 		<div className="h-full flex flex-row gap-8">
@@ -394,11 +403,14 @@ const ContrastLab = () => {
 			</div>
 
 			{/* Preview */}
-			<div
-				className="flex-1 rounded-2xl flex flex-col items-center justify-center p-12 transition-colors duration-200 shadow-inner"
-				style={{ backgroundColor: bg }}
-			>
-				<div className="space-y-8 text-center" style={{ color: fg }}>
+			<div className="flex-1 rounded-2xl flex flex-col items-center justify-center p-12 transition-colors duration-200 shadow-inner relative overflow-hidden">
+				<svg className="absolute inset-0 w-full h-full">
+					<rect width="100%" height="100%" fill={bg} />
+				</svg>
+				<div
+					ref={textRef}
+					className="space-y-8 text-center text-dynamic"
+				>
 					<h1 className="text-6xl font-brand">Heading</h1>
 					<p className="text-lg max-w-md leading-relaxed">
 						The quick brown fox jumps over the lazy dog.
@@ -440,6 +452,7 @@ const ColorMixer = ({ onFavorite, favorites }: any) => {
 						value={steps}
 						onChange={(e) => setSteps(Number(e.target.value))}
 						className="w-full accent-accent-cyan"
+						title="Steps"
 					/>
 				</div>
 				<ColorInput color={colorB} onChange={setColorB} label="End" />
@@ -448,24 +461,20 @@ const ColorMixer = ({ onFavorite, favorites }: any) => {
 			<div className="w-full h-32 flex rounded-2xl overflow-hidden shadow-2xl border border-white/10">
 				{mix.map((hex, i) => (
 					<div key={i} className="flex-1 h-full relative group">
-						<div
-							className="w-full h-full"
-							style={{ backgroundColor: hex }}
-						/>
+						<svg className="w-full h-full">
+							<rect width="100%" height="100%" fill={hex} />
+						</svg>
 						<div className="absolute bottom-2 left-0 right-0 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-							<button
-								onClick={() => onFavorite(hex)}
-								className="p-1.5 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-md"
-							>
-								<Heart
-									size={12}
-									className={
-										favorites.includes(hex)
-											? "fill-current text-red-500"
-											: ""
-									}
-								/>
-							</button>
+							<HeartToggle
+								isFavorite={favorites.includes(hex)}
+								onToggle={() => onFavorite(hex)}
+								size={12}
+								className={
+									favorites.includes(hex)
+										? "scale-110"
+										: "text-white hover:text-red-500"
+								}
+							/>
 						</div>
 					</div>
 				))}
@@ -495,16 +504,26 @@ const TypeSandbox = ({ onFavorite, favorites }: any) => {
 		setBodyFont(FONTS[Math.floor(Math.random() * FONTS.length)]);
 	};
 
+	const previewRef = useRef<HTMLDivElement>(null);
+	useEffect(() => {
+		previewRef.current?.style.setProperty("--header-font", headerFont);
+		previewRef.current?.style.setProperty("--body-font", bodyFont);
+	}, [headerFont, bodyFont]);
+
 	return (
 		<div className="h-full flex flex-row gap-8">
 			<div className="w-1/3 flex flex-col gap-6 p-6 bg-black/20 rounded-xl border border-glass-stroke">
 				<h3 className="text-white font-brand text-lg mb-2">Controls</h3>
 				<div className="space-y-4">
 					<div>
-						<label className="text-xs text-gray-500 font-mono block mb-2">
+						<label
+							htmlFor="header-font-select"
+							className="text-xs text-gray-500 font-mono block mb-2"
+						>
 							HEADER FONT
 						</label>
 						<select
+							id="header-font-select"
 							value={headerFont}
 							onChange={(e) => setHeaderFont(e.target.value)}
 							className="w-full bg-bg-void border border-glass-stroke rounded-lg p-2 text-white font-mono text-xs"
@@ -517,10 +536,14 @@ const TypeSandbox = ({ onFavorite, favorites }: any) => {
 						</select>
 					</div>
 					<div>
-						<label className="text-xs text-gray-500 font-mono block mb-2">
+						<label
+							htmlFor="body-font-select"
+							className="text-xs text-gray-500 font-mono block mb-2"
+						>
 							BODY FONT
 						</label>
 						<select
+							id="body-font-select"
 							value={bodyFont}
 							onChange={(e) => setBodyFont(e.target.value)}
 							className="w-full bg-bg-void border border-glass-stroke rounded-lg p-2 text-white font-mono text-xs"
@@ -538,33 +561,31 @@ const TypeSandbox = ({ onFavorite, favorites }: any) => {
 					<button
 						onClick={randomize}
 						className="flex-1 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white font-mono text-xs transition-colors"
+						title="Randomize"
 					>
 						Randomize
 					</button>
-					<button
-						onClick={() => onFavorite(pairingKey)}
-						className={`p-2 rounded-lg border transition-all ${
-							isFavorite
-								? "bg-red-500 text-white border-red-500"
-								: "bg-transparent text-gray-400 border-glass-stroke hover:text-white"
-						}`}
-					>
-						<Heart
+					<div className="p-2 rounded-lg border border-transparent hover:border-glass-stroke transition-all">
+						<HeartToggle
+							isFavorite={isFavorite}
+							onToggle={() => onFavorite(pairingKey)}
 							size={16}
-							className={isFavorite ? "fill-current" : ""}
+							className={
+								isFavorite ? "scale-110" : "hover:scale-110"
+							}
 						/>
-					</button>
+					</div>
 				</div>
 			</div>
 
-			<div className="flex-1 bg-white p-12 rounded-2xl flex flex-col justify-center gap-6 shadow-monolith text-black">
-				<h1
-					className="text-5xl leading-tight"
-					style={{ fontFamily: headerFont }}
-				>
+			<div
+				ref={previewRef}
+				className="flex-1 bg-white p-12 rounded-2xl flex flex-col justify-center gap-6 shadow-monolith text-black"
+			>
+				<h1 className="text-5xl leading-tight font-header-dynamic">
 					The quick brown fox jumps over the lazy dog.
 				</h1>
-				<div className="space-y-4" style={{ fontFamily: bodyFont }}>
+				<div className="space-y-4 font-body-dynamic">
 					<p className="text-lg leading-relaxed opacity-80 max-w-xl">
 						Good typography is invisible. It allows the reader to
 						focus on the content, not the formatting.
@@ -613,6 +634,7 @@ const Library = ({
 										<button
 											onClick={() => onRemovePalette(i)}
 											className="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+											title="Delete Palette"
 										>
 											<Trash size={12} />
 										</button>
@@ -623,10 +645,15 @@ const Library = ({
 												<div
 													key={ci}
 													className="flex-1 h-full"
-													style={{
-														backgroundColor: c,
-													}}
-												/>
+												>
+													<svg className="w-full h-full">
+														<rect
+															width="100%"
+															height="100%"
+															fill={c}
+														/>
+													</svg>
+												</div>
 											)
 										)}
 									</div>
@@ -667,19 +694,14 @@ const Library = ({
 										<button
 											onClick={() => onRemoveFont(f)}
 											className="absolute top-2 right-2 text-gray-300 hover:text-red-500"
+											title="Delete Pairing"
 										>
 											<Trash size={12} />
 										</button>
-										<h4
-											className="text-xl mb-1 truncate"
-											style={{ fontFamily: header }}
-										>
+										<h4 className="text-xl mb-1 truncate font-header-dynamic">
 											{header}
 										</h4>
-										<p
-											className="text-sm opacity-60 truncate"
-											style={{ fontFamily: body }}
-										>
+										<p className="text-sm opacity-60 truncate font-body-dynamic">
 											{body}
 										</p>
 									</div>
@@ -705,21 +727,37 @@ const Library = ({
 									key={color}
 									className="group relative aspect-square rounded-xl overflow-hidden border border-white/10 shadow-lg"
 								>
-									<div
-										className="w-full h-full cursor-pointer"
-										style={{ backgroundColor: color }}
-										onClick={() => onLoadColor(color)}
-										title="Click to load as seed"
-									/>
 									<button
-										onClick={() => onRemoveColor(color)}
-										className="absolute top-1 right-1 p-1 rounded-full bg-black/20 hover:bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-all"
+										type="button"
+										className="w-full h-full cursor-pointer bg-transparent border-none p-0"
+										onClick={() => onLoadColor(color)}
+										onKeyDown={(e) => {
+											if (
+												e.key === "Enter" ||
+												e.key === " "
+											)
+												onLoadColor(color);
+										}}
+										aria-label={`Load color ${color}`}
 									>
-										<Heart
-											size={12}
-											className="fill-current text-white"
-										/>
+										<svg className="w-full h-full">
+											<rect
+												width="100%"
+												height="100%"
+												fill={color}
+											/>
+										</svg>
 									</button>
+									<div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-all">
+										<HeartToggle
+											isFavorite={true}
+											onToggle={() =>
+												onRemoveColor(color)
+											}
+											size={12}
+											className="text-white"
+										/>
+									</div>
 									<div className="absolute bottom-0 inset-x-0 bg-black/40 backdrop-blur-sm p-1 text-center">
 										<span className="text-[8px] font-mono text-white">
 											{color}
@@ -745,12 +783,15 @@ const ColorControl = ({ label, color, onChange }: any) => (
 				value={color}
 				onChange={(e) => onChange(e.target.value)}
 				className="w-10 h-10 rounded-lg border border-glass-stroke bg-transparent cursor-pointer"
+				title="Pick Color"
 			/>
 			<input
 				type="text"
 				value={color}
 				onChange={(e) => onChange(e.target.value)}
 				className="flex-1 bg-transparent border-b border-glass-stroke text-white font-mono text-sm focus:outline-none focus:border-accent-cyan"
+				title="Hex Input"
+				placeholder="#000000"
 			/>
 		</div>
 	</div>
@@ -761,15 +802,16 @@ const ColorInput = ({ color, onChange, label }: any) => (
 		<label className="text-[10px] font-mono text-gray-500 uppercase">
 			{label}
 		</label>
-		<div
-			className="w-16 h-16 rounded-2xl shadow-lg border-2 border-white/10 relative overflow-hidden"
-			style={{ backgroundColor: color }}
-		>
+		<div className="w-16 h-16 rounded-2xl shadow-lg border-2 border-white/10 relative overflow-hidden">
+			<svg className="absolute inset-0 w-full h-full">
+				<rect width="100%" height="100%" fill={color} />
+			</svg>
 			<input
 				type="color"
 				value={color}
 				onChange={(e) => onChange(e.target.value)}
 				className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+				title="Pick Color"
 			/>
 		</div>
 	</div>

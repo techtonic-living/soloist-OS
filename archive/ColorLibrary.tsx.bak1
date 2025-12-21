@@ -1,0 +1,959 @@
+import { useState, useMemo } from "react";
+import {
+	Heart,
+	Copy,
+	Check,
+	FolderPlus,
+	Trash2,
+	FolderOpen,
+	Book,
+} from "lucide-react";
+import {
+	DndContext,
+	closestCenter,
+	KeyboardSensor,
+	PointerSensor,
+	useSensor,
+	useSensors,
+	DragOverlay,
+	DragStartEvent,
+	DragEndEvent,
+} from "@dnd-kit/core";
+import {
+	arrayMove,
+	SortableContext,
+	sortableKeyboardCoordinates,
+	useSortable,
+	rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { PRESET_LIBRARIES, PresetColor } from "../../data/colorPresets";
+import { colord } from "colord";
+
+// --- Helper Functions ---
+const fallbackCopy = (text: string) => {
+	const textArea = document.createElement("textarea");
+	textArea.value = text;
+	textArea.style.position = "fixed";
+	textArea.style.left = "-9999px";
+	textArea.style.top = "0";
+	document.body.appendChild(textArea);
+	textArea.focus();
+	textArea.select();
+	try {
+		document.execCommand("copy");
+	} catch (err) {
+		console.error("Fallback copy failed", err);
+	}
+	document.body.removeChild(textArea);
+};
+
+const performCopy = (text: string) => {
+	if (navigator.clipboard && navigator.clipboard.writeText) {
+		navigator.clipboard.writeText(text).catch(() => {
+			fallbackCopy(text);
+		});
+	} else {
+		fallbackCopy(text);
+	}
+};
+
+interface ColorGroup {
+	id: string;
+	name: string;
+	colors: string[]; // Array of hex strings
+	isExpanded: boolean;
+}
+
+export const ColorLibrary = ({
+	library,
+	onLoadColor,
+	onRemoveColor,
+	onRemovePalette,
+	onInspectColor,
+	view = "all",
+	// Optional props for external state management
+	onMoveColors,
+	onDeleteGroup,
+	onCreateGroup,
+	onRenameGroup,
+}: {
+	library: any;
+	onLoadColor: (c: string) => void;
+	onRemoveColor: (c: string, metadata?: PresetColor) => void;
+	onRemovePalette: (i: number) => void;
+	onInspectColor?: (c: PresetColor) => void;
+	view?: "all" | "colors" | "palettes";
+	// Extended interface for groups/bulk actions allowing parent to pass them
+	onAddColors?: (colors: any[]) => void;
+	onMoveColors?: (colors: string[], groupId: string) => void;
+	onMoveColor?: (color: string, groupId: string) => void;
+	onDeleteGroup?: (groupId: string) => void;
+	onCreateGroup?: (name: string, description: string) => void;
+	onRenameGroup?: (groupId: string, name: string) => void;
+	onUpdateGroup?: (groupId: string, updates: any) => void;
+	onReorderGroups?: (groups: any[]) => void;
+	onRemoveColors?: (colors: any[]) => void;
+}) => {
+	const [activeSubTab, setActiveSubTab] = useState<"favorites" | "presets">(
+		"favorites"
+	);
+
+	// Group State
+	const [groups, setGroups] = useState<ColorGroup[]>([
+		{ id: "ungrouped", name: "Ungrouped", colors: [], isExpanded: true },
+	]);
+	const [draggedColor, setDraggedColor] = useState<string | null>(null);
+	const [selectedColors, setSelectedColors] = useState<Set<string>>(
+		new Set()
+	);
+	const [isSelectionMode, setIsSelectionMode] = useState(false);
+	const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+
+	// Sync groups with library colors
+	useMemo(() => {
+		if (!library || !library.colors) return;
+
+		// Get all current favorite colors
+		const currentFavorites = library.colors.map((c: any) =>
+			typeof c === "string" ? c.toUpperCase() : c.value.toUpperCase()
+		);
+
+		setGroups((prevGroups) => {
+			// Deep copy
+			const newGroups = prevGroups.map((g) => ({
+				...g,
+				colors: [...g.colors],
+			}));
+
+			// 1. Remove colors from groups that are no longer favorites
+			newGroups.forEach((g) => {
+				g.colors = g.colors.filter((c) => currentFavorites.includes(c));
+			});
+
+			// 2. Add new favorites to 'ungrouped' if not present in any group
+			const allGroupedColors = new Set(
+				newGroups.flatMap((g) => g.colors)
+			);
+			const newColors = currentFavorites.filter(
+				(c: string) => !allGroupedColors.has(c)
+			);
+
+			const ungrouped = newGroups.find((g) => g.id === "ungrouped");
+			if (ungrouped) {
+				ungrouped.colors.push(...newColors);
+			} else {
+				// Should effectively never happen unless ungrouped deleted
+				newGroups.push({
+					id: "ungrouped",
+					name: "Ungrouped",
+					colors: newColors,
+					isExpanded: true,
+				});
+			}
+
+			return newGroups;
+		});
+	}, [library.colors]);
+
+	// DnD Sensors
+	const sensors = useSensors(
+		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+		useSensor(KeyboardSensor, {
+			coordinateGetter: sortableKeyboardCoordinates,
+		})
+	);
+
+	// DnD Handlers
+	const handleDragStart = (event: DragStartEvent) => {
+		setDraggedColor(event.active.id as string);
+	};
+
+	const handleDragEnd = (event: DragEndEvent) => {
+		const { active, over } = event;
+		setDraggedColor(null);
+
+		if (!over) return;
+
+		const activeColor = active.id as string;
+		const overId = over.id as string;
+
+		// 1. Dropping onto a Group Header (Move to that group)
+		if (overId.startsWith("group-")) {
+			const targetGroupId = overId.replace("group-", "");
+			moveColorToGroup(activeColor, targetGroupId);
+			return;
+		}
+
+		// 2. Reordering within list (Sortable)
+		// Find source group
+		const sourceGroup = groups.find((g) => g.colors.includes(activeColor));
+		const targetGroup = groups.find((g) => g.colors.includes(overId));
+
+		if (sourceGroup && targetGroup && sourceGroup.id === targetGroup.id) {
+			const oldIndex = sourceGroup.colors.indexOf(activeColor);
+			const newIndex = sourceGroup.colors.indexOf(overId);
+
+			if (oldIndex !== newIndex) {
+				setGroups((prev) =>
+					prev.map((g) => {
+						if (g.id === sourceGroup.id) {
+							return {
+								...g,
+								colors: arrayMove(g.colors, oldIndex, newIndex),
+							};
+						}
+						return g;
+					})
+				);
+			}
+		} else if (
+			sourceGroup &&
+			targetGroup &&
+			sourceGroup.id !== targetGroup.id
+		) {
+			// Dragging between groups (if dropping on an item in another group)
+			moveColorToGroup(activeColor, targetGroup.id);
+		}
+	};
+
+	const moveColorToGroup = (color: string, targetGroupId: string) => {
+		setGroups((prev) => {
+			const newGroups = prev.map((g) => ({
+				...g,
+				colors: [...g.colors],
+			}));
+
+			// Remove from source
+			newGroups.forEach((g) => {
+				g.colors = g.colors.filter((c) => c !== color);
+			});
+
+			// Add to target
+			const target = newGroups.find((g) => g.id === targetGroupId);
+			if (target) {
+				target.colors.push(color);
+			}
+			return newGroups;
+		});
+
+		if (onMoveColors) onMoveColors([color], targetGroupId);
+	};
+
+	const createGroup = () => {
+		const newGroup: ColorGroup = {
+			id: crypto.randomUUID(),
+			name: "New Collection",
+			colors: [],
+			isExpanded: true,
+		};
+		setGroups((prev) => [newGroup, ...prev]);
+		setEditingGroupId(newGroup.id);
+
+		if (onCreateGroup) onCreateGroup(newGroup.name, "User created group");
+	};
+
+	const deleteGroup = (groupId: string) => {
+		if (groupId === "ungrouped") return;
+		setGroups((prev) => {
+			const groupToDelete = prev.find((g) => g.id === groupId);
+			const ungrouped = prev.find((g) => g.id === "ungrouped");
+
+			// Move colors back to ungrouped
+			if (groupToDelete && ungrouped) {
+				const newUngrouped = {
+					...ungrouped,
+					colors: [...ungrouped.colors, ...groupToDelete.colors],
+				};
+				return prev
+					.filter((g) => g.id !== groupId)
+					.map((g) => (g.id === "ungrouped" ? newUngrouped : g));
+			}
+
+			return prev.filter((g) => g.id !== groupId);
+		});
+
+		if (onDeleteGroup) onDeleteGroup(groupId);
+	};
+
+	const toggleSelection = (color: string) => {
+		const newSet = new Set(selectedColors);
+		if (newSet.has(color)) {
+			newSet.delete(color);
+		} else {
+			newSet.add(color);
+		}
+		setSelectedColors(newSet);
+	};
+
+	// Toggling favorite checks if it exists in the library prop
+	const isFavorite = (color: string) => {
+		if (!library || !library.colors) return false;
+		return library.colors.some((c: string | PresetColor) => {
+			const hexValue = typeof c === "string" ? c : c.value;
+			return hexValue.toUpperCase() === color.toUpperCase();
+		});
+	};
+
+	return (
+		<div className="h-full flex flex-col overflow-hidden relative">
+			{/* BULK ACTIONS TOOLBAR (Selection Mode) */}
+			{selectedColors.size > 0 && (
+				<div className="absolute bottom-4 left-4 right-4 bg-bg-raised border border-accent-cyan p-3 rounded-xl shadow-2xl z-50 flex items-center justify-between animate-in slide-in-from-bottom-4">
+					<span className="text-xs font-mono text-white ml-2">
+						{selectedColors.size} selected
+					</span>
+					<div className="flex items-center gap-2">
+						{/* Move to Group Dropdown (Simplified) */}
+						<div className="flex gap-1">
+							{groups
+								.filter((g) => g.id !== "ungrouped")
+								.slice(0, 3)
+								.map((g) => (
+									<button
+										key={g.id}
+										onClick={() => {
+											Array.from(selectedColors).forEach(
+												(c) => moveColorToGroup(c, g.id)
+											);
+											if (onMoveColors)
+												onMoveColors(
+													Array.from(selectedColors),
+													g.id
+												);
+											setSelectedColors(new Set());
+											setIsSelectionMode(false);
+										}}
+										className="px-2 py-1 rounded bg-black/20 hover:bg-black/40 text-[10px] text-white/80 transition-colors"
+									>
+										Move to {g.name}
+									</button>
+								))}
+						</div>
+
+						<div className="h-4 w-px bg-white/10 mx-2" />
+
+						<button
+							onClick={() => {
+								Array.from(selectedColors).forEach((c) =>
+									onRemoveColor(c)
+								);
+								setSelectedColors(new Set());
+								setIsSelectionMode(false);
+							}}
+							className="p-2 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
+							title="Delete Selected"
+						>
+							<Trash2 size={14} />
+						</button>
+						<button
+							onClick={() => {
+								setSelectedColors(new Set());
+								setIsSelectionMode(false);
+							}}
+							className="p-2 hover:bg-white/10 text-white/60 rounded-lg transition-colors"
+						>
+							<span className="text-xs">Cancel</span>
+						</button>
+					</div>
+				</div>
+			)}
+
+			{/* Sub-Navigation for Colors View */}
+			{view === "colors" && (
+				<div className="flex items-center justify-between mb-4 px-2 border-b border-glass-stroke">
+					<div className="flex gap-4">
+						<button
+							onClick={() => setActiveSubTab("favorites")}
+							className={`pb-2 text-xs font-mono uppercase tracking-wider transition-colors border-b-2 ${
+								activeSubTab === "favorites"
+									? "border-accent-cyan text-white"
+									: "border-transparent text-gray-500 hover:text-gray-300"
+							}`}
+						>
+							Favorites
+						</button>
+						<button
+							onClick={() => setActiveSubTab("presets")}
+							className={`pb-2 text-xs font-mono uppercase tracking-wider transition-colors border-b-2 ${
+								activeSubTab === "presets"
+									? "border-accent-cyan text-white"
+									: "border-transparent text-gray-500 hover:text-gray-300"
+							}`}
+						>
+							Libraries
+						</button>
+					</div>
+
+					{/* Groups Action (Only in Favorites) */}
+					{activeSubTab === "favorites" && (
+						<button
+							onClick={createGroup}
+							className="flex items-center gap-1.5 text-[10px] bg-white/5 hover:bg-white/10 text-white/80 px-2 py-1 rounded-md transition-colors mb-1"
+						>
+							<FolderPlus size={12} />
+							<span>New Group</span>
+						</button>
+					)}
+				</div>
+			)}
+
+			<div className="flex-1 overflow-y-auto pr-2 pb-20 custom-scrollbar">
+				<div className="space-y-12">
+					{/* Palettes View */}
+					{(view === "all" || view === "palettes") && (
+						<div className="space-y-4">
+							<h3 className="text-sm font-mono text-gray-400 uppercase tracking-widest border-b border-glass-stroke pb-2">
+								Saved Palettes
+							</h3>
+							{library.palettes.length === 0 ? (
+								<p className="text-gray-600 text-xs italic">
+									No saved palettes.
+								</p>
+							) : (
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+									{library.palettes.map(
+										(p: any, i: number) => (
+											<div
+												key={i}
+												className="bg-bg-raised border border-glass-stroke p-4 rounded-xl space-y-3 group"
+											>
+												<div className="flex items-center justify-between">
+													<span className="text-xs font-mono text-white">
+														{p.name}
+													</span>
+													<button
+														onClick={() =>
+															onRemovePalette(i)
+														}
+														className="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+													>
+														<Trash2 size={12} />
+													</button>
+												</div>
+												<div className="h-12 flex rounded-lg overflow-hidden w-full">
+													{p.colors.map(
+														(
+															c: string,
+															ci: number
+														) => (
+															<div
+																key={ci}
+																className="flex-1 h-full"
+																style={{
+																	backgroundColor:
+																		c,
+																}}
+															/>
+														)
+													)}
+												</div>
+												<div className="flex justify-end">
+													<button
+														onClick={() =>
+															onLoadColor(
+																p.colors[0]
+															)
+														}
+														className="text-[10px] text-accent-cyan hover:underline"
+													>
+														Use Base
+													</button>
+												</div>
+											</div>
+										)
+									)}
+								</div>
+							)}
+						</div>
+					)}
+
+					{/* --- FAVORITES VIEW (With Groups & DnD) --- */}
+					{(view === "all" ||
+						(view === "colors" &&
+							activeSubTab === "favorites")) && (
+						<DndContext
+							sensors={sensors}
+							collisionDetection={closestCenter}
+							onDragStart={handleDragStart}
+							onDragEnd={handleDragEnd}
+						>
+							<div className="space-y-6">
+								{groups.map(
+									(group) =>
+										(group.colors.length > 0 ||
+											group.id !== "ungrouped") && (
+											<div
+												key={group.id}
+												className="space-y-3"
+											>
+												{/* Group Header */}
+												<div
+													// ID for dropping on header
+													id={`group-${group.id}`}
+													className="flex items-center gap-2 group/header"
+												>
+													<button
+														onClick={() =>
+															setGroups((prev) =>
+																prev.map((g) =>
+																	g.id ===
+																	group.id
+																		? {
+																				...g,
+																				isExpanded:
+																					!g.isExpanded,
+																		  }
+																		: g
+																)
+															)
+														}
+														className="p-1 hover:bg-white/5 rounded text-gray-400"
+													>
+														<FolderOpen
+															size={12}
+															className={
+																group.isExpanded
+																	? "text-accent-cyan"
+																	: ""
+															}
+														/>
+													</button>
+
+													{editingGroupId ===
+													group.id ? (
+														<input
+															autoFocus
+															value={group.name}
+															onChange={(e) =>
+																setGroups(
+																	(prev) =>
+																		prev.map(
+																			(
+																				g
+																			) =>
+																				g.id ===
+																				group.id
+																					? {
+																							...g,
+																							name: e
+																								.target
+																								.value,
+																					  }
+																					: g
+																		)
+																)
+															}
+															onBlur={() => {
+																if (
+																	onRenameGroup
+																)
+																	onRenameGroup(
+																		group.id,
+																		group.name
+																	);
+																setEditingGroupId(
+																	null
+																);
+															}}
+															onKeyDown={(e) => {
+																if (
+																	e.key ===
+																	"Enter"
+																) {
+																	if (
+																		onRenameGroup
+																	)
+																		onRenameGroup(
+																			group.id,
+																			group.name
+																		);
+																	setEditingGroupId(
+																		null
+																	);
+																}
+															}}
+															className="bg-black/40 border border-accent-cyan rounded px-1 py-0.5 text-xs font-bold text-white min-w-[100px]"
+														/>
+													) : (
+														<h3
+															className="text-sm font-mono text-gray-400 uppercase tracking-widest cursor-pointer hover:text-white transition-colors"
+															onDoubleClick={() =>
+																group.id !==
+																	"ungrouped" &&
+																setEditingGroupId(
+																	group.id
+																)
+															}
+														>
+															{group.name}{" "}
+															<span className="text-[10px] opacity-50 ml-1">
+																(
+																{
+																	group.colors
+																		.length
+																}
+																)
+															</span>
+														</h3>
+													)}
+
+													{group.id !==
+														"ungrouped" && (
+														<button
+															onClick={() =>
+																deleteGroup(
+																	group.id
+																)
+															}
+															className="opacity-0 group-hover/header:opacity-100 p-1 hover:text-red-500 text-gray-600 transition-all"
+															title="Delete Group (Colors will move to Ungrouped)"
+														>
+															<Trash2 size={10} />
+														</button>
+													)}
+												</div>
+
+												{/* Group Colors (Sortable Grid) */}
+												{group.isExpanded && (
+													<SortableContext
+														items={group.colors}
+														strategy={
+															rectSortingStrategy
+														}
+													>
+														<div className="grid grid-cols-2 gap-3 pl-2 border-l border-white/5 min-h-[40px]">
+															{group.colors.map(
+																(color) => {
+																	const colorInfo =
+																		library.colors.find(
+																			(
+																				c: any
+																			) =>
+																				(typeof c ===
+																				"string"
+																					? c
+																					: c.value
+																				).toUpperCase() ===
+																				color
+																		);
+																	// Fallback object if not found in library (e.g. slight mismatch)
+																	const displayObj =
+																		typeof colorInfo ===
+																		"object"
+																			? colorInfo
+																			: {
+																					value: color,
+																					name: color,
+																			  };
+
+																	return (
+																		<SortableColorCard
+																			key={
+																				color
+																			}
+																			id={
+																				color
+																			}
+																			color={
+																				color
+																			}
+																			label={
+																				displayObj.name ||
+																				color
+																			}
+																			selected={selectedColors.has(
+																				color
+																			)}
+																			onSelect={() =>
+																				toggleSelection(
+																					color
+																				)
+																			}
+																			selectionMode={
+																				isSelectionMode ||
+																				selectedColors.size >
+																					0
+																			}
+																			onLoad={() => {
+																				if (
+																					!isSelectionMode &&
+																					selectedColors.size ===
+																						0
+																				)
+																					onLoadColor(
+																						color
+																					);
+																			}}
+																			onRemove={() =>
+																				onRemoveColor(
+																					color
+																				)
+																			}
+																		/>
+																	);
+																}
+															)}
+															{/* Drop Target Placeholder if empty */}
+															{group.colors
+																.length ===
+																0 && (
+																<div className="col-span-2 h-12 border-2 border-dashed border-white/5 rounded-lg flex items-center justify-center text-[10px] text-gray-600">
+																	Drop colors
+																	here
+																</div>
+															)}
+														</div>
+													</SortableContext>
+												)}
+											</div>
+										)
+								)}
+							</div>
+							<DragOverlay>
+								{draggedColor ? (
+									<div
+										className="w-[100px] h-10 rounded-lg shadow-2xl ring-2 ring-accent-cyan"
+										style={{
+											backgroundColor: draggedColor,
+										}}
+									/>
+								) : null}
+							</DragOverlay>
+						</DndContext>
+					)}
+
+					{/* Rest of the views (Presets & Palettes) can use the old rendering, simplified here for brevity or kept as is if not affected by DnD logic */}
+
+					{/* Colors: Presets View */}
+					{view === "colors" && activeSubTab === "presets" && (
+						<div className="space-y-8">
+							{!PRESET_LIBRARIES ||
+							PRESET_LIBRARIES.length === 0 ? (
+								<p className="text-gray-500 italic">
+									No preset libraries found.
+								</p>
+							) : (
+								PRESET_LIBRARIES.map((preset) => (
+									<div
+										key={preset.name}
+										className="space-y-4"
+									>
+										<div className="space-y-1">
+											<div className="flex items-center gap-2 border-b border-glass-stroke pb-2">
+												<Book
+													size={14}
+													className="text-accent-cyan"
+												/>
+												<h3 className="text-sm font-brand text-white">
+													{preset.name}
+												</h3>
+												<span className="text-xs text-gray-500 ml-auto">
+													{preset.colors.length}{" "}
+													colors
+												</span>
+											</div>
+											<p className="text-xs text-gray-500 italic pb-2">
+												{preset.description}
+											</p>
+										</div>
+										<div className="grid grid-cols-2 gap-3">
+											{preset.colors.map((c) => (
+												<SmartColorCard
+													key={c.value}
+													color={c.value}
+													label={c.name}
+													isFavorite={isFavorite(
+														c.value
+													)}
+													onClick={() => {
+														onLoadColor(c.value);
+														if (onInspectColor)
+															onInspectColor(c);
+													}}
+													onToggleFavorite={() =>
+														onRemoveColor(
+															c.value,
+															c
+														)
+													}
+												/>
+											))}
+										</div>
+									</div>
+								))
+							)}
+						</div>
+					)}
+				</div>
+			</div>
+		</div>
+	);
+};
+
+// --- Sortable Color Card (Wrapper) ---
+const SortableColorCard = ({
+	id,
+	color,
+	label,
+	selected,
+	onSelect,
+	onLoad,
+	onRemove,
+	selectionMode,
+}: any) => {
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({ id });
+
+	const style = {
+		transform: CSS.Transform.toString(transform),
+		transition,
+		opacity: isDragging ? 0.3 : 1,
+		zIndex: isDragging ? 999 : "auto",
+	};
+
+	return (
+		<div
+			ref={setNodeRef}
+			style={style}
+			{...attributes}
+			{...listeners}
+			className="relative group/card touch-none"
+		>
+			{/* Selection Checkbox Overlay */}
+			{(selectionMode || selected) && (
+				<div
+					onClick={(e) => {
+						e.stopPropagation();
+						onSelect();
+					}}
+					className={`absolute top-2 left-2 z-20 w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-colors ${
+						selected
+							? "bg-accent-cyan border-accent-cyan"
+							: "bg-black/40 border-white/40 hover:border-white"
+					}`}
+				>
+					{selected && <Check size={10} className="text-black" />}
+				</div>
+			)}
+
+			<SmartColorCard
+				color={color}
+				label={label}
+				isFavorite={true}
+				onClick={selectionMode ? onSelect : onLoad}
+				onToggleFavorite={onRemove}
+				// Long press to enter selection mode could be handled here if needed
+			/>
+		</div>
+	);
+};
+
+const SmartColorCard = ({
+	color,
+	label,
+	name,
+	isFavorite,
+	onClick,
+	onToggleFavorite,
+}: {
+	color: string;
+	label: string;
+	name?: string;
+	isFavorite: boolean;
+	onClick: () => void;
+	onToggleFavorite: () => void;
+}) => {
+	const [copied, setCopied] = useState(false);
+	const isDark = colord(color).isDark();
+
+	const handleCopy = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		performCopy(color.toUpperCase());
+		setCopied(true);
+		setTimeout(() => setCopied(false), 2000);
+	};
+
+	return (
+		<div
+			className={`relative rounded-xl overflow-hidden aspect-[4/3] shadow-sm transition-all hover:shadow-lg group/minicard ${
+				isDark ? "border border-white/40" : "border border-black/20"
+			}`}
+		>
+			{/* Interactive Color Body */}
+			<div
+				className="absolute inset-0 cursor-pointer"
+				onClick={onClick}
+				title={`Click to load ${name}`}
+			>
+				<div
+					className="absolute inset-0 z-0"
+					style={{ backgroundColor: color }}
+				/>
+
+				{/* Actions Row (Top Right) - No Swap Button */}
+				<div
+					className={`absolute top-1 right-1 flex items-center gap-0.5 z-10 ${
+						isDark ? "text-white" : "text-black/60"
+					}`}
+				>
+					<button
+						onClick={handleCopy}
+						className="p-1.5 rounded-full hover:bg-black/10 transition-colors"
+						title="Copy Hex"
+					>
+						{copied ? (
+							<Check size={14} className="text-green-500" />
+						) : (
+							<Copy size={14} />
+						)}
+					</button>
+					<button
+						onClick={(e) => {
+							e.stopPropagation();
+							onToggleFavorite();
+						}}
+						className="p-1.5 rounded-full hover:bg-black/10 transition-colors"
+						title={
+							isFavorite
+								? "Remove from Favorites"
+								: "Save to Favorites"
+						}
+					>
+						<Heart
+							size={14}
+							className={
+								isFavorite ? "fill-red-500 scale-110" : ""
+							}
+						/>
+					</button>
+				</div>
+			</div>
+
+			{/* Static Label (Always Visible) */}
+			<div
+				className={`absolute inset-0 p-2 flex flex-col justify-end pointer-events-none ${
+					isDark ? "text-white/90" : "text-black/80"
+				}`}
+			>
+				<span className="text-[10px] font-bold uppercase opacity-60 tracking-wider mb-0.5">
+					{label}
+				</span>
+				{name && (
+					<span className="text-[10px] font-mono opacity-90 truncate font-medium">
+						{name}
+					</span>
+				)}
+				<span className="text-[9px] font-mono opacity-75">
+					{color.toUpperCase()}
+				</span>
+			</div>
+		</div>
+	);
+};

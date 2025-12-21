@@ -6,13 +6,22 @@
 		"build:ui": "npm run build --prefix ui-src",
 		"build:plugin": "esbuild plugin/code.tsx --bundle --outfile=dist/code.js --target=es6 --format=iife",
 		"watch": "concurrently \"npm run watch:ui\" \"npm run watch:plugin\"",
-		"watch:ui": "npm run dev --prefix ui-src",
+		"watch:ui": "cd ui-src && npm run dev",
 		"watch:plugin": "npm run build:plugin -- --watch"
 	},
 	"devDependencies": {
-		"esbuild": "^0.19.5",
-		"concurrently": "^8.2.2",
+		"@eslint/js": "^9.39.2",
 		"@figma/plugin-typings": "^1.81.0",
-		"typescript": "^5.2.2"
+		"@typescript-eslint/eslint-plugin": "^8.50.0",
+		"@typescript-eslint/parser": "^8.50.0",
+		"concurrently": "^8.2.2",
+		"esbuild": "^0.19.5",
+		"eslint": "^9.39.2",
+		"eslint-plugin-jsx-a11y": "^6.10.2",
+		"eslint-plugin-react": "^7.37.5",
+		"eslint-plugin-react-hooks": "^7.0.1",
+		"eslint-plugin-tailwindcss": "^3.18.2",
+		"typescript": "^5.2.2",
+		"typescript-eslint": "^8.50.0"
 	}
 }

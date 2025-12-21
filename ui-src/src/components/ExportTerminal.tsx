@@ -7,7 +7,7 @@ import {
 	FileCode,
 	Wind,
 } from "lucide-react";
-import { SemanticToken } from "./SemanticMapper";
+import { SemanticToken } from "../data/semanticTokens";
 
 // Helper to flatten all color ramps into a single object
 const flattenColors = (props: ExportTerminalProps) => {

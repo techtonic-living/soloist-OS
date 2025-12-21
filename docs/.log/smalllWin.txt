@@ -1,0 +1,31 @@
+vendor-core-9e2aac24491b6338.min.js.br:15 [Livegraph] Connected 2025-12-08T07:19:09.345Z.
+vendor-core-9e2aac24491b6338.min.js.br:15 PLUGIN: initializing...
+VM1201:65 Frontend: Sending PING...
+vendor-core-9e2aac24491b6338.min.js.br:15 PLUGIN: received message {type: 'ping'}
+VM1201:65 Frontend: Sending PING...
+vendor-core-9e2aac24491b6338.min.js.br:15 PLUGIN: received message {type: 'ping'}
+VM1201:65 Frontend: Sending sync request...
+VM1201:65 Frontend: Payload: {pluginMessage: {…}}
+vendor-core-9e2aac24491b6338.min.js.br:15 PLUGIN: received message {type: 'create-variables', payload: {…}}
+vendor-core-9e2aac24491b6338.min.js.br:15 PLUGIN: Starting variable sync... {colors: Array(3)}
+vendor-core-9e2aac24491b6338.min.js.br:15 PLUGIN: Fetching local collections...
+vendor-core-9e2aac24491b6338.min.js.br:15 PLUGIN: Collections found: 6
+vendor-core-9e2aac24491b6338.min.js.br:15 PLUGIN: Found existing collection VariableCollectionId:23417:2461
+vendor-core-9e2aac24491b6338.min.js.br:15 PLUGIN: Creating variable void/900
+vendor-core-9e2aac24491b6338.min.js.br:15 PLUGIN: Creating variable void/800
+vendor-core-9e2aac24491b6338.min.js.br:15 PLUGIN: Creating variable primary/500
+vendor-core-9e2aac24491b6338.min.js.br:15 PLUGIN: Successfully synced 3 variables.
+vendor-core-9e2aac24491b6338.min.js.br:15 Sentry event id: 064c45dd7ce741ed86cc2f67730b0e8f
+vendor-core-9e2aac24491b6338.min.js.br:15 SSE is deprecated, please use localhost/mcp instead
+(anonymous) @ vendor-core-9e2aac24491b6338.min.js.br:15
+e_ @ 619-5bfb350d31aeebc1.min.js.br:1345
+(anonymous) @ 619-5bfb350d31aeebc1.min.js.br:205
+I.port1.onmessage @ VM7:2
+VM1201:65 Frontend: Sending sync request...
+VM1201:65 Frontend: Payload: {pluginMessage: {…}}
+vendor-core-9e2aac24491b6338.min.js.br:15 PLUGIN: received message {type: 'create-variables', payload: {…}}
+vendor-core-9e2aac24491b6338.min.js.br:15 PLUGIN: Starting variable sync... {colors: Array(3)}
+vendor-core-9e2aac24491b6338.min.js.br:15 PLUGIN: Fetching local collections...
+vendor-core-9e2aac24491b6338.min.js.br:15 PLUGIN: Collections found: 6
+vendor-core-9e2aac24491b6338.min.js.br:15 PLUGIN: Found existing collection VariableCollectionId:23417:2461
+vendor-core-9e2aac24491b6338.min.js.br:15 PLUGIN: Successfully synced 3 variables.

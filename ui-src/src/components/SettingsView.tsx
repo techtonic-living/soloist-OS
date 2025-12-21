@@ -11,31 +11,11 @@ import {
 	HardDrive,
 	User as UserIcon,
 } from "lucide-react";
-import {
-	AILevel,
-	VisualFidelity,
-	StorageType,
-} from "../hooks/useSoloistSystem";
 
-interface SettingsViewProps {
-	settings: {
-		aiLevel: AILevel;
-		visualFidelity: VisualFidelity;
-		storageType: StorageType;
-		userProfile: {
-			displayName: string;
-			role: string;
-			bio: string;
-			avatarUrl?: string;
-		};
-	};
-	updateSettings: (newSettings: any) => void;
-}
+import { useSoloist } from "../context/SoloistContext";
 
-export const SettingsView = ({
-	settings,
-	updateSettings,
-}: SettingsViewProps) => {
+export const SettingsView = () => {
+	const { settings, updateSettings } = useSoloist();
 	const SettingSection = ({ title, icon: Icon, children }: any) => (
 		<div className="mb-8 last:mb-0">
 			<div className="flex items-center gap-3 mb-6">

@@ -1,8 +1,38 @@
 import { useState, useEffect } from "react";
+import { PresetColor } from "../data/colorPresets";
 
 export type StorageType = "local" | "github" | "cloud";
 export type VisualFidelity = "performance" | "high";
 export type AILevel = "silent" | "guide" | "teacher";
+
+export interface UiPreferences {
+	colorGridDensity: {
+		favorites: number;
+		presets: number;
+	};
+	paletteGridDensity: {
+		favorites: number;
+		presets: number;
+	};
+
+	/**
+	 * Optional user customization for Preset Libraries (the built-in Libraries tab).
+	 * Stored in UI prefs so it persists across sessions without mutating preset constants.
+	 */
+	colorPresetCustom?: {
+		libraryOrder?: string[]; // library name order
+		hiddenLibraries?: Record<string, boolean>; // library name -> hidden
+		itemOrderByLibrary?: Record<string, string[]>; // library name -> list of color hex values
+		hiddenItems?: Record<string, boolean>; // `${libraryName}::${hex}` -> hidden
+	};
+
+	palettePresetCustom?: {
+		libraryOrder?: string[]; // library id order
+		hiddenLibraries?: Record<string, boolean>; // library id -> hidden
+		itemOrderByLibrary?: Record<string, string[]>; // library id -> list of palette names
+		hiddenItems?: Record<string, boolean>; // `${libraryId}::${paletteName}` -> hidden
+	};
+}
 
 interface UserProfile {
 	displayName: string;
@@ -11,18 +41,61 @@ interface UserProfile {
 	avatarUrl?: string;
 }
 
-interface UserLibrary {
-	colors: string[]; // Hex codes
-	fonts: string[]; // Font family names
-	palettes: { name: string; colors: string[] }[];
+export interface CollectionItem {
+	type: "color" | "palette";
+	value: any;
 }
 
-interface SystemSettings {
+export interface Collection {
+	id: string;
+	name: string;
+	items: CollectionItem[];
+}
+
+export interface Project {
+	id: string;
+	name: string;
+	collectionIds: string[];
+}
+
+export interface ColorGroup {
+	id: string;
+	name: string;
+	description: string;
+	colorIds: string[]; // Values (Hex)
+	isActive: boolean;
+	isHidden: boolean;
+	collapsed?: boolean;
+}
+
+export interface PaletteGroup {
+	id: string;
+	name: string;
+	description: string;
+	paletteIds: string[]; // Values (Names)
+	isActive: boolean;
+	isHidden: boolean;
+	collapsed?: boolean;
+}
+
+export interface UserLibrary {
+	colors: (string | PresetColor)[]; // Hex codes or full PresetColor objects
+	colorGroups?: ColorGroup[]; // Custom user groups
+	fonts: string[]; // Font family names
+	palettes: { name: string; colors: string[] }[];
+	paletteGroups?: PaletteGroup[];
+	collections: Collection[];
+	colorCache?: PresetColor[]; // AI-generated metadata cache for reuse
+	projects: Project[];
+}
+
+export interface SystemSettings {
 	storageType: StorageType;
 	visualFidelity: VisualFidelity;
 	aiLevel: AILevel;
 	userProfile: UserProfile;
 	library: UserLibrary;
+	uiPreferences: UiPreferences;
 }
 
 const DEFAULT_SETTINGS: SystemSettings = {
@@ -36,8 +109,22 @@ const DEFAULT_SETTINGS: SystemSettings = {
 	},
 	library: {
 		colors: [],
+		colorGroups: [],
 		fonts: [],
 		palettes: [],
+		paletteGroups: [],
+		collections: [],
+		projects: [],
+	},
+	uiPreferences: {
+		colorGridDensity: {
+			favorites: 2,
+			presets: 2,
+		},
+		paletteGridDensity: {
+			favorites: 2,
+			presets: 2,
+		},
 	},
 };
 
@@ -89,18 +176,28 @@ export const useSoloistSystem = () => {
 
 	return {
 		settings,
-		updateSettings: (newSettings: Partial<SystemSettings>) => {
-			const updated = { ...settings, ...newSettings };
-			setSettings(updated);
-			parent.postMessage(
-				{
-					pluginMessage: {
-						type: "save-storage",
-						payload: { key: "soloist-settings", data: updated },
+		updateSettings: (
+			newSettings:
+				| Partial<SystemSettings>
+				| ((prev: SystemSettings) => SystemSettings)
+		) => {
+			setSettings((prev) => {
+				const updated =
+					typeof newSettings === "function"
+						? newSettings(prev)
+						: { ...prev, ...newSettings };
+
+				parent.postMessage(
+					{
+						pluginMessage: {
+							type: "save-storage",
+							payload: { key: "soloist-settings", data: updated },
+						},
 					},
-				},
-				"*"
-			);
+					"*"
+				);
+				return updated;
+			});
 		},
 		updateData: (key: string, data: any) => {
 			setDataStore((prev) => ({ ...prev, [key]: data }));
