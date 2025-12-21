@@ -1503,26 +1503,94 @@ export const ColorLibrary = ({
 																return (
 																	<>
 																		<div className="fixed inset-0 z-40 bg-transparent cursor-default" />
-																		<div className="relative z-50 flex flex-col gap-1 flex-1">
-																			<div className="relative">
-																				<input
-																					autoFocus
-																					type="text"
-																					className={`bg-black/40 text-white text-sm font-brand font-bold px-3 py-1.5 rounded-lg border focus:outline-none focus:ring-2 w-full shadow-lg transition-colors ${
-																						isDuplicate
-																							? "border-red-500 focus:border-red-500 focus:ring-red-500/30"
-																							: "border-white/20 focus:border-accent-cyan focus:ring-accent-cyan/20"
-																					}`}
+																		<div className="relative z-50 flex flex-row items-start gap-2 flex-1 w-full">
+																			<div className="flex flex-col gap-1 flex-1 min-w-0">
+																				<div className="relative">
+																					<input
+																						autoFocus
+																						type="text"
+																						className={`bg-black/40 text-white text-sm font-brand font-bold px-3 py-1.5 rounded-lg border focus:outline-none focus:ring-2 w-full shadow-lg transition-colors ${
+																							isDuplicate
+																								? "border-red-500 focus:border-red-500 focus:ring-red-500/30"
+																								: "border-white/20 focus:border-accent-cyan focus:ring-accent-cyan/20"
+																						}`}
+																						defaultValue={
+																							group.name
+																						}
+																						placeholder="Group Name"
+																						onKeyDown={(
+																							e
+																						) => {
+																							if (
+																								e.key ===
+																								"Enter"
+																							) {
+																								e.preventDefault();
+																								if (
+																									isValid &&
+																									onUpdateGroup &&
+																									tempEditData
+																								) {
+																									onUpdateGroup(
+																										group.id,
+																										tempEditData
+																									);
+																									setEditingGroupId(
+																										null
+																									);
+																								}
+																							} else if (
+																								e.key ===
+																								"Escape"
+																							) {
+																								setEditingGroupId(
+																									null
+																								);
+																							}
+																						}}
+																						onChange={(
+																							e
+																						) => {
+																							setTempEditData(
+																								(
+																									prev
+																								) => ({
+																									name: e
+																										.target
+																										.value,
+																									description:
+																										prev?.description ||
+																										"",
+																								})
+																							);
+																						}}
+																					/>
+																					{!isValid && (
+																						<div className="absolute top-full left-0 mt-1 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded shadow-lg z-[60]">
+																							{currentName.trim()
+																								.length ===
+																							0
+																								? "Name is required."
+																								: "Group name must be unique."}
+																						</div>
+																					)}
+																				</div>
+																				<textarea
+																					className="w-full bg-black/20 text-xs text-gray-400 px-3 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-accent-cyan focus:ring-2 focus:ring-accent-cyan/20 resize-none shadow-inner font-sans leading-relaxed"
 																					defaultValue={
-																						group.name
+																						group.description
 																					}
-																					placeholder="Group Name"
+																					placeholder="Add a description..."
+																					rows={
+																						2
+																					}
 																					onKeyDown={(
 																						e
 																					) => {
 																						if (
 																							e.key ===
-																							"Enter"
+																								"Enter" &&
+																							!e.shiftKey
 																						) {
 																							e.preventDefault();
 																							if (
@@ -1554,45 +1622,39 @@ export const ColorLibrary = ({
 																							(
 																								prev
 																							) => ({
-																								name: e
-																									.target
-																									.value,
-																								description:
-																									prev?.description ||
+																								name:
+																									prev?.name ||
 																									"",
+																								description:
+																									e
+																										.target
+																										.value,
 																							})
 																						);
 																					}}
 																				/>
-																				{isDuplicate && (
-																					<div className="absolute top-full left-0 mt-1 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded shadow-lg z-[60]">
-																						Group
-																						name
-																						must
-																						be
-																						unique.
-																					</div>
-																				)}
 																			</div>
-																			<textarea
-																				className="w-full bg-black/20 text-xs text-gray-400 px-3 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-accent-cyan focus:ring-2 focus:ring-accent-cyan/20 resize-none shadow-inner font-sans leading-relaxed mt-2"
-																				defaultValue={
-																					group.description
-																				}
-																				placeholder="Add a description..."
-																				rows={
-																					2
-																				}
-																				onKeyDown={(
-																					e
-																				) => {
-																					if (
-																						e.key ===
-																							"Enter" &&
-																						!e.shiftKey
-																					) {
-																						e.preventDefault();
-																						// Save on Enter in textarea
+																			<div className="flex flex-row items-center gap-1 shrink-0 pt-0.5">
+																				<button
+																					onClick={() =>
+																						setEditingGroupId(
+																							null
+																						)
+																					}
+																					className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors backdrop-blur-sm"
+																					title="Cancel"
+																				>
+																					<X
+																						size={
+																							12
+																						}
+																					/>
+																				</button>
+																				<button
+																					disabled={
+																						!isValid
+																					}
+																					onClick={() => {
 																						if (
 																							isValid &&
 																							onUpdateGroup &&
@@ -1606,91 +1668,31 @@ export const ColorLibrary = ({
 																								null
 																							);
 																						}
-																					} else if (
-																						e.key ===
-																						"Escape"
-																					) {
-																						setEditingGroupId(
-																							null
-																						);
+																					}}
+																					className={`p-1.5 rounded-full text-white transition-colors backdrop-blur-sm ${
+																						!isValid
+																							? "bg-gray-500 opacity-50"
+																							: "bg-green-500/80 hover:bg-green-500"
+																					}`}
+																					title={
+																						!isValid
+																							? isDuplicate
+																								? "Group Name Must Be Unique"
+																								: "Name Cannot Be Empty"
+																							: "Save"
 																					}
-																				}}
-																				onChange={(
-																					e
-																				) => {
-																					setTempEditData(
-																						(
-																							prev
-																						) => ({
-																							name:
-																								prev?.name ||
-																								"",
-																							description:
-																								e
-																									.target
-																									.value,
-																						})
-																					);
-																				}}
-																			/>
+																				>
+																					<Check
+																						size={
+																							12
+																						}
+																					/>
+																				</button>
+																			</div>
 																		</div>
 
 																		{/* Actions (Outside) */}
-																		<div className="relative z-50 flex flex-row items-center gap-1 pt-0.5">
-																			<button
-																				onClick={() =>
-																					setEditingGroupId(
-																						null
-																					)
-																				}
-																				className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors backdrop-blur-sm"
-																				title="Cancel"
-																			>
-																				<X
-																					size={
-																						12
-																					}
-																				/>
-																			</button>
-																			<button
-																				disabled={
-																					!isValid
-																				}
-																				onClick={() => {
-																					if (
-																						isValid &&
-																						onUpdateGroup &&
-																						tempEditData
-																					) {
-																						onUpdateGroup(
-																							group.id,
-																							tempEditData
-																						);
-																						setEditingGroupId(
-																							null
-																						);
-																					}
-																				}}
-																				className={`p-1.5 rounded-full text-white transition-colors backdrop-blur-sm ${
-																					!isValid
-																						? "bg-gray-500 opacity-50"
-																						: "bg-green-500/80 hover:bg-green-500"
-																				}`}
-																				title={
-																					!isValid
-																						? isDuplicate
-																							? "Group Name Must Be Unique"
-																							: "Name Cannot Be Empty"
-																						: "Save"
-																				}
-																			>
-																				<Check
-																					size={
-																						12
-																					}
-																				/>
-																			</button>
-																		</div>
+																		{/* Actions Moved Inline */}
 																	</>
 																);
 															})()

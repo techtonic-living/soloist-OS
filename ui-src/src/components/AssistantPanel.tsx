@@ -16,6 +16,7 @@ import { HeartToggle } from "./common/HeartToggle";
 import { useCopyFeedback } from "../hooks/useCopyFeedback";
 import { ColorControlPanel } from "./lab/ColorControlPanel";
 import { MagicBadge } from "./common/MagicBadge";
+import { SmartColorInput } from "./common";
 import { colord } from "colord";
 import {
 	toggleFavoriteWithMetadata,
@@ -53,54 +54,17 @@ interface AssistantPanelProps {
 function PaletteInspectorHeader({
 	isEditing,
 	isFavorite,
-	isValidName,
-	isDuplicateName,
 	isPaletteCopied,
 	palette,
 	paletteHexes,
 	onLoad,
 	onToggleFavoritePalette,
 	setIsEditing,
-	handleSave,
-	handleCancel,
 	handleCopyAll,
 }: any) {
-	const buttonClass = isValidName
-		? "bg-green-500/80 hover:bg-green-500"
-		: "bg-gray-500 opacity-50";
-
-	let buttonTitle = "Name Cannot Be Empty";
-	if (isValidName) {
-		buttonTitle = "Save";
-	} else if (isDuplicateName) {
-		buttonTitle = "Palette Name Must Be Unique";
-	}
-
-	if (isEditing) {
-		return (
-			<div className="absolute top-2 right-2 flex gap-1 z-[100]">
-				<button
-					onClick={handleCancel}
-					className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors"
-					title="Cancel"
-				>
-					<X size={12} />
-				</button>
-				<button
-					onClick={handleSave}
-					disabled={!isValidName}
-					className={`p-1.5 rounded-full text-white transition-colors ${buttonClass}`}
-					title={buttonTitle}
-				>
-					<Check size={12} />
-				</button>
-			</div>
-		);
-	}
-
 	return (
 		<div className="absolute top-2 right-2 flex gap-1 z-[100]">
-			{isFavorite && (
+			{!isEditing && isFavorite && (
 				<button
 					onClick={() => setIsEditing(true)}
 					className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors"
@@ -148,54 +112,17 @@ function PaletteInspectorHeader({
 function ColorInspectorHeader({
 	isEditing,
 	isFavorite,
-	isValid,
-	isDuplicate,
 	isCopied,
 	color,
 	onLoadStudio,
 	onLoadRemix,
 	onToggleFavorite,
 	setIsEditing,
-	handleSave,
-	handleCancel,
 	handleCopy,
 }: any) {
-	const buttonClass = isValid
-		? "bg-green-500/80 hover:bg-green-500"
-		: "bg-gray-500 opacity-50";
-
-	let buttonTitle = "Name Cannot Be Empty";
-	if (isValid) {
-		buttonTitle = "Save";
-	} else if (isDuplicate) {
-		buttonTitle = "Color Name Must Be Unique";
-	}
-
-	if (isEditing) {
-		return (
-			<div className="absolute top-2 right-2 flex gap-1 z-[100]">
-				<button
-					onClick={handleCancel}
-					className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors backdrop-blur-sm"
-					title="Cancel"
-				>
-					<X size={12} />
-				</button>
-				<button
-					onClick={handleSave}
-					disabled={!isValid}
-					className={`p-1.5 rounded-full text-white transition-colors backdrop-blur-sm ${buttonClass}`}
-					title={buttonTitle}
-				>
-					<Check size={12} />
-				</button>
-			</div>
-		);
-	}
-
 	return (
 		<div className="absolute top-2 right-2 flex gap-1 z-[100]">
-			{isFavorite && (
+			{!isEditing && isFavorite && (
 				<button
 					onClick={() => setIsEditing(true)}
 					className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors backdrop-blur-sm"
@@ -284,7 +211,7 @@ function PaletteColorCell({
 			</svg>
 
 			{/* Always-visible hex label (bottom-left) */}
-			<div className="absolute bottom-2 left-2 text-white mix-blend-difference min-w-0 max-w-full pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity duration-150">
+			<div className="absolute bottom-2 left-3 text-white mix-blend-difference min-w-0 max-w-full pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity duration-150">
 				<span className="text-xs font-mono truncate block">
 					{String(hex).toUpperCase()}
 				</span>
@@ -402,6 +329,9 @@ function InspectedPaletteCard({
 	const paletteHexes: string[] = Array.isArray(palette?.colors)
 		? palette.colors.map(normalizeHex).filter(Boolean)
 		: [];
+
+	const isDark =
+		paletteHexes.length > 0 ? colord(paletteHexes[0]).isDark() : true;
 
 	const isSamePaletteByColors = (a: any, bHexes: string[]) => {
 		const aHexes: string[] = Array.isArray(a?.colors)
@@ -540,11 +470,14 @@ function InspectedPaletteCard({
 					))}
 				</div>
 
-				{/* Palette name (bottom-left, no scrim). Aligned above stripe hex labels (mini-card feel). */}
-				<div className="absolute bottom-7 left-2 right-14 text-white mix-blend-difference z-[90]">
+				<div
+					className={`absolute inset-0 p-3 flex flex-col justify-end pointer-events-none ${
+						isDark ? "text-white/90" : "text-black/80"
+					}`}
+				>
 					{isEditing ? (
-						<div className="pointer-events-auto relative">
-							<div className="relative">
+						<div className="pointer-events-auto mb-1 relative z-[100] flex items-center gap-2 w-full">
+							<div className="relative flex-1 min-w-0">
 								<input
 									ref={nameInputRef}
 									value={localName}
@@ -559,7 +492,7 @@ function InspectedPaletteCard({
 											handleCancel();
 										}
 									}}
-									className={`bg-black/40 text-white text-sm font-brand font-bold px-3 py-1.5 rounded-lg border focus:outline-none focus:ring-2 w-full shadow-lg transition-colors placeholder-white/50 ${
+									className={`bg-black/40 backdrop-blur-md text-white text-sm font-bold font-brand border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 shadow-lg transition-colors placeholder-white/50 w-full min-w-0 ${
 										isDuplicateName
 											? "border-red-500 focus:border-red-500 focus:ring-red-500/30"
 											: "border-white/20 focus:border-accent-cyan focus:ring-accent-cyan/20"
@@ -574,12 +507,39 @@ function InspectedPaletteCard({
 									</div>
 								)}
 							</div>
+							<div className="flex items-center gap-1 shrink-0">
+								<button
+									onClick={handleCancel}
+									className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors backdrop-blur-sm"
+									title="Cancel"
+								>
+									<X size={12} />
+								</button>
+								<button
+									onClick={handleSave}
+									disabled={!isValidName}
+									className={`p-1.5 rounded-full text-white transition-colors backdrop-blur-sm ${
+										!isValidName
+											? "bg-gray-500 opacity-50"
+											: "bg-green-500/80 hover:bg-green-500"
+									}`}
+									title="Save"
+								>
+									<Check size={12} />
+								</button>
+							</div>
 						</div>
 					) : (
-						<span className="text-xs font-bold uppercase opacity-80 tracking-wider block truncate pointer-events-none">
+						<span className="text-xs font-bold uppercase opacity-70 tracking-wider mb-0.5 flex items-center gap-1">
 							{displayName}
 						</span>
 					)}
+					<span
+						className="text-[10px] font-mono opacity-0 select-none"
+						aria-hidden="true"
+					>
+						&nbsp;
+					</span>
 				</div>
 
 				{/* Header Actions */}
@@ -812,8 +772,8 @@ function InspectedColorCard({
 					}`}
 				>
 					{isEditing ? (
-						<div className="pointer-events-auto mb-1 relative z-[100]">
-							<div className="relative">
+						<div className="pointer-events-auto mb-1 relative z-[100] flex items-center gap-2 w-full">
+							<div className="relative flex-1 min-w-0">
 								<input
 									ref={nameInputRef}
 									value={localName}
@@ -828,10 +788,10 @@ function InspectedColorCard({
 											handleCancel();
 										}
 									}}
-									className={`bg-black/40 backdrop-blur-md border rounded px-2 py-1 text-xs font-bold font-brand text-white w-full focus:outline-none focus:border-accent-cyan placeholder-white/50 ${
+									className={`bg-black/40 backdrop-blur-md border rounded-lg px-3 py-1.5 text-sm font-bold font-brand text-white w-full focus:outline-none focus:ring-2 shadow-lg transition-colors placeholder-white/50 min-w-0 ${
 										isDuplicate
-											? "border-red-500 bg-red-500/10"
-											: "border-white/20"
+											? "border-red-500 focus:border-red-500 focus:ring-red-500/30"
+											: "border-white/20 focus:border-accent-cyan focus:ring-accent-cyan/20"
 									}`}
 									placeholder="Color Name"
 									autoFocus
@@ -841,6 +801,27 @@ function InspectedColorCard({
 										Color name must be unique.
 									</div>
 								)}
+							</div>
+							<div className="flex items-center gap-1 shrink-0">
+								<button
+									onClick={handleCancel}
+									className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors backdrop-blur-sm"
+									title="Cancel"
+								>
+									<X size={12} />
+								</button>
+								<button
+									onClick={handleSave}
+									disabled={!isValid}
+									className={`p-1.5 rounded-full text-white transition-colors backdrop-blur-sm ${
+										!isValid
+											? "bg-gray-500 opacity-50"
+											: "bg-green-500/80 hover:bg-green-500"
+									}`}
+									title="Save"
+								>
+									<Check size={12} />
+								</button>
 							</div>
 						</div>
 					) : (
@@ -1271,7 +1252,9 @@ function RemixColorInspectorCard({
 									`hsl(${Math.round(hsla.h)}, ${Math.round(
 										hsla.s
 									)}%, ${Math.round(hsla.l)}%)`,
-									`hsl(${Math.round(hsla.h)}, ...)`
+									`hsl(${Math.round(hsla.h)}, ${Math.round(
+										hsla.s
+									)}%, ${Math.round(hsla.l)}%)`
 								)
 							}
 							isCopied={isHslCopied}
@@ -1298,7 +1281,9 @@ function RemixColorInspectorCard({
 									`hsb(${Math.round(hsva.h)}, ${Math.round(
 										hsva.s
 									)}%, ${Math.round(hsva.v)}%)`,
-									`hsb(${Math.round(hsva.h)}, ...)`
+									`hsb(${Math.round(hsva.h)}, ${Math.round(
+										hsva.s
+									)}%, ${Math.round(hsva.v)}%)`
 								)
 							}
 							isCopied={isHsbCopied}
@@ -1492,437 +1477,7 @@ const LocalColorWheel = ({
 // Smart Color Input (Ported from ColorControlPanel)
 // ---------------------------
 
-function SmartColorInput({
-	id,
-	value,
-	type,
-	label,
-	onCommit,
-	onCopy,
-	isCopied,
-	editable = false,
-	disabled = false,
-	onEditStart,
-	onEditEnd,
-	hideCopy = false,
-	isDark,
-}: Readonly<{
-	id: string;
-	value: string;
-	type: "hex" | "rgb" | "hsl" | "hsb";
-	label?: string;
-	onCommit?: (val: string) => void;
-	onCopy: () => void;
-	isCopied: boolean;
-	editable?: boolean;
-	disabled?: boolean;
-	onEditStart: (id: string) => void;
-	onEditEnd: () => void;
-	hideCopy?: boolean;
-	isDark?: boolean;
-}>) {
-	// Local state
-	const [localValue, setLocalValue] = useState(value);
-	const [isEditing, setIsEditing] = useState(false);
-	const [initialHexValue, setInitialHexValue] = useState<string | null>(null);
-
-	// Slider State
-	const [activeComponent, setActiveComponent] = useState<number | null>(null);
-	const [initialValue, setInitialValue] = useState<string | null>(null);
-
-	// Sync local value when prop changes (if not editing)
-	useEffect(() => {
-		if (!isEditing && activeComponent === null) {
-			setLocalValue(value);
-		}
-	}, [value, isEditing, activeComponent]);
-
-	// ---------------------------
-	// Slider Logic
-	// ---------------------------
-	const getComponentValues = () => {
-		if (type === "hex") return [];
-		return localValue
-			.replace(/%/g, "")
-			.split(",")
-			.map((p: string) => Number.parseInt(p.trim()));
-	};
-
-	const componentValues = getComponentValues();
-
-	const getSliderConfig = (index: number) => {
-		if (type === "rgb") return { min: 0, max: 255 };
-		if (type === "hsl" || type === "hsb")
-			return { min: 0, max: index === 0 ? 360 : 100 };
-		return { min: 0, max: 100 };
-	};
-
-	const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		if (activeComponent === null) return;
-		const newVal = Number.parseInt(e.target.value);
-		const newComponents = [...componentValues];
-		newComponents[activeComponent] = newVal;
-
-		let formattedString = "";
-		if (type === "rgb") {
-			formattedString = newComponents.join(", ");
-		} else {
-			formattedString = `${newComponents[0]}, ${newComponents[1]}%, ${newComponents[2]}%`;
-		}
-
-		setLocalValue(formattedString);
-		// Real-time update
-		if (onCommit) onCommit(formattedString);
-	};
-
-	const startSlider = (idx: number) => {
-		if (disabled) return;
-		setInitialValue(value);
-		setActiveComponent(idx);
-		onEditStart(id);
-	};
-
-	const commitSlider = () => {
-		setActiveComponent(null);
-		setInitialValue(null);
-		onEditEnd();
-	};
-
-	const revertSlider = () => {
-		if (initialValue && onCommit) {
-			onCommit(initialValue);
-			setLocalValue(initialValue);
-		}
-		setActiveComponent(null);
-		setInitialValue(null);
-		onEditEnd();
-	};
-
-	// ---------------------------
-	// Text Input Logic (Hex)
-	// ---------------------------
-	const handleSave = () => {
-		let commitValue = localValue;
-
-		if (type === "hex") {
-			const hexPattern = /^[A-Fa-f0-9]{6}$/;
-			const normalizedValue = `#${localValue.replace(/^#/, "")}`;
-
-			if (
-				!hexPattern.test(localValue) ||
-				!colord(normalizedValue).isValid()
-			) {
-				return;
-			}
-
-			commitValue = normalizedValue;
-		}
-
-		if (onCommit) {
-			onCommit(commitValue);
-		}
-		setInitialHexValue(null);
-		setIsEditing(false);
-		onEditEnd();
-	};
-
-	const handleCancel = () => {
-		if (type === "hex" && initialHexValue) {
-			setLocalValue(initialHexValue);
-			if (onCommit) onCommit(initialHexValue);
-		} else {
-			setLocalValue(value);
-		}
-		setInitialHexValue(null);
-		setIsEditing(false);
-		onEditEnd();
-	};
-
-	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-		if (e.key === "Enter") {
-			e.preventDefault();
-			handleSave();
-		} else if (e.key === "Escape") {
-			e.preventDefault();
-			handleCancel();
-		}
-	};
-
-	// ---------------------------
-	// Render Helpers
-	// ---------------------------
-	const renderHexEditor = () => {
-		const hexPattern = /^[A-Fa-f0-9]{6}$/;
-		const normalizedValue = `#${localValue.replace(/^#/, "")}`;
-		const isInvalid =
-			!hexPattern.test(localValue) || !colord(normalizedValue).isValid();
-
-		return (
-			<div className="relative z-[100] flex flex-col gap-1 flex-1 min-w-0">
-				<div className="flex items-center gap-2 flex-1 min-w-0">
-					<input
-						autoFocus
-						type="text"
-						value={localValue.toUpperCase()}
-						onChange={(e) => {
-							const nextVal = e.target.value.replace(/^#/, "");
-							setLocalValue(nextVal);
-							if (
-								hexPattern.test(nextVal) &&
-								colord(`#${nextVal}`).isValid()
-							) {
-								if (onCommit) onCommit(`#${nextVal}`);
-							}
-						}}
-						onKeyDown={handleKeyDown}
-						className={`flex-1 min-w-0 bg-black/40 backdrop-blur-md border rounded px-2 py-1 text-xs font-bold font-mono text-white text-center focus:outline-none transition-colors ${
-							isInvalid
-								? "border-red-500 focus:border-red-500"
-								: "border-white/20 focus:border-accent-cyan"
-						}`}
-						title="Hex Value"
-						placeholder="000000"
-					/>
-					<div className="flex items-center gap-1 shrink-0">
-						<button
-							onClick={handleCancel}
-							className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors backdrop-blur-sm"
-							title="Cancel"
-						>
-							<X size={12} />
-						</button>
-						<button
-							onClick={handleSave}
-							disabled={isInvalid}
-							className={`p-1.5 rounded-full text-white transition-colors backdrop-blur-sm ${
-								isInvalid
-									? "bg-gray-500 opacity-50"
-									: "bg-green-500/80 hover:bg-green-500"
-							}`}
-							title={
-								isInvalid ? "Invalid Hex Color Format" : "Save"
-							}
-						>
-							<Check size={12} />
-						</button>
-					</div>
-				</div>
-			</div>
-		);
-	};
-
-	const renderSliderEditor = () => {
-		const config = getSliderConfig(activeComponent as number);
-		let label = "B";
-		if (activeComponent === 0) {
-			label = type === "rgb" ? "R" : "H";
-		} else if (activeComponent === 1) {
-			label = type === "rgb" ? "G" : "S";
-		} else if (type === "hsl") {
-			label = "L";
-		}
-
-		return (
-			<div className="relative z-[100] flex items-center gap-2 flex-1 min-w-0">
-				<div
-					className="flex items-center gap-1.5 w-[120px] bg-black/40 rounded px-2 py-0.5 animate-in fade-in zoom-in-95 duration-200 border border-accent-cyan backdrop-blur-md"
-					onPointerDown={(e) => e.stopPropagation()}
-				>
-					<span className="text-[10px] font-mono opacity-60 w-3 text-right shrink-0">
-						{label}
-					</span>
-					<input
-						type="range"
-						min={config.min}
-						max={config.max}
-						value={componentValues[activeComponent as number]}
-						onChange={handleSliderChange}
-						autoFocus
-						className="flex-1 h-1 bg-white/20 rounded-full appearance-none cursor-pointer accent-accent-cyan hover:accent-accent-cyan/80 min-w-0"
-						title="Adjust Value"
-					/>
-					<span className="text-[10px] font-mono font-bold w-6 text-left shrink-0">
-						{componentValues[activeComponent as number]}
-					</span>
-				</div>
-				<div className="flex items-center gap-1 shrink-0">
-					<button
-						onClick={(e) => {
-							e.stopPropagation();
-							revertSlider();
-						}}
-						className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors backdrop-blur-sm"
-						title="Cancel"
-					>
-						<X size={12} />
-					</button>
-					<button
-						onClick={(e) => {
-							e.stopPropagation();
-							commitSlider();
-						}}
-						className="p-1.5 rounded-full bg-green-500/80 hover:bg-green-500 text-white transition-colors backdrop-blur-sm"
-						title="Commit"
-					>
-						<Check size={12} />
-					</button>
-				</div>
-			</div>
-		);
-	};
-
-	const renderValueDisplay = () => {
-		if (type === "hex") {
-			let opacityClass = "opacity-90 text-black/80";
-			if (disabled) {
-				opacityClass = "opacity-30 blur-[1px]";
-			} else if (isDark) {
-				opacityClass = "opacity-90 text-white";
-			}
-
-			return (
-				<button
-					onClick={() => {
-						if (editable && !disabled) {
-							setInitialHexValue(value);
-							setLocalValue(value.replace(/^#/, ""));
-							setIsEditing(true);
-							onEditStart(id);
-						}
-					}}
-					disabled={!editable || disabled}
-					className={`flex-1 text-center transition-all duration-300 font-bold text-3xl font-brand ${
-						editable && !disabled
-							? "cursor-pointer hover:text-white"
-							: "cursor-default select-none"
-					} ${opacityClass}`}
-				>
-					{value.toUpperCase()}
-				</button>
-			);
-		}
-
-		let containerClass = `grid grid-cols-3 gap-3 flex-1 text-xs font-mono transition-all duration-300 opacity-90 cursor-default ${
-			isDark ? "text-white" : "text-black/80"
-		}`;
-		if (disabled) {
-			containerClass =
-				"grid grid-cols-3 gap-3 flex-1 text-xs font-mono transition-all duration-300 opacity-30 blur-[1px] pointer-events-none";
-		}
-
-		return (
-			<div className={containerClass}>
-				{componentValues.map((val, idx) => (
-					<button
-						key={`${type}-${idx}`}
-						type="button"
-						onClick={(e) => {
-							e.stopPropagation();
-							startSlider(idx);
-						}}
-						className={`px-0.5 rounded transition-colors w-full ${
-							idx === 2 ? "text-left pl-2" : "text-right"
-						} ${
-							isDark
-								? "hover:bg-white/10 hover:text-white"
-								: "hover:bg-black/10 hover:text-black"
-						}`}
-						title={`Adjust ${type.toUpperCase()} value`}
-						disabled={disabled}
-					>
-						{val}
-						{type !== "rgb" && idx > 0 ? "%" : ""}
-						{idx < 2 && (
-							<span
-								className={`opacity-30 ml-px ${
-									isDark ? "text-white" : "text-black"
-								}`}
-							>
-								,
-							</span>
-						)}
-					</button>
-				))}
-			</div>
-		);
-	};
-
-	const renderContent = () => {
-		if (isEditing) return renderHexEditor();
-		if (activeComponent !== null) return renderSliderEditor();
-		return renderValueDisplay();
-	};
-
-	const renderLabel = () => {
-		if (!label) return null;
-		let labelClass =
-			"text-[9px] font-mono w-8 text-left transition-all duration-300";
-		if (disabled) {
-			labelClass += " opacity-10";
-		} else if (isDark) {
-			labelClass += " text-white opacity-40";
-		} else {
-			labelClass += " text-black opacity-50";
-		}
-
-		if (isEditing || activeComponent !== null) {
-			labelClass += " absolute left-2";
-		}
-
-		return <span className={labelClass}>{label}</span>;
-	};
-
-	return (
-		<div
-			className={`flex items-center ${
-				type === "hex" || isEditing || activeComponent !== null
-					? "justify-center"
-					: "justify-between"
-			} px-12 gap-1 group/field w-full relative h-7 ${
-				disabled ? "pointer-events-none" : ""
-			} ${isEditing || activeComponent !== null ? "z-[100]" : "z-auto"}`}
-		>
-			{renderLabel()}
-
-			{renderContent()}
-
-			{/* Copy Button (Only if NOT active slider/editing AND not hidden) */}
-			{!isEditing && activeComponent === null && !hideCopy && (
-				<button
-					onClick={(e) => {
-						e.stopPropagation();
-						if (!disabled) onCopy();
-					}}
-					disabled={disabled}
-					className={`
-                        p-1.5 rounded-lg transition-all absolute right-2
-                        ${
-							isCopied
-								? "opacity-100"
-								: "opacity-0 group-hover/field:opacity-100"
-						}
-                        ${
-							isDark
-								? "text-white hover:bg-white/10"
-								: "text-black hover:bg-black/10"
-						}
-                        ${disabled ? "hidden" : ""}
-                    `}
-					title={`Copy ${type.toUpperCase()}`}
-				>
-					{isCopied ? (
-						<Check size={12} className="text-green-500" />
-					) : (
-						<Copy
-							size={12}
-							className={isDark ? "text-white" : "text-black"}
-						/>
-					)}
-				</button>
-			)}
-		</div>
-	);
-}
+// SmartColorInput moved to ./common/SmartColorInput.tsx
 export function AssistantPanel({
 	activeColorStep,
 	activeColorTab,
@@ -2284,7 +1839,10 @@ export function AssistantPanel({
 				</div>
 			</div>
 
-			<div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+			<div
+				className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar"
+				style={{ scrollbarGutter: "stable" }}
+			>
 				<div>
 					<span className="text-accent-cyan text-xs font-mono mb-2 block uppercase tracking-wider opacity-60">
 						Active Tool
@@ -2400,7 +1958,7 @@ function getExploreViewContent(
 		return {
 			lessonId: "00.6",
 			title: "Color Studio",
-			description: "Create custom colors with precision controls.",
+			description: "Create custom colors with precision.",
 			concepts: [
 				"Use Hue, Saturation, and Lightness for intuitive mixing.",
 				"See real-time harmony suggestions on the wheel.",
@@ -2417,7 +1975,7 @@ function getExploreViewContent(
 		return {
 			lessonId: "00.7",
 			title: "Palette Remix",
-			description: "Generate and refine entire color palettes instantly.",
+			description: "Generate and refine palettes with magic.",
 			concepts: [
 				"Lock colors you like to keep them while randomizing others.",
 				"Save your favorite remixes to your Palette Library.",
