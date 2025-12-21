@@ -3,6 +3,7 @@ import React, {
 	useContext,
 	useState,
 	useEffect,
+	useMemo,
 	ReactNode,
 	useCallback,
 } from "react";
@@ -84,6 +85,12 @@ interface SoloistContextType {
 	setBaseRadius: (val: number) => void;
 	semanticTokens: SemanticToken[];
 	setSemanticTokens: (tokens: SemanticToken[]) => void;
+
+	// Sampler State (Global Persistence)
+	sampledColors: string[];
+	setSampledColors: React.Dispatch<React.SetStateAction<string[]>>;
+	isSamplerActive: boolean;
+	setIsSamplerActive: (active: boolean) => void;
 }
 
 // --- Context ---
@@ -111,8 +118,7 @@ export const SoloistProvider = ({ children }: { children: ReactNode }) => {
 			height = 600;
 			setIsAssistantPinned(false);
 		} else if (size === "standard") {
-			width = 1000;
-			height = 700;
+			// Redundant width/height assignments already set by default
 			setIsAssistantPinned(true);
 		} else if (size === "studio") {
 			width = 1400;
@@ -178,47 +184,82 @@ export const SoloistProvider = ({ children }: { children: ReactNode }) => {
 	const [semanticTokens, setSemanticTokens] =
 		useState<SemanticToken[]>(DEFAULT_SEMANTICS);
 
+	// 6. Sampler State
+	const [sampledColors, setSampledColors] = useState<string[]>([]);
+	const [isSamplerActive, setIsSamplerActive] = useState(false);
+
 	// --- Output ---
 
-	const value: SoloistContextType = {
-		activeView,
-		setActiveView,
-		windowSize,
-		setWindowSize,
-		handleResize,
-		isAssistantPinned,
-		setIsAssistantPinned,
-		settings,
-		updateSettings,
-		seedColor,
-		setSeedColor,
-		ramp,
-		setRamp,
-		neutralRamp,
-		setNeutralRamp,
-		signalRamp,
-		setSignalRamp,
-		alphaRamp,
-		setAlphaRamp,
-		secondaryRamp,
-		setSecondaryRamp: setSecondaryRampState, // Map state setter to context name
-		tertiaryRamp,
-		setTertiaryRamp: setTertiaryRampState, // Map state setter to context name
-		harmonyMode,
-		setHarmonyMode,
-		setSecondaryColor,
-		setTertiaryColor,
-		baseSize,
-		setBaseSize,
-		scale,
-		setScale,
-		baseSpacing,
-		setBaseSpacing,
-		baseRadius,
-		setBaseRadius,
-		semanticTokens,
-		setSemanticTokens,
-	};
+	const value: SoloistContextType = useMemo(
+		() => ({
+			activeView,
+			setActiveView,
+			windowSize,
+			setWindowSize,
+			handleResize,
+			isAssistantPinned,
+			setIsAssistantPinned,
+			settings,
+			updateSettings,
+			seedColor,
+			setSeedColor,
+			ramp,
+			setRamp,
+			neutralRamp,
+			setNeutralRamp,
+			signalRamp,
+			setSignalRamp,
+			alphaRamp,
+			setAlphaRamp,
+			secondaryRamp,
+			setSecondaryRamp: setSecondaryRampState,
+			tertiaryRamp,
+			setTertiaryRamp: setTertiaryRampState,
+			harmonyMode,
+			setHarmonyMode,
+			setSecondaryColor,
+			setTertiaryColor,
+			baseSize,
+			setBaseSize,
+			scale,
+			setScale,
+			baseSpacing,
+			setBaseSpacing,
+			baseRadius,
+			setBaseRadius,
+			semanticTokens,
+			setSemanticTokens,
+			sampledColors,
+			setSampledColors,
+			isSamplerActive,
+			setIsSamplerActive,
+		}),
+		[
+			activeView,
+			windowSize,
+			isAssistantPinned,
+			settings,
+			seedColor,
+			ramp,
+			neutralRamp,
+			signalRamp,
+			alphaRamp,
+			secondaryRamp,
+			tertiaryRamp,
+			harmonyMode,
+			setSecondaryColor,
+			setTertiaryColor,
+			baseSize,
+			scale,
+			baseSpacing,
+			baseRadius,
+			semanticTokens,
+			sampledColors,
+			isSamplerActive,
+			updateSettings,
+			handleResize,
+		]
+	);
 
 	return (
 		<SoloistContext.Provider value={value}>

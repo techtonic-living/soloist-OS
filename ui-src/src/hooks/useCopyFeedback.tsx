@@ -20,7 +20,7 @@ const fallbackCopy = (text: string) => {
 
 export const useCopyFeedback = () => {
 	const [isCopied, setIsCopied] = useState(false);
-	const { showToast } = useToast();
+	const toast = useToast();
 
 	const copy = useCallback(
 		(text: string, label?: React.ReactNode) => {
@@ -43,13 +43,13 @@ export const useCopyFeedback = () => {
 				"Copied to clipboard"
 			);
 
-			showToast(message);
+			toast.transient(message);
 			setIsCopied(true);
 
 			// 3. Reset State
 			setTimeout(() => setIsCopied(false), 2000);
 		},
-		[showToast]
+		[toast]
 	);
 
 	return { isCopied, copy };

@@ -1,230 +1,1057 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { colord } from "colord";
+import { motion } from "framer-motion";
+import {
+	Sun,
+	Moon,
+	Zap,
+	Cloud,
+	ThermometerSnowflake,
+	ThermometerSun,
+	RotateCcw,
+	RotateCw,
+	Crosshair,
+	X,
+	Disc,
+	Orbit,
+	ImagePlus,
+	Gauge,
+	Search,
+	MousePointer2,
+	Droplets,
+	Dices,
+} from "lucide-react";
+import { useToast } from "../../context/ToastContext";
+import { useSoloist } from "../../context/SoloistContext";
+
+import { ImageCanvasPicker } from "./ImageCanvasPicker";
+
 import "./ColorCreator.css";
 
-// SONAR: Interactive color picker requires inline styles for dynamic values:
-// - Computed positioning (left, top) based on HSL values
-// - Dynamic gradients (lightness slider background)
-// - Dynamic colors (color wheel, handles)
-// - Dynamic transforms (translate, scale)
-// These cannot be static Tailwind classes and are documented exceptions.
-
 interface ColorCreatorProps {
-  seedColor: string;
-  setSeedColor: (color: string) => void;
-  secondaryColor: string;
-  setSecondaryColor: (color: string) => void;
-  tertiaryColor: string;
-  setTertiaryColor: (color: string) => void;
-  harmonyMode?: "complementary" | "analogous" | "triadic" | "manual";
-  setHarmonyMode?: (
-    mode: "complementary" | "analogous" | "triadic" | "manual"
-  ) => void;
-  activeColorSlot?: "primary" | "secondary" | "tertiary";
+	seedColor: string;
+	setSeedColor: (color: string) => void;
+	secondaryColor: string;
+	setSecondaryColor: (color: string) => void;
+	tertiaryColor: string;
+	setTertiaryColor: (color: string) => void;
+	harmonyMode?: "complementary" | "analogous" | "triadic" | "manual";
+	setHarmonyMode?: (
+		mode: "complementary" | "analogous" | "triadic" | "manual"
+	) => void;
+	activeColorSlot?: "primary" | "secondary" | "tertiary";
+	setActiveColorSlot?: (slot: "primary" | "secondary" | "tertiary") => void;
 }
 
+type WheelMode =
+	| "default"
+	| "bright"
+	| "dark"
+	| "saturated"
+	| "desaturated"
+	| "cool"
+	| "warm";
+
 export const ColorCreator = ({
-  seedColor,
-  setSeedColor,
-  secondaryColor,
-  tertiaryColor,
-  setSecondaryColor,
-  setTertiaryColor,
-  harmonyMode = "complementary",
-  setHarmonyMode = () => {},
-  activeColorSlot = "primary",
+	seedColor,
+	setSeedColor,
+	secondaryColor,
+	tertiaryColor,
+	setSecondaryColor,
+	setTertiaryColor,
+	harmonyMode = "complementary",
+	setHarmonyMode = () => {},
+	activeColorSlot = "primary",
+	setActiveColorSlot,
 }: ColorCreatorProps) => {
-  // 1. Calculate Harmonies Instantly (Visual Feedack)
-  const harmonies = useMemo(() => {
-    const c = colord(seedColor);
-    if (harmonyMode === "complementary") {
-      return {
-        sec: c.rotate(180).toHex(),
-        tert: c.rotate(-30).toHex(),
-      };
-    } else if (harmonyMode === "analogous") {
-      return {
-        sec: c.rotate(-30).toHex(),
-        tert: c.rotate(30).toHex(),
-      };
-    } else if (harmonyMode === "triadic") {
-      return {
-        sec: c.rotate(120).toHex(),
-        tert: c.rotate(240).toHex(),
-      };
-    }
-    return { sec: null, tert: null };
-  }, [seedColor, harmonyMode]);
+	const {
+		sampledColors,
+		setSampledColors,
+		isSamplerActive,
+		setIsSamplerActive,
+	} = useSoloist();
 
-  // 2. Sync Global State (Side Effect)
-  useEffect(() => {
-    if (harmonyMode === "manual") return;
+	const [wheelMode, setWheelMode] = useState<WheelMode>("default");
+	const [pickerMode, setPickerMode] = useState<"wheel" | "image">("wheel");
+	const [activeImage, setActiveImage] = useState<string | null>(null);
+	const [lastUserImage, setLastUserImage] = useState<string | null>(null);
+	const [isSamplerHovered, setIsSamplerHovered] = useState(false);
+	const [hoverHex, setHoverHex] = useState<string | null>(null);
 
-    // Only update if value is different to prevent infinite loops
-    if (
-      harmonies.sec &&
-      setSecondaryColor &&
-      harmonies.sec !== secondaryColor
-    ) {
-      setSecondaryColor(harmonies.sec);
-    }
-    if (
-      harmonies.tert &&
-      setTertiaryColor &&
-      harmonies.tert !== tertiaryColor
-    ) {
-      setTertiaryColor(harmonies.tert);
-    }
-  }, [
-    harmonies,
-    harmonyMode,
-    setSecondaryColor,
-    setTertiaryColor,
-    secondaryColor,
-    tertiaryColor,
-  ]);
+	// Dynamic Control Bar State
+	// Kaleidoscope: speed + sensitivity | Image: zoom + rotate
+	const [speedVal, setSpeedVal] = useState(50);
+	const [senseVal, setSenseVal] = useState(50);
+	const [zoomVal, setZoomVal] = useState(50); // 50 = 1x, 0 = 0.5x, 100 = 2x
+	const [rotateVal, setRotateVal] = useState(0); // 0-360 degrees
 
-  // 3. Determine Display Colors
-  // If Manual Mode:
-  // - activeColor is whatever slot is selected (Primary, Secondary, or Tertiary)
-  // - "Secondary" prop passed to Wheel becomes one of the NON-selected colors
-  // - "Tertiary" prop passed to Wheel becomes the other NON-selected color
-  // This essentially rotates the wheel's focus.
+	// Persist last uploaded image & sampler state across sessions via Figma clientStorage
+	useEffect(() => {
+		const keys = [
+			"soloist-last-image",
+			"soloist-sampled-colors",
+			"soloist-sampler-active",
+		];
+		keys.forEach((key) => {
+			parent.postMessage(
+				{
+					pluginMessage: {
+						type: "load-storage",
+						payload: { key },
+					},
+				},
+				"*"
+			);
+		});
+	}, []);
 
-  let activeColor = seedColor;
-  let activeSecondary =
-    harmonyMode !== "manual" ? harmonies.sec || secondaryColor : secondaryColor;
-  let activeTertiary =
-    harmonyMode !== "manual" ? harmonies.tert || tertiaryColor : tertiaryColor;
+	// Persist last user-uploaded image across sessions via Figma clientStorage
+	useEffect(() => {
+		if (lastUserImage && lastUserImage !== "generated:crayons") {
+			parent.postMessage(
+				{
+					pluginMessage: {
+						type: "save-storage",
+						payload: {
+							key: "soloist-last-image",
+							data: lastUserImage,
+						},
+					},
+				},
+				"*"
+			);
+		}
+	}, [lastUserImage]);
 
-  if (harmonyMode === "manual") {
-    if (activeColorSlot === "secondary") {
-      activeColor = secondaryColor;
-      activeSecondary = seedColor; // Show Primary as marker
-      activeTertiary = tertiaryColor; // Show Tertiary as marker
-    } else if (activeColorSlot === "tertiary") {
-      activeColor = tertiaryColor;
-      activeSecondary = seedColor; // Show Primary as marker
-      activeTertiary = secondaryColor; // Show Secondary as marker
-    }
-    // if Primary, simple default logic applies (Active=Primary, Sec=Sec, Tert=Tert)
-  }
+	// Sync sampler state to storage
+	useEffect(() => {
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "save-storage",
+					payload: {
+						key: "soloist-sampled-colors",
+						data: sampledColors,
+					},
+				},
+			},
+			"*"
+		);
+	}, [sampledColors]);
 
-  // Parse Colors
-  const color = colord(activeColor);
-  const hsla = color.toHsl();
+	useEffect(() => {
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "save-storage",
+					payload: {
+						key: "soloist-sampler-active",
+						data: isSamplerActive,
+					},
+				},
+			},
+			"*"
+		);
+	}, [isSamplerActive]);
 
-  // Handle Main Change
-  const handleColorChange = (h: number, s: number, l?: number) => {
-    const newColor = colord({
-      h,
-      s,
-      l: l !== undefined ? l : hsla.l,
-    }).toHex();
+	const toast = useToast();
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const lastToastTimeRef = useRef<number>(0);
 
-    if (harmonyMode === "manual") {
-      if (activeColorSlot === "secondary") setSecondaryColor(newColor);
-      else if (activeColorSlot === "tertiary") setTertiaryColor(newColor);
-      else setSeedColor(newColor);
-    } else {
-      setSeedColor(newColor); // Always drive primary in harmony modes
-    }
-  };
+	// 0. Listen for Backend Messages (Color Picking & Live Sampling)
+	useEffect(() => {
+		const handleMessage = (event: MessageEvent) => {
+			const msg = event.data.pluginMessage;
+			if (!msg) return;
 
-  return (
-    <div className="h-full flex flex-col items-center gap-6 p-6 overflow-y-auto custom-scrollbar bg-bg-surface/30 backdrop-blur-sm">
-      {/* Background Ambience */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[100px]" />
-      </div>
+			if (msg.type === "color-picked") {
+				commitHex(msg.payload.hex);
+			} else if (msg.type === "storage-loaded") {
+				const { key, data } = msg.payload;
+				if (
+					key === "soloist-last-image" &&
+					data &&
+					data !== "generated:crayons"
+				) {
+					setLastUserImage(data);
+					setActiveImage(data);
+					setPickerMode("image");
+				} else if (key === "soloist-sampled-colors") {
+					if (data) setSampledColors(data);
+				} else if (key === "soloist-sampler-active") {
+					if (data !== undefined) setIsSamplerActive(data);
+				}
+			} else if (msg.type === "selection-colors" && isSamplerActive) {
+				const newColors: string[] = msg.payload.colors || [];
+				if (newColors.length === 0) return;
 
-      {/* Top Controls: Harmony Mode */}
-      <div className="relative z-20">
-        <div className="flex p-1 gap-1 bg-black/60 backdrop-blur-xl rounded-full border border-white/10 shadow-2xl opacity-50 hover:opacity-100 transition-opacity duration-300">
-          {["manual", "complementary", "analogous", "triadic"].map((m) => (
-            <button
-              key={m}
-              onClick={() => setHarmonyMode(m as any)}
-              className={`px-4 py-1.5 rounded-full text-[10px] font-bold tracking-wider transition-all uppercase ${
-                harmonyMode === m
-                  ? "bg-white text-black shadow-sm"
-                  : "text-gray-400 hover:text-white hover:bg-white/5"
-              }`}
-            >
-              {m}
-            </button>
-          ))}
-        </div>
-      </div>
+				// Filter out duplicates that are already in the sample set (optional polish)
+				// We want unique hexes in the orbit.
+				const uniqueIncoming = newColors.filter(
+					(hex) =>
+						!sampledColors.includes(hex) &&
+						// Also protect against duplicates within the incoming batch itself
+						newColors.indexOf(hex) === newColors.lastIndexOf(hex)
+				);
 
-      {/* Main Canvas Area */}
-      <div className="flex-1 flex flex-col items-center justify-center w-full max-w-2xl relative z-10">
-        {/* The Wheel */}
-        <div className="relative group">
-          <ColorWheel
-            size={420}
-            hue={hsla.h}
-            saturation={hsla.s}
-            onChange={(h, s) => handleColorChange(h, s)}
-            secondaryColor={activeSecondary}
-            tertiaryColor={activeTertiary}
-            harmonyMode={harmonyMode}
-            lightness={hsla.l}
-            // In manual mode, we always want to see markers for context
-            showMarkers={true}
-          />
-        </div>
-      </div>
+				setSampledColors((prev: string[]) => {
+					// Re-filter against fresh state just in case
+					const distinct = uniqueIncoming.filter(
+						(c: string) => !prev.includes(c)
+					);
 
-      {/* Brightness Control - Floating Pill */}
-      <div className="relative z-20 flex items-center gap-3 p-1 pr-4 bg-black/60 backdrop-blur-xl rounded-full border border-white/10 shadow-2xl w-80 opacity-50 hover:opacity-100 transition-opacity duration-300">
-        <div className="px-3 py-1.5 rounded-full bg-white/5 text-[10px] uppercase font-bold tracking-wider text-gray-400 pointer-events-none select-none">
-          Lightness
-        </div>
+					if (distinct.length === 0) return prev; // All duplicates
 
-        <div className="relative flex-1 h-3 rounded-full overflow-hidden shadow-inner border border-white/10 group cursor-pointer brightness-gradient">
-          <div
-            className="absolute inset-0 z-0 opacity-80 brightness-gradient-fill"
-            style={{
-              background: `linear-gradient(to right, #000 0%, ${colord({
-                h: hsla.h,
-                s: hsla.s,
-                l: 50,
-              }).toHex()} 50%, #fff 100%)`,
-            }}
-          />
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={hsla.l}
-            onChange={(e) =>
-              setSeedColor(
-                colord({
-                  ...hsla,
-                  l: parseInt(e.target.value),
-                }).toHex()
-              )
-            }
-            title="Adjust Lightness"
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-          />
-          {/* Thumb Indicator */}
-          <div
-            className="absolute top-0 bottom-0 w-1.5 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)] pointer-events-none transition-transform duration-75"
-            style={{
-              left: `${hsla.l}%`,
-              transform: "translateX(-50%)",
-            }}
-          />
-        </div>
+					const availableSlots = 10 - prev.length;
 
-        <div className="w-8 text-right text-[10px] uppercase font-bold tracking-wider text-white select-none">
-          {Math.round(hsla.l)}%
-        </div>
-      </div>
-    </div>
-  );
+					if (availableSlots <= 0) {
+						const now = Date.now();
+						if (now - lastToastTimeRef.current > 3000) {
+							toast.transient(
+								<span>
+									<span className="text-accent-cyan">
+										Orbit full
+									</span>{" "}
+									(10/10)
+								</span>
+							);
+							lastToastTimeRef.current = now;
+						}
+						return prev;
+					}
+
+					if (distinct.length > availableSlots) {
+						const now = Date.now();
+						if (now - lastToastTimeRef.current > 3000) {
+							toast.transient(
+								<span>
+									Orbit full. Only{" "}
+									<span className="text-accent-cyan">
+										{availableSlots} colors
+									</span>{" "}
+									added.
+								</span>
+							);
+							lastToastTimeRef.current = now;
+						}
+						return [...prev, ...distinct.slice(0, availableSlots)];
+					}
+
+					return [...prev, ...distinct];
+				});
+			}
+		};
+
+		window.addEventListener("message", handleMessage);
+
+		// Initial request if active
+		if (isSamplerActive) {
+			parent.postMessage(
+				{ pluginMessage: { type: "request-selection-colors" } },
+				"*"
+			);
+		}
+
+		return () => window.removeEventListener("message", handleMessage);
+	}, [isSamplerActive, toast, sampledColors]);
+
+	// 5. Manage Color Slot Focus (Logic Refinement)
+	// Focus state should always be primary unless active mode is MANUAL
+	useEffect(() => {
+		if (harmonyMode !== "manual" && activeColorSlot !== "primary") {
+			setActiveColorSlot?.("primary");
+		}
+	}, [harmonyMode, activeColorSlot, setActiveColorSlot]);
+
+	const toggleSampler = () => {
+		const newState = !isSamplerActive;
+		setIsSamplerActive(newState);
+		if (newState) {
+			parent.postMessage(
+				{ pluginMessage: { type: "request-selection-colors" } },
+				"*"
+			);
+		}
+		// PREVIOUSLY: setSampledColors([]); -> Removed to persist session state
+	};
+
+	// 1. Calculate Harmonies Instantly (Visual Feedack)
+	const harmonies = useMemo(() => {
+		const c = colord(seedColor);
+		if (harmonyMode === "complementary") {
+			return {
+				sec: c.rotate(180).toHex(),
+				tert: c.rotate(-30).toHex(),
+			};
+		} else if (harmonyMode === "analogous") {
+			return {
+				sec: c.rotate(-30).toHex(),
+				tert: c.rotate(30).toHex(),
+			};
+		} else if (harmonyMode === "triadic") {
+			return {
+				sec: c.rotate(120).toHex(),
+				tert: c.rotate(240).toHex(),
+			};
+		}
+		return { sec: null, tert: null };
+	}, [seedColor, harmonyMode]);
+
+	// 2. Sync Global State (Side Effect)
+	useEffect(() => {
+		if (harmonyMode === "manual") return;
+
+		// Only update if value is different to prevent infinite loops
+		if (
+			harmonies.sec &&
+			setSecondaryColor &&
+			harmonies.sec !== secondaryColor
+		) {
+			setSecondaryColor(harmonies.sec);
+		}
+		if (
+			harmonies.tert &&
+			setTertiaryColor &&
+			harmonies.tert !== tertiaryColor
+		) {
+			setTertiaryColor(harmonies.tert);
+		}
+	}, [
+		harmonies,
+		harmonyMode,
+		setSecondaryColor,
+		setTertiaryColor,
+		secondaryColor,
+		tertiaryColor,
+	]);
+
+	// 3. Determine Display Colors
+	let activeColor = seedColor;
+	// Determine Colors for UI Display (Stable slots for the toolbar)
+	const displaySecondary =
+		harmonyMode === "manual"
+			? secondaryColor
+			: harmonies.sec ?? secondaryColor;
+	const displayTertiary =
+		harmonyMode === "manual"
+			? tertiaryColor
+			: harmonies.tert ?? tertiaryColor;
+
+	// Determine Swapped Colors for Wheel Markers
+	let markerSecondary = displaySecondary;
+	let markerTertiary = displayTertiary;
+
+	if (harmonyMode === "manual") {
+		if (activeColorSlot === "secondary") {
+			activeColor = secondaryColor;
+			markerSecondary = seedColor;
+			markerTertiary = tertiaryColor;
+		} else if (activeColorSlot === "tertiary") {
+			activeColor = tertiaryColor;
+			markerSecondary = seedColor;
+			markerTertiary = secondaryColor;
+		}
+	}
+
+	// Parse Colors
+	const color = colord(activeColor);
+	const hsla = color.toHsl();
+
+	// Handle State Commits (Slot-Aware)
+	const commitHex = (hex: string) => {
+		if (harmonyMode === "manual") {
+			if (activeColorSlot === "secondary") setSecondaryColor(hex);
+			else if (activeColorSlot === "tertiary") setTertiaryColor(hex);
+			else setSeedColor(hex);
+		} else {
+			setSeedColor(hex);
+		}
+	};
+
+	const handleColorChange = (
+		updates: Partial<{ h: number; s: number; l: number }>
+	) => {
+		const newColor = colord({
+			h: updates.h ?? hsla.h,
+			s: updates.s ?? hsla.s,
+			l: updates.l ?? hsla.l,
+		}).toHex();
+		commitHex(newColor);
+	};
+
+	const applyWheelType = (type: WheelMode) => {
+		setWheelMode(type);
+		setPickerMode("wheel"); // Reset picker when mode changes or reset is clicked
+
+		// Always start from a neutral baseline to prevent stacking effects
+		let h = hsla.h;
+		let s = 50;
+		let l = 50;
+
+		switch (type) {
+			case "bright":
+				l = 80;
+				s = 100;
+				break;
+			case "dark":
+				l = 20;
+				s = 60;
+				break;
+			case "saturated":
+				s = 100;
+				break;
+			case "desaturated":
+				s = 25;
+				break;
+			case "cool":
+				h = 210;
+				break;
+			case "warm":
+				h = 30;
+				break;
+		}
+		handleColorChange({ h, s, l });
+	};
+
+	const shuffleColor = () => {
+		const randomHex = colord({
+			h: Math.floor(Math.random() * 360),
+			s: 40 + Math.floor(Math.random() * 50),
+			l: 40 + Math.floor(Math.random() * 40),
+		}).toHex();
+		commitHex(randomHex);
+		setPickerMode("wheel");
+	};
+
+	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+
+		const reader = new FileReader();
+		reader.onload = (ev) => {
+			if (ev.target?.result) {
+				const result = ev.target.result as string;
+				setActiveImage(result);
+				setLastUserImage(result);
+				setPickerMode("image");
+			}
+		};
+		reader.readAsDataURL(file);
+	};
+
+	const activateCrayons = () => {
+		// Use the hosted/local asset for crayons
+		setActiveImage("generated:crayons");
+		setPickerMode("image");
+	};
+
+	return (
+		<div className="h-full flex flex-col items-center gap-6 p-6 overflow-y-auto custom-scrollbar bg-bg-surface/30 backdrop-blur-sm relative">
+			{/* Hidden File Input */}
+			<input
+				type="file"
+				ref={fileInputRef}
+				onChange={handleFileChange}
+				accept="image/*"
+				className="hidden"
+			/>
+
+			{/* Background Ambience */}
+			<div className="absolute inset-0 pointer-events-none">
+				<div
+					className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[100px] opacity-10"
+					style={{ backgroundColor: activeColor }}
+				/>
+			</div>
+
+			{/* Harmony Selection Toolbar (Top) */}
+			<div className="flex-shrink-0 flex items-center p-1 gap-1.5 rounded-full bg-bg-raised/95 backdrop-blur-xl border border-glass-stroke shadow-monolith z-30">
+				{["manual", "complementary", "analogous", "triadic"].map(
+					(m) => {
+						const isActive = harmonyMode === m;
+						return (
+							<button
+								key={m}
+								onClick={() => setHarmonyMode(m as any)}
+								className={`group relative flex items-center px-4 py-1.5 rounded-full transition-all duration-300 ${
+									isActive
+										? "bg-white/10 text-white shadow-sm ring-1 ring-white/20"
+										: "text-gray-400 hover:text-white hover:bg-white/5"
+								}`}
+								title={m.toUpperCase()}
+							>
+								{isActive && (
+									<motion.div
+										layoutId="harmony-active-pill"
+										className="absolute inset-0 bg-bg-surface rounded-full shadow-sm border border-glass-stroke -z-10"
+										transition={{
+											type: "spring",
+											stiffness: 500,
+											damping: 30,
+										}}
+									/>
+								)}
+								<span className="text-[10px] font-bold tracking-tight uppercase">
+									{m === "complementary"
+										? "Complementary"
+										: m === "analogous"
+										? "Analogous"
+										: m === "triadic"
+										? "Triadic"
+										: "Manual"}
+								</span>
+							</button>
+						);
+					}
+				)}
+			</div>
+
+			{/* Main Workbench Area */}
+			<div className="flex-1 flex flex-row items-center justify-center gap-10 w-full max-w-4xl relative z-10 px-8 animate-in fade-in duration-300">
+				{/* Left Column: Color Slot Selection (Vertical) */}
+				<div className="flex flex-col items-center gap-2 p-1.5 rounded-full bg-bg-raised/95 backdrop-blur-xl border border-glass-stroke shadow-monolith w-[44px]">
+					{[
+						{ id: "primary", num: "1", color: seedColor },
+						{ id: "secondary", num: "2", color: displaySecondary },
+						{ id: "tertiary", num: "3", color: displayTertiary },
+					].map((slot) => {
+						const isActive = activeColorSlot === slot.id;
+						const isManual = harmonyMode === "manual";
+
+						return (
+							<button
+								key={slot.id}
+								onClick={() =>
+									isManual &&
+									setActiveColorSlot?.(slot.id as any)
+								}
+								className={`group relative p-1 rounded-full transition-all duration-300 ${
+									isManual
+										? "cursor-pointer"
+										: "cursor-default"
+								} ${
+									isActive
+										? "bg-white/10 shadow-sm ring-1 ring-white/20"
+										: isManual
+										? "hover:bg-white/5"
+										: ""
+								}`}
+								title={
+									isManual
+										? `Switch to ${
+												slot.id
+													.charAt(0)
+													.toUpperCase() +
+												slot.id.slice(1)
+										  } Slot`
+										: `${
+												slot.id
+													.charAt(0)
+													.toUpperCase() +
+												slot.id.slice(1)
+										  } Channel`
+								}
+							>
+								<div
+									className={`w-6 h-6 rounded-full border border-white/20 shadow-sm transition-transform duration-300 flex items-center justify-center ${
+										isActive
+											? "scale-110 shadow-neon-glow"
+											: isManual
+											? "group-hover:scale-110"
+											: ""
+									}`}
+									style={{ backgroundColor: slot.color }}
+								>
+									<span className="text-[10px] font-black text-white mix-blend-difference opacity-60">
+										{slot.num}
+									</span>
+								</div>
+								{isActive && (
+									<motion.div
+										layoutId="active-slot-glow-vertical"
+										className="absolute -inset-0.5 rounded-full border border-accent-cyan/40 pointer-events-none"
+										initial={false}
+										transition={{
+											type: "spring",
+											stiffness: 500,
+											damping: 30,
+										}}
+									/>
+								)}
+							</button>
+						);
+					})}
+				</div>
+
+				{/* Center: The Core Interaction (Swappable Instrument) */}
+				<div className="relative w-[320px] h-[320px] flex-none flex items-center justify-center group scale-95 transition-all duration-300">
+					{pickerMode === "image" && activeImage ? (
+						<div className="absolute inset-0 w-full h-full flex items-center justify-center animate-in fade-in zoom-in duration-300">
+							<ImageCanvasPicker
+								onSelectColor={(hex) => {
+									commitHex(hex);
+									setSampledColors((prev) => {
+										if (prev.includes(hex)) return prev;
+										if (prev.length >= 10) {
+											toast.standard(
+												<span>
+													<span className="text-accent-cyan">
+														Orbit full
+													</span>{" "}
+													(10/10)
+												</span>
+											);
+											return prev;
+										}
+										return [...prev, hex];
+									});
+								}}
+								imageUrl={activeImage}
+								speedVal={speedVal}
+								senseVal={senseVal}
+								zoomVal={zoomVal}
+								rotateVal={rotateVal}
+							/>
+						</div>
+					) : (
+						<div className="absolute inset-0 flex items-center justify-center animate-in fade-in zoom-in duration-300 z-40 pointer-events-none">
+							<div className="pointer-events-auto">
+								<ColorWheel
+									size={320}
+									hue={hsla.h}
+									saturation={hsla.s}
+									onChange={(h, s) =>
+										handleColorChange({ h, s })
+									}
+									onHoverColor={setHoverHex}
+									secondaryColor={markerSecondary}
+									tertiaryColor={markerTertiary}
+									harmonyMode={harmonyMode}
+									lightness={hsla.l}
+									wheelMode={wheelMode}
+									showMarkers={true}
+								/>
+							</div>
+						</div>
+					)}
+
+					{/* Persistent Docked Control Bar */}
+					<div className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex items-center h-[42px] px-3 gap-2 rounded-full bg-bg-raised/95 backdrop-blur-xl border border-glass-stroke shadow-monolith z-30">
+						{/* Left Slider: Saturation (Wheel) / Speed (Atmosphere) / Zoom (Image) */}
+						<div
+							className="flex items-center gap-1.5 px-2"
+							title={
+								pickerMode === "wheel"
+									? "Saturation"
+									: activeImage === "generated:crayons"
+									? "Speed"
+									: "Zoom"
+							}
+						>
+							{pickerMode === "wheel" ? (
+								<Droplets size={16} className="text-white/40" />
+							) : activeImage === "generated:crayons" ? (
+								<Gauge size={16} className="text-white/40" />
+							) : (
+								<Search size={16} className="text-white/40" />
+							)}
+							<input
+								type="range"
+								min="0"
+								max="100"
+								value={
+									pickerMode === "wheel"
+										? hsla.s
+										: activeImage === "generated:crayons"
+										? speedVal
+										: zoomVal
+								}
+								onChange={(e) => {
+									const val = Number(e.target.value);
+									if (pickerMode === "wheel")
+										handleColorChange({ s: val });
+									else if (
+										activeImage === "generated:crayons"
+									)
+										setSpeedVal(val);
+									else setZoomVal(val);
+								}}
+								className="w-12 h-1 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-cyan [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-accent-cyan [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(63,227,242,0.5)]"
+							/>
+						</div>
+
+						{/* Hex Display (Reactive Background) */}
+						<div
+							className="px-3 h-[21px] flex items-center justify-center rounded-full border border-white/20 shadow-lg transition-colors duration-200"
+							style={{ backgroundColor: hoverHex || activeColor }}
+						>
+							<span
+								className="font-mono text-[11px] font-bold tracking-wider"
+								style={{
+									color: colord(
+										hoverHex || activeColor
+									).isDark()
+										? "rgba(255,255,255,0.95)"
+										: "rgba(0,0,0,0.9)",
+								}}
+							>
+								{(hoverHex || activeColor).toUpperCase()}
+							</span>
+						</div>
+
+						{/* Right Slider: Lightness (Wheel) / Sensitivity (Atmosphere) / Rotate (Image) */}
+						<div
+							className="flex items-center gap-1.5 px-2"
+							title={
+								pickerMode === "wheel"
+									? "Luminance"
+									: activeImage === "generated:crayons"
+									? "Sensitivity"
+									: "Rotate"
+							}
+						>
+							<input
+								type="range"
+								min="0"
+								max={
+									pickerMode === "wheel"
+										? "100"
+										: activeImage === "generated:crayons"
+										? "100"
+										: "360"
+								}
+								value={
+									pickerMode === "wheel"
+										? hsla.l
+										: activeImage === "generated:crayons"
+										? senseVal
+										: rotateVal
+								}
+								onChange={(e) => {
+									const val = Number(e.target.value);
+									if (pickerMode === "wheel")
+										handleColorChange({ l: val });
+									else if (
+										activeImage === "generated:crayons"
+									)
+										setSenseVal(val);
+									else setRotateVal(val);
+								}}
+								className="w-12 h-1 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-cyan [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-accent-cyan [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(63,227,242,0.5)]"
+							/>
+							{pickerMode === "wheel" ? (
+								<Sun size={16} className="text-white/40" />
+							) : activeImage === "generated:crayons" ? (
+								<MousePointer2
+									size={16}
+									className="text-white/40"
+								/>
+							) : (
+								<RotateCw size={16} className="text-white/40" />
+							)}
+						</div>
+					</div>
+				</div>
+
+				{/* Right Column: Orbital Sampler & Mode Selection */}
+				<div className="flex flex-col items-center gap-8 w-[52px]">
+					{/* Orbital Selection Sampler Container */}
+					<div
+						onMouseEnter={() => setIsSamplerHovered(true)}
+						onMouseLeave={() => setIsSamplerHovered(false)}
+						className="relative flex items-center justify-center w-14 h-14 bg-bg-surface backdrop-blur-xl rounded-full border border-glass-stroke shadow-monolith z-20"
+					>
+						{/* Center Toggle Button */}
+						<button
+							onClick={toggleSampler}
+							className={`relative w-10 h-10 rounded-full backdrop-blur-md border border-white/20 shadow-lg flex items-center justify-center transition-all duration-300 z-10 ${
+								isSamplerActive
+									? "bg-accent-cyan/20 text-accent-cyan scale-110"
+									: "bg-white/5 text-white/60 hover:bg-white/10 hover:scale-105"
+							}`}
+							title="Toggle Orbital Selection Mode"
+						>
+							<Crosshair
+								size={18}
+								className={
+									isSamplerActive
+										? "rotate-90 scale-110"
+										: "hover:rotate-90"
+								}
+							/>
+							{isSamplerActive && (
+								<div className="absolute inset-0 rounded-full animate-pulse bg-accent-cyan/20 -z-10" />
+							)}
+						</button>
+
+						{/* Orbiting Color Bubbles (Inside relative container) */}
+						{isSamplerActive &&
+							sampledColors
+								.slice(0, 10)
+								.map((hex: string, i: number) => {
+									const count = Math.min(
+										sampledColors.length,
+										10
+									);
+									const spreadAngle = (360 / count) * i;
+									const orbitAngle = (360 / count) * i;
+									const radius = isSamplerHovered
+										? 58
+										: 44 + (i % 2) * 6;
+									const scale = isSamplerHovered ? 1.25 : 1;
+
+									return (
+										<motion.div
+											key={`${hex}-${i}`}
+											className="absolute w-6 h-6"
+											style={{
+												left: "50%",
+												top: "50%",
+												marginLeft: "-12px",
+												marginTop: "-12px",
+											}}
+											animate={{
+												rotate: isSamplerHovered
+													? spreadAngle
+													: [
+															orbitAngle,
+															orbitAngle + 360,
+													  ],
+											}}
+											transition={{
+												rotate: isSamplerHovered
+													? {
+															type: "spring",
+															stiffness: 45,
+															damping: 14,
+													  }
+													: {
+															duration:
+																15 +
+																(i % 3) * 5,
+															repeat: Infinity,
+															ease: "linear",
+													  },
+											}}
+										>
+											<motion.div
+												className="absolute inset-0 group/bubble pointer-events-auto"
+												animate={{
+													x: radius,
+													scale: scale,
+													rotate: isSamplerHovered
+														? -spreadAngle
+														: [
+																-orbitAngle,
+																-(
+																	orbitAngle +
+																	360
+																),
+														  ],
+												}}
+												transition={{
+													x: {
+														type: "spring",
+														stiffness: 80,
+														damping: 12,
+													},
+													scale: {
+														type: "spring",
+														stiffness: 100,
+														damping: 10,
+													},
+													rotate: isSamplerHovered
+														? {
+																type: "spring",
+																stiffness: 45,
+																damping: 14,
+														  }
+														: {
+																duration:
+																	15 +
+																	(i % 3) * 5,
+																repeat: Infinity,
+																ease: "linear",
+														  },
+												}}
+											>
+												<button
+													onClick={() =>
+														commitHex(hex)
+													}
+													className="absolute inset-0 rounded-full border border-white/20 shadow-sm transition-transform duration-200 group-hover/bubble:scale-110 cursor-pointer"
+													style={{
+														backgroundColor: hex,
+													}}
+													title={`Sample ${hex}`}
+												/>
+												<button
+													onClick={(e) => {
+														e.stopPropagation();
+														setSampledColors(
+															(prev: string[]) =>
+																prev.filter(
+																	(
+																		c: string
+																	) =>
+																		c !==
+																		hex
+																)
+														);
+													}}
+													className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full text-white flex items-center justify-center opacity-0 group-hover/bubble:opacity-100 transition-all duration-200 scale-75 group-hover/bubble:scale-100 shadow-sm hover:bg-red-600 z-30"
+												>
+													<X
+														size={10}
+														strokeWidth={3}
+													/>
+												</button>
+											</motion.div>
+										</motion.div>
+									);
+								})}
+					</div>
+
+					{/* Vertical Toolkit (Modes) - Repositioned beneath sampler */}
+					<div className="flex flex-col items-center gap-1 p-1 rounded-full bg-bg-raised backdrop-blur-xl border border-glass-stroke shadow-monolith w-[40px]">
+						{[
+							{
+								id: "wheel",
+								icon: Disc,
+								color: "text-accent-cyan",
+								title: "Color Wheel",
+								action: () => setPickerMode("wheel"),
+							},
+							{
+								id: "atmosphere",
+								icon: Orbit,
+								color: "text-accent-violet",
+								title: "Atmosphere",
+								action: activateCrayons,
+							},
+							{
+								id: "image",
+								icon: ImagePlus,
+								color: "text-primary",
+								title: "Image Drop",
+								action: () => {
+									if (
+										lastUserImage &&
+										lastUserImage !== "generated:crayons"
+									) {
+										setActiveImage(lastUserImage);
+										setPickerMode("image");
+									} else {
+										fileInputRef.current?.click();
+									}
+								},
+							},
+						].map((mode) => {
+							const isActive =
+								mode.id === "wheel"
+									? pickerMode === "wheel"
+									: mode.id === "atmosphere"
+									? pickerMode === "image" &&
+									  activeImage === "generated:crayons"
+									: pickerMode === "image" &&
+									  activeImage !== "generated:crayons";
+
+							return (
+								<div
+									key={mode.id}
+									className="relative group/modebtn"
+								>
+									<button
+										onClick={mode.action}
+										className={`relative p-2 rounded-full transition-all hover:scale-105 active:scale-95 z-10 ${
+											isActive
+												? "text-white"
+												: "text-gray-400 hover:text-white"
+										}`}
+										title={mode.title}
+									>
+										{isActive && (
+											<motion.div
+												layoutId="mode-picker-active"
+												className="absolute inset-0 bg-bg-surface rounded-full shadow-sm border border-glass-stroke -z-10"
+												transition={{
+													type: "spring",
+													stiffness: 500,
+													damping: 30,
+												}}
+											/>
+										)}
+										<mode.icon
+											size={16}
+											className={mode.color}
+										/>
+									</button>
+									{mode.id === "image" &&
+										activeImage &&
+										activeImage !== "generated:crayons" && (
+											<button
+												onClick={(e) => {
+													e.stopPropagation();
+													setActiveImage(null);
+													setLastUserImage(null);
+													setPickerMode("wheel");
+													parent.postMessage(
+														{
+															pluginMessage: {
+																type: "save-storage",
+																payload: {
+																	key: "soloist-last-image",
+																	data: null,
+																},
+															},
+														},
+														"*"
+													);
+												}}
+												className="absolute -top-1 -right-1 w-3 h-3 bg-accent-cyan rounded-full text-white flex items-center justify-center opacity-0 group-hover/modebtn:opacity-100 transition-all duration-200 scale-75 group-hover/modebtn:scale-100 shadow-sm hover:bg-cyan-400 z-20"
+											>
+												<X size={7} strokeWidth={3} />
+											</button>
+										)}
+								</div>
+							);
+						})}
+					</div>
+				</div>
+			</div>
+
+			{/* Wheel Type Selector (Bottom Toolbar) */}
+			<div className="flex items-center h-[42px] px-1 gap-1 bg-bg-raised/95 backdrop-blur-xl rounded-full border border-glass-stroke shadow-monolith z-20">
+				{[
+					{ id: "default", icon: RotateCcw, label: "Default" },
+					{ id: "bright", icon: Sun, label: "Bright" },
+					{ id: "dark", icon: Moon, label: "Dark" },
+					{ id: "saturated", icon: Zap, label: "Vivid" },
+					{ id: "desaturated", icon: Cloud, label: "Muted" },
+					{ id: "cool", icon: ThermometerSnowflake, label: "Cool" },
+					{ id: "warm", icon: ThermometerSun, label: "Warm" },
+					{ id: "shuffle", icon: Dices, label: "Shuffle" },
+				].map((mode) => (
+					<button
+						key={mode.id}
+						onClick={() =>
+							mode.id === "shuffle"
+								? shuffleColor()
+								: applyWheelType(mode.id as WheelMode)
+						}
+						className={`w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300 ${
+							wheelMode === mode.id
+								? "bg-white/10 text-white shadow-sm ring-1 ring-white/20 scale-110"
+								: "text-white/40 hover:text-white hover:bg-white/5"
+						}`}
+						title={mode.label}
+					>
+						<mode.icon size={16} />
+					</button>
+				))}
+			</div>
+		</div>
+	);
 };
 
 // ---------------------------
@@ -232,206 +1059,275 @@ export const ColorCreator = ({
 // ---------------------------
 
 interface ColorWheelProps {
-  size: number;
-  hue: number;
-  saturation: number;
-  onChange: (h: number, s: number) => void;
-  secondaryColor?: string;
-  tertiaryColor?: string;
-  harmonyMode: string;
-  showMarkers?: boolean;
+	size: number;
+	hue: number;
+	saturation: number;
+	onChange: (h: number, s: number) => void;
+	secondaryColor?: string;
+	tertiaryColor?: string;
+	harmonyMode: string;
+	showMarkers?: boolean;
+	wheelMode?: WheelMode;
+	onHoverColor?: (hex: string | null) => void;
 }
 
 const ColorWheel = ({
-  size,
-  hue,
-  saturation,
-  onChange,
-  secondaryColor,
-  tertiaryColor,
-  harmonyMode,
-  lightness = 50, // Default to 50 if not provided
-  showMarkers = false,
+	size,
+	hue,
+	saturation,
+	onChange,
+	secondaryColor,
+	tertiaryColor,
+	harmonyMode,
+	lightness = 50,
+	showMarkers = false,
+	wheelMode = "default",
+	onHoverColor,
 }: ColorWheelProps & { lightness?: number }) => {
-  const wheelRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
+	const wheelRef = useRef<HTMLDivElement>(null);
+	const [isDragging, setIsDragging] = useState(false);
+	const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
+	const [isHovering, setIsHovering] = useState(false);
+	const radius = size / 2;
 
-  const radius = size / 2;
+	// Mapping Logic: Angle (0-360) <-> Hue (0-360)
+	const getHueFromAngle = (angle: number) => {
+		if (wheelMode === "cool") {
+			// Cool range: 160 (Green-Blue) to 280 (Purple)
+			return 160 + (angle / 360) * 120;
+		}
+		if (wheelMode === "warm") {
+			// Warm range: -20 (Deep Red) to 80 (Yellow-Orange)
+			let h = -20 + (angle / 360) * 100;
+			if (h < 0) h += 360;
+			return h;
+		}
+		return angle;
+	};
 
-  // Helper to get XY from HS
-  const getPosition = (h: number, s: number) => {
-    const angleRad = (h - 90) * (Math.PI / 180); // -90 because 0deg is top in CSS conic, but right in math
-    // Map saturation 0-100 to distance 0-radius
-    const dist = (s / 100) * radius;
-    const x = radius + Math.cos(angleRad) * dist;
-    const y = radius + Math.sin(angleRad) * dist;
-    return { x, y };
-  };
+	const getAngleFromHue = (h: number) => {
+		if (wheelMode === "cool") {
+			// Inverse of 160 + (d/360)*120
+			return ((h - 160) / 120) * 360;
+		}
+		if (wheelMode === "warm") {
+			// Inverse of -20 + (d/360)*100
+			let normalizedH = h > 180 ? h - 360 : h;
+			return ((normalizedH + 20) / 100) * 360;
+		}
+		return h;
+	};
 
-  // Calculate main handle position
-  const mainPos = getPosition(hue, saturation);
+	// Helper to get XY from H and S
+	const getPosition = (h: number, s: number) => {
+		const angle = getAngleFromHue(h);
+		const angleRad = (angle - 90) * (Math.PI / 180);
+		const dist = (s / 100) * radius;
+		return {
+			x: radius + Math.cos(angleRad) * dist,
+			y: radius + Math.sin(angleRad) * dist,
+		};
+	};
 
-  // Interaction handler
-  const handleMove = (clientX: number, clientY: number) => {
-    if (!wheelRef.current) return;
-    const rect = wheelRef.current.getBoundingClientRect();
-    const cx = rect.left + radius;
-    const cy = rect.top + radius;
+	const mainPos = getPosition(hue, saturation);
 
-    const dx = clientX - cx;
-    const dy = clientY - cy;
+	const handleMove = (clientX: number, clientY: number) => {
+		if (!wheelRef.current) return;
+		const rect = wheelRef.current.getBoundingClientRect();
+		const cx = rect.left + radius;
+		const cy = rect.top + radius;
+		const dx = clientX - cx;
+		const dy = clientY - cy;
 
-    // Calculate Angle (Hue)
-    let angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
-    if (angle < 0) angle += 360;
+		let angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+		if (angle < 0) angle += 360;
 
-    // Calculate Distance (Saturation)
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    const s = Math.min(100, (dist / radius) * 100);
+		const dist = Math.hypot(dx, dy);
+		const s = Math.min(100, (dist / radius) * 100);
 
-    onChange(angle, s);
-  };
+		const h = getHueFromAngle(angle);
+		onChange(h, s);
+	};
 
-  const onMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    handleMove(e.clientX, e.clientY);
-  };
+	useEffect(() => {
+		const onMouseMove = (e: MouseEvent) => {
+			if (isDragging) handleMove(e.clientX, e.clientY);
+		};
+		const onMouseUp = () => setIsDragging(false);
 
-  useEffect(() => {
-    const onMouseMove = (e: MouseEvent) => {
-      if (isDragging) handleMove(e.clientX, e.clientY);
-    };
-    const onMouseUp = () => setIsDragging(false);
+		if (isDragging) {
+			globalThis.addEventListener("mousemove", onMouseMove);
+			globalThis.addEventListener("mouseup", onMouseUp);
+		}
+		return () => {
+			globalThis.removeEventListener("mousemove", onMouseMove);
+			globalThis.removeEventListener("mouseup", onMouseUp);
+		};
+	}, [isDragging]);
 
-    if (isDragging) {
-      window.addEventListener("mousemove", onMouseMove);
-      window.addEventListener("mouseup", onMouseUp);
-    }
-    return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-    };
-  }, [isDragging]);
+	const getMouseColor = (x: number, y: number) => {
+		const dx = x - radius;
+		const dy = y - radius;
+		let angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+		if (angle < 0) angle += 360;
+		const dist = Math.hypot(dx, dy);
+		const s = Math.min(100, (dist / radius) * 100);
+		const h = getHueFromAngle(angle);
+		let lVal = 50;
+		if (wheelMode === "bright") lVal = 60;
+		else if (wheelMode === "dark") lVal = 30;
+		return colord({ h, s, l: lVal }).toHex();
+	};
 
-  // Calculate Harmony Positions
-  const getHarmonyPos = (cStr?: string) => {
-    if (!cStr) return null;
-    const c = colord(cStr);
-    const h = c.hue();
-    const s = c.toHsl().s;
-    return getPosition(h, s);
-  };
+	const hoverColor = getMouseColor(hoverPos.x, hoverPos.y);
 
-  const secPos = getHarmonyPos(secondaryColor);
-  const tertPos = getHarmonyPos(tertiaryColor);
+	useEffect(() => {
+		if (isHovering) {
+			onHoverColor?.(hoverColor);
+		} else {
+			onHoverColor?.(null);
+		}
+	}, [isHovering, hoverColor, onHoverColor]);
 
-  // Dynamic Gradient Stops
-  const stops = [
-    { d: 0, h: 0 },
-    { d: 60, h: 60 },
-    { d: 120, h: 120 },
-    { d: 180, h: 180 },
-    { d: 240, h: 240 },
-    { d: 300, h: 300 },
-    { d: 360, h: 360 }, // Loop back to 0 (Red)
-    // Note: Hue 0 and 360 are Red.
-    // We need specific hues: Red, Yellow, Lime, Cyan, Blue, Magenta, Red
-  ];
+	const getHarmonyPos = (cStr?: string) => {
+		if (!cStr) return null;
+		const c = colord(cStr);
+		return getPosition(c.hue(), c.toHsl().s);
+	};
 
-  // Construct conic gradient string
-  // We use colord to generate the hex for each hue at 100% Saturation and CURRENT Lightness
-  // Center is White/Grey/Black based on lightness (Sat 0)
-  // Actually, center is Saturation 0.
+	const secPos = getHarmonyPos(secondaryColor);
+	const tertPos = getHarmonyPos(tertiaryColor);
 
-  const centerColor = colord({ h: 0, s: 0, l: lightness }).toHex();
+	// Composition Logic
+	const stops = useMemo(() => {
+		const steps = 12;
+		const arr = [];
+		for (let i = 0; i <= steps; i++) {
+			const d = (i / steps) * 360;
+			const h = getHueFromAngle(d);
+			let s = 100;
+			let l = lightness;
 
-  const conicStops = stops
-    .map((s) => {
-      const hex = colord({ h: s.h, s: 100, l: lightness }).toHex();
-      return `${hex} ${s.d}deg`;
-    })
-    .join(", ");
+			// Mode specific L/S shifts
+			if (wheelMode === "bright") l = 85;
+			else if (wheelMode === "dark") l = 20;
+			else if (wheelMode === "desaturated") s = 25;
 
-  return (
-    <div
-      ref={wheelRef}
-      className="rounded-full relative shadow-2xl shadow-black/50 cursor-pointer"
-      style={{
-        width: size,
-        height: size,
-        background: `
-                    radial-gradient(circle, ${centerColor} 0%, transparent 70%),
-                    conic-gradient(from 0deg, ${conicStops})
-                `,
-      }}
-      onMouseDown={onMouseDown}
-    >
-      {/* Overlay for Saturation/Lightness nuance */}
-      <div className="absolute inset-0 rounded-full saturation-overlay pointer-events-none" />
+			arr.push(`${colord({ h, s, l }).toHex()} ${d}deg`);
+		}
+		return arr.join(", ");
+	}, [lightness, wheelMode, getHueFromAngle]);
 
-      {/* Harmony Handles (Non-interactive for now, just visual indicators) */}
-      {(harmonyMode !== "manual" || showMarkers) && secPos && (
-        <svg
-          className="absolute w-5 h-5 pointer-events-none drop-shadow-lg"
-          style={{
-            left: secPos.x,
-            top: secPos.y,
-            transform: "translate(-50%, -50%)",
-            zIndex: 5,
-          }}
-          viewBox="0 0 16 16"
-        >
-          <circle
-            cx="8"
-            cy="8"
-            r="7"
-            fill="none"
-            stroke="white"
-            strokeWidth="2"
-            opacity="0.8"
-          />
-          <circle cx="8" cy="8" r="4" fill={secondaryColor} opacity="0.95" />
-        </svg>
-      )}
-      {(harmonyMode !== "manual" || showMarkers) && tertPos && (
-        <svg
-          className="absolute w-5 h-5 pointer-events-none drop-shadow-lg"
-          style={{
-            left: tertPos.x,
-            top: tertPos.y,
-            transform: "translate(-50%, -50%)",
-            zIndex: 5,
-          }}
-          viewBox="0 0 16 16"
-        >
-          <circle
-            cx="8"
-            cy="8"
-            r="7"
-            fill="none"
-            stroke="white"
-            strokeWidth="2"
-            opacity="0.8"
-          />
-          <circle cx="8" cy="8" r="4" fill={tertiaryColor} opacity="0.95" />
-        </svg>
-      )}
+	const centerColor = useMemo(() => {
+		let l = lightness;
+		if (wheelMode === "bright") l = 95;
+		else if (wheelMode === "dark") l = 10;
+		return colord({ h: 0, s: 0, l }).toHex();
+	}, [lightness, wheelMode]);
 
-      {/* Main Handle */}
-      <div
-        className="absolute w-6 h-6 rounded-full border-2 border-white shadow-[0_0_10px_rgba(0,0,0,0.5)] cursor-grab active:cursor-grabbing hover:scale-110 transition-transform"
-        style={{
-          left: mainPos.x,
-          top: mainPos.y,
-          backgroundColor: colord({
-            h: hue,
-            s: saturation,
-            l: 50,
-          }).toHex(),
-          transform: "translate(-50%, -50%)",
-          zIndex: 10,
-        }}
-      />
-    </div>
-  );
+	return (
+		<div
+			ref={wheelRef}
+			className={`rounded-full relative shadow-2xl shadow-black/80 transition-all duration-500 ${
+				isDragging
+					? "cursor-grabbing"
+					: isHovering
+					? "cursor-none"
+					: "cursor-crosshair"
+			}`}
+			style={{
+				width: size,
+				height: size,
+				background: `
+          radial-gradient(circle at center, ${centerColor} 0%, transparent 80%),
+          conic-gradient(from 0deg, ${stops})
+        `,
+			}}
+			onMouseDown={(e) => {
+				setIsDragging(true);
+				handleMove(e.clientX, e.clientY);
+			}}
+			onMouseMove={(e) => {
+				if (!wheelRef.current) return;
+				const rect = wheelRef.current.getBoundingClientRect();
+				const x = e.clientX - rect.left;
+				const y = e.clientY - rect.top;
+				setHoverPos({ x, y });
+				setIsHovering(true);
+			}}
+			onMouseEnter={() => setIsHovering(true)}
+			onMouseLeave={() => setIsHovering(false)}
+		>
+			<div className="absolute inset-0 rounded-full bg-black/5 pointer-events-none" />
+
+			{/* Harmony Markers */}
+			{(harmonyMode !== "manual" || showMarkers) && secPos && (
+				<div
+					className="absolute w-4 h-4 rounded-full border-2 border-white/50 shadow-lg pointer-events-none transition-all duration-300"
+					style={{
+						left: secPos.x,
+						top: secPos.y,
+						backgroundColor: secondaryColor,
+						transform: "translate(-50%, -50%)",
+						zIndex: 5,
+					}}
+				/>
+			)}
+			{(harmonyMode !== "manual" || showMarkers) && tertPos && (
+				<div
+					className="absolute w-4 h-4 rounded-full border-2 border-white/50 shadow-lg pointer-events-none transition-all duration-300"
+					style={{
+						left: tertPos.x,
+						top: tertPos.y,
+						backgroundColor: tertiaryColor,
+						transform: "translate(-50%, -50%)",
+						zIndex: 5,
+					}}
+				/>
+			)}
+
+			{/* Selection Handle */}
+			<div
+				className="absolute w-7 h-7 rounded-full border-[3px] border-white shadow-2xl transition-all duration-75 z-20"
+				style={{
+					left: mainPos.x,
+					top: mainPos.y,
+					backgroundColor: colord({
+						h: hue,
+						s: saturation,
+						l: 50,
+					}).toHex(),
+					transform: `translate(-50%, -50%) scale(${
+						isDragging ? 0.9 : 1
+					})`,
+					cursor: isDragging ? "grabbing" : "grab",
+				}}
+			/>
+
+			{/* Custom Magnifier Cursor */}
+			{isHovering && !isDragging && (
+				<div
+					className="absolute pointer-events-none transition-transform duration-75 rounded-full z-50 bg-transparent flex items-center justify-center"
+					style={{
+						left: hoverPos.x,
+						top: hoverPos.y,
+						width: 40,
+						height: 40,
+						transform: "translate(-50%, -50%)",
+						border: "2px solid rgba(255,255,255,0.8)",
+						boxShadow:
+							"0 0 10px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.2)",
+					}}
+				>
+					<div
+						className="w-2 h-2 rounded-full shadow-sm"
+						style={{
+							backgroundColor: hoverColor,
+							border: "1px solid rgba(255,255,255,0.8)",
+						}}
+					/>
+				</div>
+			)}
+		</div>
+	);
 };

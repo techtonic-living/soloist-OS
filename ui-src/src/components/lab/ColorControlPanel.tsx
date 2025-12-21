@@ -66,7 +66,7 @@ export const ColorControlPanel = ({
 	const { isCopied: isPaletteCopied, copy: copyPalette } = useCopyFeedback();
 
 	// Global Toast
-	const { showToast } = useToast();
+	const toast = useToast();
 
 	// Async Toggle for Favorites
 	const { status: primaryStatus, toggle: togglePrimary } = useAsyncToggle();
@@ -114,7 +114,7 @@ export const ColorControlPanel = ({
 						),
 					},
 				});
-				showToast("Removed from Favorites");
+				toast.standard("Removed from Favorites");
 			} else {
 				// Add as simple string (no metadata generation in fallback)
 				updateSettings({
@@ -123,7 +123,7 @@ export const ColorControlPanel = ({
 						colors: [...currentLib.colors, colorHex],
 					},
 				});
-				showToast("Saved to Favorites");
+				toast.standard("Saved to Favorites");
 			}
 		});
 	};
@@ -222,7 +222,7 @@ export const ColorControlPanel = ({
 					),
 				},
 			});
-			showToast("Removed from Favorites");
+			toast.standard("Removed from Favorites");
 		} else {
 			// Add
 			const palette = {
@@ -237,7 +237,7 @@ export const ColorControlPanel = ({
 					palettes: [...currentLib.palettes, palette],
 				},
 			});
-			showToast("Saved to Favorites");
+			toast.standard("Saved to Favorites");
 		}
 	};
 

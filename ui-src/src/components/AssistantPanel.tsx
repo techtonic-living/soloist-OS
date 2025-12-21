@@ -317,7 +317,7 @@ function InspectedPaletteCard({
 	setIsEditing: (v: boolean) => void;
 }>) {
 	const { settings, updateSettings } = useSoloist();
-	const { showToast } = useToast();
+	const toast = useToast();
 	const library = settings.library || { palettes: [], colors: [] };
 
 	const normalizeHex = (v: any) => {
@@ -440,7 +440,7 @@ function InspectedPaletteCard({
 				palettes: palettesNext,
 			},
 		});
-		showToast("Palette updated");
+		toast.standard("Palette updated");
 		setIsEditing(false);
 	};
 
@@ -1527,7 +1527,7 @@ export function AssistantPanel({
 		activeExploreTab,
 	]);
 
-	const { showToast } = useToast();
+	const toast = useToast();
 	// useSoloistSystem doesn't expose onUpdateColor directly, we might need to implement it here or usage was wrong.
 	// Checking the hook file, it returns { settings, updateSettings, updateData, dataStore }.
 	// Assuming onUpdateColor is NOT in the hook, we will implement the updater manually using updateSettings.
@@ -1555,6 +1555,7 @@ export function AssistantPanel({
 	};
 
 	const toggleFavoriteColor = async (color: string) => {
+		console.log("[AssistantPanel] toggleFavoriteColor called for:", color);
 		const result = await toggleFavoriteWithMetadata({
 			color,
 			settings,
@@ -1562,7 +1563,7 @@ export function AssistantPanel({
 		});
 
 		if (result?.action === "added" && result.color?.isAutoRenamed) {
-			showToast(
+			toast.standard(
 				<>
 					Saved as{" "}
 					<span className="text-accent-cyan">
@@ -1586,7 +1587,7 @@ export function AssistantPanel({
 			meaning: newMeaning,
 			usage: newUsage,
 		});
-		showToast("Color updated");
+		toast.standard("Color updated");
 	};
 
 	// Toggle Palette with AI Metadata
@@ -1599,9 +1600,9 @@ export function AssistantPanel({
 		});
 
 		if (result.action === "added") {
-			showToast("Palette saved to Favorites");
+			toast.standard("Palette saved to Favorites");
 		} else {
-			showToast("Palette removed from Favorites");
+			toast.standard("Palette removed from Favorites");
 		}
 	};
 

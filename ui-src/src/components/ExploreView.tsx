@@ -28,18 +28,19 @@ interface ExploreViewProps {
 	setActiveColorSlot?: (slot: "primary" | "secondary" | "tertiary") => void;
 }
 
-export const ExploreView = ({
-	activeTab,
-	setActiveTab,
-	onInspectColor = () => {},
-	onInspectPalette = () => {},
-	generatorColors,
-	setGeneratorColors,
-	inspectedRemixIndex,
-	onInspectRemixColor,
-	activeColorSlot,
-}: // Note: setActiveColorSlot is defined in interface but not used in this component
-ExploreViewProps) => {
+export const ExploreView = (props: ExploreViewProps) => {
+	const {
+		activeTab,
+		setActiveTab,
+		onInspectColor = () => {},
+		onInspectPalette = () => {},
+		generatorColors,
+		setGeneratorColors,
+		inspectedRemixIndex,
+		onInspectRemixColor,
+		activeColorSlot,
+		setActiveColorSlot,
+	} = props;
 	const {
 		seedColor,
 		setSeedColor,
@@ -53,7 +54,7 @@ ExploreViewProps) => {
 		updateSettings,
 	} = useSoloist();
 
-	const { showToast } = useToast();
+	const toast = useToast();
 
 	// Derived colors for ColorCreator
 	const secondaryColor = secondaryRamp[5]?.hex || "#000000";
@@ -323,7 +324,7 @@ ExploreViewProps) => {
 		});
 
 		if (palette) {
-			showToast(
+			toast.standard(
 				<>
 					Removed{" "}
 					<span className="text-accent-cyan">{palette.name}</span>{" "}
@@ -356,7 +357,7 @@ ExploreViewProps) => {
 			},
 		});
 
-		showToast(
+		toast.standard(
 			<>
 				Removed{" "}
 				<span className="text-accent-cyan">
@@ -389,7 +390,7 @@ ExploreViewProps) => {
 			},
 		});
 
-		showToast(
+		toast.standard(
 			<>
 				Added{" "}
 				<span className="text-accent-cyan">{newPalettes.length}</span>{" "}
@@ -568,6 +569,7 @@ ExploreViewProps) => {
 								harmonyMode={harmonyMode}
 								setHarmonyMode={setHarmonyMode}
 								activeColorSlot={activeColorSlot}
+								setActiveColorSlot={setActiveColorSlot}
 							/>
 						</motion.div>
 					)}

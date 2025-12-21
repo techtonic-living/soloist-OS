@@ -579,7 +579,7 @@ export const ColorLibrary = ({
 	};
 
 	// Toast
-	const { showToast } = useToast();
+	const toast = useToast();
 
 	// Grid Density State (Columns)
 	const [density, setDensity] = useState(2);
@@ -1392,7 +1392,7 @@ export const ColorLibrary = ({
 																res.action ===
 																	"removed"
 															) {
-																showToast(
+																toast.standard(
 																	<>
 																		Removed{" "}
 																		<span className="text-accent-cyan">
@@ -1412,7 +1412,7 @@ export const ColorLibrary = ({
 																	res.color as PresetColor
 																).isAutoRenamed
 															) {
-																showToast(
+																toast.standard(
 																	<>
 																		Saved as{" "}
 																		<span className="text-accent-cyan">
@@ -2220,7 +2220,7 @@ export const ColorLibrary = ({
 																			res.action ===
 																				"removed"
 																		) {
-																			showToast(
+																			toast.standard(
 																				<>
 																					Removed{" "}
 																					<span className="text-accent-cyan">
@@ -2244,7 +2244,7 @@ export const ColorLibrary = ({
 																			)
 																				.isAutoRenamed
 																		) {
-																			showToast(
+																			toast.standard(
 																				<>
 																					Saved
 																					as{" "}
@@ -2980,7 +2980,7 @@ export const ColorLibrary = ({
 																				)
 																					.isAutoRenamed
 																			) {
-																				showToast(
+																				toast.standard(
 																					<>
 																						Saved
 																						as{" "}
