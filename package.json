@@ -6,7 +6,7 @@
 		"build:ui": "npm run build --prefix ui-src",
 		"build:plugin": "esbuild plugin/code.tsx --bundle --outfile=dist/code.js --target=es6 --format=iife",
 		"watch": "concurrently \"npm run watch:ui\" \"npm run watch:plugin\"",
-		"watch:ui": "npm run dev --prefix ui-src",
+		"watch:ui": "cd ui-src && npm run dev",
 		"watch:plugin": "npm run build:plugin -- --watch"
 	},
 	"devDependencies": {
