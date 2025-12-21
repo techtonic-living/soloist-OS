@@ -58,7 +58,7 @@ interface ColorLibraryProps {
 	onToggleFavorite: (
 		color: string,
 		metadata?: PresetColor
-	) => Promise<ToggleFavoriteResult | void>;
+	) => Promise<ToggleFavoriteResult | void | null>;
 	uiPreferences?: UiPreferences;
 	onUpdateUiPreferences?: (prefs: Partial<UiPreferences>) => void;
 	view?: "all" | "colors" | "palettes";

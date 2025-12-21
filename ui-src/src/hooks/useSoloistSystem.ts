@@ -6,202 +6,212 @@ export type VisualFidelity = "performance" | "high";
 export type AILevel = "silent" | "guide" | "teacher";
 
 export interface UiPreferences {
-  colorGridDensity: {
-    favorites: number;
-    presets: number;
-  };
-  paletteGridDensity: {
-    favorites: number;
-    presets: number;
-  };
+	colorGridDensity: {
+		favorites: number;
+		presets: number;
+	};
+	paletteGridDensity: {
+		favorites: number;
+		presets: number;
+	};
 
-  /**
-   * Optional user customization for Preset Libraries (the built-in Libraries tab).
-   * Stored in UI prefs so it persists across sessions without mutating preset constants.
-   */
-  colorPresetCustom?: {
-    libraryOrder?: string[]; // library name order
-    hiddenLibraries?: Record<string, boolean>; // library name -> hidden
-    itemOrderByLibrary?: Record<string, string[]>; // library name -> list of color hex values
-    hiddenItems?: Record<string, boolean>; // `${libraryName}::${hex}` -> hidden
-  };
+	/**
+	 * Optional user customization for Preset Libraries (the built-in Libraries tab).
+	 * Stored in UI prefs so it persists across sessions without mutating preset constants.
+	 */
+	colorPresetCustom?: {
+		libraryOrder?: string[]; // library name order
+		hiddenLibraries?: Record<string, boolean>; // library name -> hidden
+		itemOrderByLibrary?: Record<string, string[]>; // library name -> list of color hex values
+		hiddenItems?: Record<string, boolean>; // `${libraryName}::${hex}` -> hidden
+	};
 
-  palettePresetCustom?: {
-    libraryOrder?: string[]; // library id order
-    hiddenLibraries?: Record<string, boolean>; // library id -> hidden
-    itemOrderByLibrary?: Record<string, string[]>; // library id -> list of palette names
-    hiddenItems?: Record<string, boolean>; // `${libraryId}::${paletteName}` -> hidden
-  };
+	palettePresetCustom?: {
+		libraryOrder?: string[]; // library id order
+		hiddenLibraries?: Record<string, boolean>; // library id -> hidden
+		itemOrderByLibrary?: Record<string, string[]>; // library id -> list of palette names
+		hiddenItems?: Record<string, boolean>; // `${libraryId}::${paletteName}` -> hidden
+	};
 }
 
 interface UserProfile {
-  displayName: string;
-  role: string;
-  bio: string;
-  avatarUrl?: string;
+	displayName: string;
+	role: string;
+	bio: string;
+	avatarUrl?: string;
 }
 
 export interface CollectionItem {
-  type: "color" | "palette";
-  value: any;
+	type: "color" | "palette";
+	value: any;
 }
 
 export interface Collection {
-  id: string;
-  name: string;
-  items: CollectionItem[];
+	id: string;
+	name: string;
+	items: CollectionItem[];
 }
 
 export interface Project {
-  id: string;
-  name: string;
-  collectionIds: string[];
+	id: string;
+	name: string;
+	collectionIds: string[];
 }
 
 export interface ColorGroup {
-  id: string;
-  name: string;
-  description: string;
-  colorIds: string[]; // Values (Hex)
-  isActive: boolean;
-  isHidden: boolean;
-  collapsed?: boolean;
+	id: string;
+	name: string;
+	description: string;
+	colorIds: string[]; // Values (Hex)
+	isActive: boolean;
+	isHidden: boolean;
+	collapsed?: boolean;
 }
 
 export interface PaletteGroup {
-  id: string;
-  name: string;
-  description: string;
-  paletteIds: string[]; // Values (Names)
-  isActive: boolean;
-  isHidden: boolean;
-  collapsed?: boolean;
+	id: string;
+	name: string;
+	description: string;
+	paletteIds: string[]; // Values (Names)
+	isActive: boolean;
+	isHidden: boolean;
+	collapsed?: boolean;
 }
 
 export interface UserLibrary {
-  colors: (string | PresetColor)[]; // Hex codes or full PresetColor objects
-  colorGroups?: ColorGroup[]; // Custom user groups
-  fonts: string[]; // Font family names
-  palettes: { name: string; colors: string[] }[];
-  paletteGroups?: PaletteGroup[];
-  collections: Collection[];
-  colorCache?: PresetColor[]; // AI-generated metadata cache for reuse
-  projects: Project[];
+	colors: (string | PresetColor)[]; // Hex codes or full PresetColor objects
+	colorGroups?: ColorGroup[]; // Custom user groups
+	fonts: string[]; // Font family names
+	palettes: { name: string; colors: string[] }[];
+	paletteGroups?: PaletteGroup[];
+	collections: Collection[];
+	colorCache?: PresetColor[]; // AI-generated metadata cache for reuse
+	projects: Project[];
 }
 
 export interface SystemSettings {
-  storageType: StorageType;
-  visualFidelity: VisualFidelity;
-  aiLevel: AILevel;
-  userProfile: UserProfile;
-  library: UserLibrary;
-  uiPreferences: UiPreferences;
+	storageType: StorageType;
+	visualFidelity: VisualFidelity;
+	aiLevel: AILevel;
+	userProfile: UserProfile;
+	library: UserLibrary;
+	uiPreferences: UiPreferences;
 }
 
 const DEFAULT_SETTINGS: SystemSettings = {
-  storageType: "local",
-  visualFidelity: "high",
-  aiLevel: "guide",
-  userProfile: {
-    displayName: "Soloist User",
-    role: "Designer",
-    bio: "Crafting digital experiences.",
-  },
-  library: {
-    colors: [],
-    colorGroups: [],
-    fonts: [],
-    palettes: [],
-    paletteGroups: [],
-    collections: [],
-    projects: [],
-  },
-  uiPreferences: {
-    colorGridDensity: {
-      favorites: 2,
-      presets: 2,
-    },
-    paletteGridDensity: {
-      favorites: 2,
-      presets: 2,
-    },
-  },
+	storageType: "local",
+	visualFidelity: "high",
+	aiLevel: "guide",
+	userProfile: {
+		displayName: "Soloist User",
+		role: "Designer",
+		bio: "Crafting digital experiences.",
+	},
+	library: {
+		colors: [],
+		colorGroups: [],
+		fonts: [],
+		palettes: [],
+		paletteGroups: [],
+		collections: [],
+		projects: [],
+	},
+	uiPreferences: {
+		colorGridDensity: {
+			favorites: 2,
+			presets: 2,
+		},
+		paletteGridDensity: {
+			favorites: 2,
+			presets: 2,
+		},
+	},
 };
 
 export const useSoloistSystem = () => {
-  const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS);
-  // We'll treat generic data as a simple key-value store in React state for now
-  // to allow reactive updates.
-  const [dataStore, setDataStore] = useState<Record<string, any>>({});
+	const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS);
+	// We'll treat generic data as a simple key-value store in React state for now
+	// to allow reactive updates.
+	const [dataStore, setDataStore] = useState<Record<string, any>>({});
 
-  useEffect(() => {
-    // Listen for messages from the plugin backend
-    const handleMessage = (event: MessageEvent) => {
-      const { type, payload } = event.data.pluginMessage || {};
-      if (type === "storage-loaded") {
-        const { key, data } = payload;
-        if (key === "soloist-settings" && data) {
-          setSettings(data);
-        } else if (key.startsWith("soloist-data-")) {
-          const dataKey = key.replace("soloist-data-", "");
-          setDataStore((prev) => ({ ...prev, [dataKey]: data }));
-        }
-      }
-    };
+	useEffect(() => {
+		// Listen for messages from the plugin backend
+		const handleMessage = (event: MessageEvent) => {
+			const { type, payload } = event.data.pluginMessage || {};
+			if (type === "storage-loaded") {
+				const { key, data } = payload;
+				if (key === "soloist-settings" && data) {
+					setSettings(data);
+				} else if (key.startsWith("soloist-data-")) {
+					const dataKey = key.replace("soloist-data-", "");
+					setDataStore((prev) => ({ ...prev, [dataKey]: data }));
+				}
+			}
+		};
 
-    window.addEventListener("message", handleMessage);
+		window.addEventListener("message", handleMessage);
 
-    // Initial load requests
-    parent.postMessage(
-      {
-        pluginMessage: {
-          type: "load-storage",
-          payload: { key: "soloist-settings" },
-        },
-      },
-      "*"
-    );
-    parent.postMessage(
-      {
-        pluginMessage: {
-          type: "load-storage",
-          payload: { key: "soloist-data-kb-entries" },
-        },
-      },
-      "*"
-    );
+		// Initial load requests
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "load-storage",
+					payload: { key: "soloist-settings" },
+				},
+			},
+			"*"
+		);
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "load-storage",
+					payload: { key: "soloist-data-kb-entries" },
+				},
+			},
+			"*"
+		);
 
-    return () => window.removeEventListener("message", handleMessage);
-  }, []);
+		return () => window.removeEventListener("message", handleMessage);
+	}, []);
 
-  return {
-    settings,
-    updateSettings: (newSettings: Partial<SystemSettings>) => {
-      const updated = { ...settings, ...newSettings };
-      setSettings(updated);
-      parent.postMessage(
-        {
-          pluginMessage: {
-            type: "save-storage",
-            payload: { key: "soloist-settings", data: updated },
-          },
-        },
-        "*"
-      );
-    },
-    updateData: (key: string, data: any) => {
-      setDataStore((prev) => ({ ...prev, [key]: data }));
-      parent.postMessage(
-        {
-          pluginMessage: {
-            type: "save-storage",
-            payload: { key: `soloist-data-${key}`, data },
-          },
-        },
-        "*"
-      );
-    },
-    // Reactive data access
-    dataStore,
-  };
+	return {
+		settings,
+		updateSettings: (
+			newSettings:
+				| Partial<SystemSettings>
+				| ((prev: SystemSettings) => SystemSettings)
+		) => {
+			setSettings((prev) => {
+				const updated =
+					typeof newSettings === "function"
+						? newSettings(prev)
+						: { ...prev, ...newSettings };
+
+				parent.postMessage(
+					{
+						pluginMessage: {
+							type: "save-storage",
+							payload: { key: "soloist-settings", data: updated },
+						},
+					},
+					"*"
+				);
+				return updated;
+			});
+		},
+		updateData: (key: string, data: any) => {
+			setDataStore((prev) => ({ ...prev, [key]: data }));
+			parent.postMessage(
+				{
+					pluginMessage: {
+						type: "save-storage",
+						payload: { key: `soloist-data-${key}`, data },
+					},
+				},
+				"*"
+			);
+		},
+		// Reactive data access
+		dataStore,
+	};
 };

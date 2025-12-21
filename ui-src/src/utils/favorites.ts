@@ -1,285 +1,324 @@
 import { colord } from "colord";
-import { PresetColor } from "../data/colorPresets";
 import {
-  findOrGenerateMetadata,
-  generatePaletteMetadata,
+	findOrGenerateMetadata,
+	generatePaletteMetadata,
 } from "../services/colorMetadata";
-import { SystemSettings } from "../hooks/useSoloistSystem";
+import { PresetColor } from "../data/colorPresets";
+import { SystemSettings, UserLibrary } from "../hooks/useSoloistSystem";
 
-interface ToggleFavoriteParams {
-  color: string;
-  existingMetadata?: PresetColor;
-  settings: SystemSettings;
-  updateSettings: (settings: Partial<SystemSettings>) => void;
+export interface ToggleFavoriteParams {
+	color: string;
+	settings: SystemSettings;
+	updateSettings: (
+		settings:
+			| Partial<SystemSettings>
+			| ((prev: SystemSettings) => SystemSettings)
+	) => void;
+	existingMetadata?: PresetColor;
 }
 
-interface SavePaletteParams {
-  colors: string[];
-  name?: string;
-  settings: SystemSettings;
-  updateSettings: (settings: Partial<SystemSettings>) => void;
+export interface SavePaletteParams {
+	colors: string[];
+	name?: string;
+	settings: SystemSettings;
+	updateSettings: (
+		settings:
+			| Partial<SystemSettings>
+			| ((prev: SystemSettings) => SystemSettings)
+	) => void;
 }
-
-// Default library shape to avoid undefined branches
-const ensureLibrary = (settings: SystemSettings) => {
-  const fallback = {
-    colors: [] as (string | PresetColor)[],
-    fonts: [],
-    palettes: [],
-    paletteGroups: [],
-    collections: [],
-    projects: [],
-    colorGroups: [],
-    colorCache: [] as PresetColor[],
-  };
-
-  const base = settings.library
-    ? { ...fallback, ...settings.library }
-    : fallback;
-
-  // Guarantee colorCache is always an array
-  return {
-    ...base,
-    colorCache: base.colorCache ?? [],
-  };
-};
-
-// Helper for unique naming on save
-const getUniqueLabel = (baseName: string, existingNames: string[]): string => {
-  const key = baseName.toLowerCase();
-  // Count how many existing names start with this base name (rough check)
-  // A more precise check is to iterate variants till one is free.
-
-  // Case-insensitive set for fast lookup
-  const occupied = new Set(existingNames.map((n) => n.toLowerCase()));
-
-  if (!occupied.has(key)) return baseName;
-
-  // Creative / Natural Variants
-  const variants = [
-    `Astral ${baseName}`,
-    `Cosmic ${baseName}`,
-    `Eternal ${baseName}`,
-    `Phantom ${baseName}`,
-    `Velvet ${baseName}`,
-    `Electric ${baseName}`,
-    `Neon ${baseName}`,
-    `Mystic ${baseName}`,
-    `Radiant ${baseName}`,
-    `Deep ${baseName}`,
-  ];
-
-  // Try variants first
-  for (const variant of variants) {
-    if (!occupied.has(variant.toLowerCase())) return variant;
-  }
-
-  // Fallback to numbering
-  for (let i = 2; ; i++) {
-    const numbered = `${baseName} (${i})`;
-    if (!occupied.has(numbered.toLowerCase())) return numbered;
-  }
-};
 
 export interface ToggleFavoriteResult {
-  action: "added" | "removed";
-  color: PresetColor | string | any;
+	action: "added" | "removed";
+	color?: any;
 }
 
+// --- Helpers ---
+
+export const ensureLibrary = (settings: SystemSettings): UserLibrary => {
+	if (settings.library) return settings.library;
+	return {
+		colors: [],
+		fonts: [],
+		palettes: [],
+		paletteGroups: [],
+		collections: [],
+		projects: [],
+	};
+};
+
+export const getUniqueLabel = (
+	baseName: string,
+	existingNames: string[]
+): string => {
+	let uniqueName = baseName;
+	let counter = 1;
+	const names = existingNames.map((n) => n.toLowerCase());
+
+	while (names.includes(uniqueName.toLowerCase())) {
+		uniqueName = `${baseName} ${counter}`;
+		counter++;
+	}
+	return uniqueName;
+};
+
+// --- Main Functions ---
+
 export const toggleFavoriteWithMetadata = async ({
-  color,
-  existingMetadata,
-  settings,
-  updateSettings,
-}: ToggleFavoriteParams): Promise<ToggleFavoriteResult> => {
-  const library = ensureLibrary(settings);
-  const targetColor = colord(color);
+	color,
+	settings: initialSettings,
+	updateSettings,
+	existingMetadata,
+}: ToggleFavoriteParams): Promise<ToggleFavoriteResult | null> => {
+	const initialLibrary = ensureLibrary(initialSettings);
+	const targetColor = colord(color);
 
-  // Determine if color already exists (Robust Check)
-  const exists = library.colors.some((c) => {
-    const storedHex = typeof c === "string" ? c : c.value;
-    return colord(storedHex).isEqual(targetColor);
-  });
+	// 1. Synchronous check for REMOVAL (Fast)
+	const existingIndex = initialLibrary.colors.findIndex((c) => {
+		const storedHex = typeof c === "string" ? c : c.value;
+		return colord(storedHex).isEqual(targetColor);
+	});
 
-  if (exists) {
-    // REMOVE Logic
-    // Preserve metadata in cache before removal
-    const currentEntry = library.colors.find((c) => {
-      const storedHex = typeof c === "string" ? c : c.value;
-      return colord(storedHex).isEqual(targetColor);
-    });
+	if (existingIndex !== -1) {
+		const removedColor = initialLibrary.colors[existingIndex];
 
-    let colorCache = library.colorCache || [];
-    if (
-      currentEntry &&
-      typeof currentEntry !== "string" &&
-      !colorCache.some((c) => colord(c.value).isEqual(targetColor))
-    ) {
-      colorCache = [...colorCache, currentEntry];
-    }
+		// Perform Atomic REMOVE
+		updateSettings((prev) => {
+			const library = ensureLibrary(prev);
 
-    const newColors = library.colors.filter((c) => {
-      const storedHex = typeof c === "string" ? c : c.value;
-      return !colord(storedHex).isEqual(targetColor);
-    });
+			// Re-verify uniqueness in case list changed
+			const newColors = library.colors.filter((c) => {
+				const storedHex = typeof c === "string" ? c : c.value;
+				return !colord(storedHex).isEqual(targetColor);
+			});
 
-    // Remove from all groups (Robust Check to ensure Group Reset)
-    const updatedGroups = (library.colorGroups || []).map((group: any) => ({
-      ...group,
-      colorIds: group.colorIds.filter(
-        (id: string) => !colord(id).isEqual(targetColor)
-      ),
-    }));
+			const updatedGroups = (library.colorGroups || []).map(
+				(group: any) => ({
+					...group,
+					colorIds: group.colorIds.filter(
+						(id: string) => !colord(id).isEqual(targetColor)
+					),
+				})
+			);
 
-    updateSettings({
-      library: {
-        ...library,
-        colors: newColors,
-        colorCache,
-        colorGroups: updatedGroups,
-      },
-    });
-    return { action: "removed", color: currentEntry || color };
-  }
+			return {
+				...prev,
+				library: {
+					...library,
+					colors: newColors,
+					colorGroups: updatedGroups,
+				},
+			};
+		});
+		return { action: "removed", color: removedColor };
+	}
 
-  // ADD Logic
-  let colorWithMetadata: PresetColor;
+	// 2. Asynchronous ADD Logic (Slow - could involve Gemini)
+	let colorWithMetadata: PresetColor;
 
-  try {
-    if (existingMetadata) {
-      colorWithMetadata = { ...existingMetadata };
-    } else {
-      // We pass empty avoidNames here because we handle renaming explicitly below
-      colorWithMetadata = await findOrGenerateMetadata(
-        color,
-        library.colorCache || [],
-        { avoidNames: [] }
-      );
-    }
+	try {
+		if (existingMetadata) {
+			colorWithMetadata = { ...existingMetadata };
+		} else {
+			// findOrGenerateMetadata handles library colors vs new colors internally
+			colorWithMetadata = await findOrGenerateMetadata(
+				color,
+				initialLibrary.colorCache || [],
+				{ avoidNames: [] }
+			);
+		}
 
-    // --- UNIQUE NAME ENFORCEMENT ---
-    const existingNames = library.colors.map((c) =>
-      typeof c === "string" ? c : c.name
-    );
-    const uniqueName = getUniqueLabel(colorWithMetadata.name, existingNames);
+		// 3. Functional Update for adding (Ensures we don't overwrite interim changes)
+		updateSettings((prev) => {
+			const library = ensureLibrary(prev);
 
-    if (uniqueName !== colorWithMetadata.name) {
-      colorWithMetadata.name = uniqueName;
-      colorWithMetadata.isAutoRenamed = true;
-    }
-    // -------------------------------
+			// Re-verify uniqueness based on LATEST state
+			if (
+				library.colors.some((c) =>
+					colord(typeof c === "string" ? c : c.value).isEqual(
+						targetColor
+					)
+				)
+			) {
+				return prev; // Already added while we were waiting
+			}
 
-    const cached = (library.colorCache || []).some((c) =>
-      colord(c.value).isEqual(targetColor)
-    );
-    const updatedCache = cached
-      ? library.colorCache || []
-      : [...(library.colorCache || []), colorWithMetadata];
+			const existingNames = library.colors.map((c) =>
+				typeof c === "string" ? c : (c as PresetColor).name
+			);
+			const uniqueName = getUniqueLabel(
+				colorWithMetadata.name,
+				existingNames
+			);
 
-    updateSettings({
-      library: {
-        ...library,
-        colors: [...library.colors, colorWithMetadata],
-        colorCache: updatedCache,
-      },
-    });
+			if (uniqueName !== colorWithMetadata.name) {
+				colorWithMetadata.name = uniqueName;
+				colorWithMetadata.isAutoRenamed = true;
+			}
 
-    return { action: "added", color: colorWithMetadata };
-  } catch (error) {
-    console.error("Failed to get color metadata:", error);
-    // Fallback: save as string to keep UX responsive
-    updateSettings({
-      library: {
-        ...library,
-        colors: [...library.colors, color],
-      },
-    });
-    return { action: "added", color };
-  }
+			const cached = (library.colorCache || []).some((c) =>
+				colord(c.value).isEqual(targetColor)
+			);
+			const updatedCache = cached
+				? library.colorCache || []
+				: [...(library.colorCache || []), colorWithMetadata];
+
+			return {
+				...prev,
+				library: {
+					...library,
+					colors: [...library.colors, colorWithMetadata],
+					colorCache: updatedCache,
+				},
+			};
+		});
+
+		return { action: "added", color: colorWithMetadata };
+	} catch (error) {
+		console.error("Failed to get color metadata:", error);
+		// Fallback without metadata
+		updateSettings((prev) => {
+			const library = ensureLibrary(prev);
+			if (
+				library.colors.some((c) =>
+					colord(typeof c === "string" ? c : c.value).isEqual(
+						targetColor
+					)
+				)
+			) {
+				return prev;
+			}
+			return {
+				...prev,
+				library: {
+					...library,
+					colors: [...library.colors, color],
+				},
+			};
+		});
+		return { action: "added", color: { value: color, name: "Color" } };
+	}
 };
 
 export const togglePaletteWithMetadata = async ({
-  colors,
-  name,
-  settings,
-  updateSettings,
+	colors,
+	name,
+	settings: initialSettings,
+	updateSettings,
 }: SavePaletteParams): Promise<ToggleFavoriteResult> => {
-  const library = ensureLibrary(settings);
+	const initialLibrary = ensureLibrary(initialSettings);
 
-  // Check if this EXACT palette already exists (case-insensitive check)
-  const existingIndex = library.palettes.findIndex((p: any) => {
-    if (p.colors.length !== colors.length) return false;
-    return p.colors.every(
-      (c: string, i: number) => c.toUpperCase() === colors[i].toUpperCase()
-    );
-  });
+	// 1. Synchronous check for REMOVAL (Fast)
+	const existingIndex = initialLibrary.palettes.findIndex((p: any) => {
+		if (p.colors.length !== colors.length) return false;
+		return p.colors.every(
+			(c: string, i: number) =>
+				c.toUpperCase() === colors[i].toUpperCase()
+		);
+	});
 
-  if (existingIndex !== -1) {
-    // REMOVE Logic
-    const newPalettes = [...library.palettes];
-    const removed = newPalettes.splice(existingIndex, 1)[0];
+	if (existingIndex !== -1) {
+		updateSettings((prev) => {
+			const library = ensureLibrary(prev);
+			const newPalettes = [...library.palettes];
 
-    // Also remove from any palette groups so a re-favorite returns to Global.
-    const removedName = String(removed?.name ?? "");
-    const updatedPaletteGroups = (library.paletteGroups || []).map(
-      (g: any) => ({
-        ...g,
-        paletteIds: (g.paletteIds || []).filter(
-          (id: string) => String(id) !== removedName
-        ),
-      })
-    );
+			// Re-find in case index shifted
+			const realIndex = newPalettes.findIndex((p: any) => {
+				if (p.colors.length !== colors.length) return false;
+				return p.colors.every(
+					(c: string, i: number) =>
+						c.toUpperCase() === colors[i].toUpperCase()
+				);
+			});
 
-    updateSettings({
-      library: {
-        ...library,
-        palettes: newPalettes,
-        paletteGroups: updatedPaletteGroups,
-      },
-    });
-    return { action: "removed", color: removed }; // reusing 'color' field for result object flexibility
-  }
+			if (realIndex === -1) return prev; // already removed
 
-  // ADD Logic
-  try {
-    let metadata;
-    if (name) {
-      // Use provided name
-      metadata = await generatePaletteMetadata(colors, {
-        avoidNames: [], // We trust the user/preset name if explicitly provided
-      });
-      metadata.name = name; // Override name
-    } else {
-      const existingNames = library.palettes.map((p: any) => p.name);
-      metadata = await generatePaletteMetadata(colors, {
-        avoidNames: existingNames,
-      });
-    }
+			const removed = newPalettes.splice(realIndex, 1)[0];
+			const removedName = String(removed?.name ?? "");
+			const updatedPaletteGroups = (library.paletteGroups || []).map(
+				(g: any) => ({
+					...g,
+					paletteIds: (g.paletteIds || []).filter(
+						(id: string) => String(id) !== removedName
+					),
+				})
+			);
 
-    updateSettings({
-      library: {
-        ...library,
-        palettes: [...library.palettes, metadata],
-      },
-    });
-    return { action: "added", color: metadata };
-  } catch (error) {
-    console.error("Failed to get palette metadata:", error);
-    // Fallback
-    const newPalette = {
-      name: `Palette ${library.palettes.length + 1}`,
-      description: "Custom palette",
-      colors,
-      meaning: "",
-      usage: "",
-      createdAt: new Date().toISOString(),
-    };
-    updateSettings({
-      library: {
-        ...library,
-        palettes: [...library.palettes, newPalette],
-      },
-    });
-    return { action: "added", color: newPalette };
-  }
+			return {
+				...prev,
+				library: {
+					...library,
+					palettes: newPalettes,
+					paletteGroups: updatedPaletteGroups,
+				},
+			};
+		});
+		return { action: "removed", color: colors };
+	}
+
+	// 2. Asynchronous ADD Logic (Slow - could involve Gemini)
+	try {
+		let metadata: any;
+		if (name) {
+			metadata = await generatePaletteMetadata(colors, {
+				avoidNames: [],
+			});
+			metadata.name = name;
+		} else {
+			const existingNames = initialLibrary.palettes.map(
+				(p: any) => p.name
+			);
+			metadata = await generatePaletteMetadata(colors, {
+				avoidNames: existingNames,
+			});
+		}
+
+		// 3. Functional Update for adding
+		updateSettings((prev) => {
+			const library = ensureLibrary(prev);
+
+			// Re-re-check existence based on LATEST
+			if (
+				library.palettes.some((p: any) => {
+					if (p.colors.length !== colors.length) return false;
+					return p.colors.every(
+						(c: string, i: number) =>
+							c.toUpperCase() === colors[i].toUpperCase()
+					);
+				})
+			) {
+				return prev; // Added while waiting
+			}
+
+			return {
+				...prev,
+				library: {
+					...library,
+					palettes: [...library.palettes, metadata],
+				},
+			};
+		});
+		return { action: "added", color: metadata };
+	} catch (error) {
+		console.error("Failed to get palette metadata:", error);
+		updateSettings((prev) => {
+			const library = ensureLibrary(prev);
+			const newPalette = {
+				name: `Palette ${library.palettes.length + 1}`,
+				description: "Custom palette",
+				colors,
+				meaning: "",
+				usage: "",
+				createdAt: new Date().toISOString(),
+			};
+			return {
+				...prev,
+				library: {
+					...library,
+					palettes: [...library.palettes, newPalette],
+				},
+			};
+		});
+		return { action: "added", color: colors };
+	}
 };

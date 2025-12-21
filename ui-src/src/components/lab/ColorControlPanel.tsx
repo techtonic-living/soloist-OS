@@ -7,10 +7,12 @@ import {
 	Eye,
 	EyeOff,
 	ArrowUpDown,
+	Wand2,
 } from "lucide-react";
 import { SmartColorInput } from "../common";
 import { HeartToggle } from "../common/HeartToggle";
 import { useCopyFeedback } from "../../hooks/useCopyFeedback";
+import { SystemSettings } from "../../hooks/useSoloistSystem";
 import { useAsyncToggle } from "../../hooks/useAsyncToggle";
 import { useToast } from "../../context/ToastContext";
 
@@ -24,10 +26,16 @@ interface ColorControlPanelProps {
 	harmonyMode?: string;
 	activeColorSlot?: "primary" | "secondary" | "tertiary";
 	setActiveColorSlot?: (slot: "primary" | "secondary" | "tertiary") => void;
-	settings?: any;
-	updateSettings?: (settings: any) => void;
+	settings: SystemSettings;
+	updateSettings: (
+		settings:
+			| Partial<SystemSettings>
+			| ((prev: SystemSettings) => SystemSettings)
+	) => void;
 	toggleFavorite?: (color: string) => Promise<void>;
 	togglePalette?: (colors: string[]) => Promise<void>;
+	onAddToRemix?: (color: string) => void;
+	onLoadPalette?: (colors: string[]) => void;
 }
 
 export const ColorControlPanel = ({
@@ -40,10 +48,12 @@ export const ColorControlPanel = ({
 	harmonyMode,
 	activeColorSlot,
 	setActiveColorSlot,
-	settings = { library: { colors: [], palettes: [] } },
-	updateSettings = () => {},
+	settings,
+	updateSettings,
 	toggleFavorite: toggleFavoriteProp,
 	togglePalette: togglePaletteProp,
+	onAddToRemix,
+	onLoadPalette,
 }: ColorControlPanelProps) => {
 	const [activeEditorId, setActiveEditorId] = useState<string | null>(null);
 	const [visibleCount, setVisibleCount] = useState<1 | 2 | 3>(3);
@@ -53,6 +63,7 @@ export const ColorControlPanel = ({
 	const { isCopied: isRgbCopied, copy: copyRgb } = useCopyFeedback();
 	const { isCopied: isHslCopied, copy: copyHsl } = useCopyFeedback();
 	const { isCopied: isHsbCopied, copy: copyHsb } = useCopyFeedback();
+	const { isCopied: isPaletteCopied, copy: copyPalette } = useCopyFeedback();
 
 	// Global Toast
 	const { showToast } = useToast();
@@ -79,7 +90,14 @@ export const ColorControlPanel = ({
 			}
 
 			// Fallback for when prop not provided
-			const currentLib = settings.library || { colors: [], palettes: [] };
+			const currentLib = settings.library || {
+				colors: [],
+				fonts: [],
+				palettes: [],
+				paletteGroups: [],
+				collections: [],
+				projects: [],
+			};
 			const isFav = currentLib.colors.some((c: any) =>
 				typeof c === "string" ? c === colorHex : c.value === colorHex
 			);
@@ -253,11 +271,16 @@ export const ColorControlPanel = ({
 			<div className="relative">
 				{/* PRIMARY SWATCH CONTAINER */}
 				<div
-					className={`relative group w-full aspect-[4/3] rounded-xl shadow-sm overflow-hidden transition-transform active:scale-[0.98] ${
+					className={`relative group w-full aspect-[4/3] rounded-xl shadow-sm overflow-hidden transition-all active:scale-[0.98] ${
 						isDark
 							? "border border-white/40"
 							: "border border-black/20"
-					} ${activeEditorId ? "z-[100]" : ""}`}
+					} ${activeEditorId ? "z-[100]" : ""} ${
+						harmonyMode === "manual" &&
+						activeColorSlot === "primary"
+							? "outline outline-1 outline-accent-cyan outline-offset-[3px] shadow-neon-glow scale-[1.02] z-10"
+							: ""
+					}`}
 				>
 					{/* Background */}
 					<svg className="absolute inset-0 z-0 w-full h-full">
@@ -270,11 +293,8 @@ export const ColorControlPanel = ({
 						} ${harmonyMode === "manual" ? "cursor-pointer" : ""}`}
 						onClick={
 							harmonyMode === "manual" && setActiveColorSlot
-								? (e) => {
-										// Only trigger if clicking background, not buttons/inputs
-										if (e.target === e.currentTarget) {
-											setActiveColorSlot("primary");
-										}
+								? () => {
+										setActiveColorSlot("primary");
 								  }
 								: undefined
 						}
@@ -283,11 +303,6 @@ export const ColorControlPanel = ({
 								harmonyMode === "manual" ? "auto" : "none",
 						}}
 					>
-						{/* Active Ring for Primary */}
-						{harmonyMode === "manual" &&
-							activeColorSlot === "primary" && (
-								<div className="absolute inset-0 border-4 border-accent-cyan rounded-2xl pointer-events-none z-50 animate-pulse" />
-							)}
 						<div
 							className={`flex justify-between items-start transition-opacity duration-300 pointer-events-auto ${
 								activeEditorId
@@ -298,7 +313,21 @@ export const ColorControlPanel = ({
 							<span className="text-[10px] font-bold tracking-widest uppercase opacity-60">
 								Primary
 							</span>
-							<div className="flex items-center gap-0.5">
+							<div className="absolute top-2 right-2 flex items-center gap-1 z-10 pointer-events-auto">
+								{onAddToRemix && (
+									<button
+										onClick={(e) => {
+											e.stopPropagation();
+											onAddToRemix(
+												seedColor.toUpperCase()
+											);
+										}}
+										className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors backdrop-blur-sm"
+										title="Send to Remix"
+									>
+										<Wand2 size={12} />
+									</button>
+								)}
 								<button
 									onClick={(e) => {
 										e.stopPropagation();
@@ -307,16 +336,16 @@ export const ColorControlPanel = ({
 											seedColor.toUpperCase()
 										);
 									}}
-									className="p-1.5 hover:bg-black/10 rounded-full transition-colors"
+									className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors backdrop-blur-sm"
 									title="Copy Hex"
 								>
 									{isHexCopied ? (
 										<Check
-											size={14}
+											size={12}
 											className="text-green-500"
 										/>
 									) : (
-										<Copy size={14} />
+										<Copy size={12} />
 									)}
 								</button>
 								<HeartToggle
@@ -327,16 +356,8 @@ export const ColorControlPanel = ({
 										)
 									}
 									showPending={primaryStatus === "pending"}
-									className={
-										isPrimaryFavorite
-											? isDark
-												? "text-white hover:bg-white/20"
-												: "text-black/80 hover:bg-black/10"
-											: isDark
-											? "text-white hover:bg-white/20"
-											: "text-black/80 hover:bg-black/10"
-									}
-									size={14}
+									size={12}
+									className="bg-black/20 hover:bg-black/40 backdrop-blur-sm"
 								/>
 							</div>
 						</div>
@@ -567,7 +588,7 @@ export const ColorControlPanel = ({
 			{/* PALETTE ACTION - Only show if > 1 color visible */}
 			{visibleCount > 1 && (
 				<div className="animate-in fade-in slide-in-from-top-4 duration-500 delay-100">
-					<div className="w-full relative aspect-[4/3] rounded-xl overflow-hidden border border-white/10 shadow-sm transition-all hover:shadow-lg group">
+					<div className="w-full relative aspect-[8/3] rounded-xl overflow-hidden border border-white/10 shadow-sm transition-all hover:shadow-lg group">
 						{/* Color Bars */}
 						<div className="absolute inset-0 flex">
 							{[
@@ -618,19 +639,57 @@ export const ColorControlPanel = ({
 								})}
 						</div>
 
-						{/* Save Toggle */}
-						{/* Save Toggle */}
-						<div className="absolute top-1 right-1 z-10">
+						{/* Palette Tools */}
+						<div className="absolute top-2 right-2 z-10 flex items-center gap-1">
+							{onLoadPalette && (
+								<button
+									onClick={(e) => {
+										e.stopPropagation();
+										onLoadPalette(
+											[
+												seedColor,
+												secondaryColor,
+												tertiaryColor,
+											].slice(0, visibleCount)
+										);
+									}}
+									className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors backdrop-blur-sm"
+									title="Send to Remix"
+								>
+									<Wand2 size={12} />
+								</button>
+							)}
+							<button
+								onClick={(e) => {
+									e.stopPropagation();
+									const hexes = [
+										seedColor,
+										secondaryColor,
+										tertiaryColor,
+									]
+										.slice(0, visibleCount)
+										.map((c) => c.toUpperCase())
+										.join(", ");
+									copyPalette(hexes, hexes);
+								}}
+								className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors backdrop-blur-sm"
+								title="Copy All Hex Values"
+							>
+								{isPaletteCopied ? (
+									<Check
+										size={12}
+										className="text-green-500"
+									/>
+								) : (
+									<Copy size={12} />
+								)}
+							</button>
 							<HeartToggle
 								isFavorite={!!isPaletteFavorite}
 								onToggle={() => savePalette()}
 								showPending={paletteStatus === "pending"}
-								className={`p-2 rounded-full hover:bg-black/10 transition-colors ${
-									colord(tertiaryColor).isDark()
-										? "text-white"
-										: "text-black/60"
-								} ${isPaletteFavorite ? "text-red-500" : ""}`}
-								size={14}
+								className="bg-black/20 hover:bg-black/40 backdrop-blur-sm"
+								size={12}
 							/>
 						</div>
 					</div>
@@ -686,7 +745,7 @@ const MiniColorCard = ({
 			onClick={onClick}
 			className={`relative rounded-xl overflow-hidden aspect-[4/3] shadow-sm transition-all group/minicard ${
 				isActive
-					? "ring-4 ring-accent-cyan transform scale-[1.02] z-10 shadow-xl"
+					? "outline outline-1 outline-accent-cyan outline-offset-[3px] shadow-neon-glow transform scale-[1.02] z-10"
 					: isHoverEnabled && !isHidden
 					? "hover:shadow-lg hover:scale-[1.02]"
 					: ""
@@ -704,26 +763,22 @@ const MiniColorCard = ({
 					<rect width="100%" height="100%" fill={color} />
 				</svg>
 
-				<div
-					className={`absolute top-1 right-1 flex items-center gap-0.5 z-10 ${
-						isDark ? "text-white" : "text-black/60"
-					}`}
-				>
+				<div className="absolute top-2 right-2 flex items-center gap-1 z-10">
 					{onAction && ActionIcon && (
 						<button
 							onClick={(e) => {
 								e.stopPropagation();
 								if (!actionDisabled) onAction();
 							}}
-							className={`p-1.5 rounded-full transition-colors ${
+							className={`p-1.5 rounded-full transition-colors backdrop-blur-sm ${
 								actionDisabled
-									? "opacity-50 cursor-default"
-									: "hover:bg-black/10"
+									? "opacity-50 cursor-default bg-black/10"
+									: "bg-black/20 hover:bg-black/40 text-white"
 							}`}
 							title={actionTitle}
 							disabled={actionDisabled}
 						>
-							<ActionIcon size={14} />
+							<ActionIcon size={12} />
 						</button>
 					)}
 					<button
@@ -731,31 +786,27 @@ const MiniColorCard = ({
 							e.stopPropagation();
 							onMakePrimary();
 						}}
-						className="p-1.5 rounded-full hover:bg-black/10 transition-colors"
+						className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors backdrop-blur-sm"
 						title={onAction ? "Swap with Primary" : "Make Primary"}
 					>
-						<ArrowUpDown size={14} />
+						<ArrowUpDown size={12} />
 					</button>
 					<button
 						onClick={handleCopy}
-						className="p-1.5 rounded-full hover:bg-black/10 transition-colors"
+						className="p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors backdrop-blur-sm"
 						title="Copy Hex"
 					>
 						{isCopied ? (
-							<Check size={14} className="text-green-500" />
+							<Check size={12} className="text-green-500" />
 						) : (
-							<Copy size={14} />
+							<Copy size={12} />
 						)}
 					</button>
 					<HeartToggle
 						isFavorite={!!isFavorite}
 						onToggle={onToggleFavorite}
-						size={14}
-						className={
-							isDark
-								? "text-white hover:bg-white/20"
-								: "text-black/80 hover:bg-black/10"
-						}
+						size={12}
+						className="bg-black/20 hover:bg-black/40 backdrop-blur-sm"
 					/>
 				</div>
 

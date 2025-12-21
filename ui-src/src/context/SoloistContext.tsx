@@ -45,7 +45,11 @@ interface SoloistContextType {
 
 	// Settings (Persisted)
 	settings: SystemSettings;
-	updateSettings: (newSettings: Partial<SystemSettings>) => void;
+	updateSettings: (
+		newSettings:
+			| Partial<SystemSettings>
+			| ((prev: SystemSettings) => SystemSettings)
+	) => void;
 
 	// Color State
 	seedColor: string;

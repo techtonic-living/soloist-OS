@@ -212,7 +212,7 @@ function PaletteColorCell({
 
 			{/* Always-visible hex label (bottom-left) */}
 			<div className="absolute bottom-2 left-3 text-white mix-blend-difference min-w-0 max-w-full pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity duration-150">
-				<span className="text-xs font-mono truncate block">
+				<span className="text-[10px] font-mono truncate block">
 					{String(hex).toUpperCase()}
 				</span>
 			</div>
@@ -1875,6 +1875,8 @@ export function AssistantPanel({
 							updateSettings={updateSettings}
 							toggleFavorite={toggleFavoriteColor}
 							togglePalette={handleTogglePalette}
+							onAddToRemix={onAddToRemix}
+							onLoadPalette={onLoadPalette}
 						/>
 					</div>
 				)}
