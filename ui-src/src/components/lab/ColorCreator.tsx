@@ -10,7 +10,6 @@ import {
 	ThermometerSun,
 	RotateCcw,
 	RotateCw,
-	Crosshair,
 	X,
 	Disc,
 	Orbit,
@@ -20,11 +19,16 @@ import {
 	MousePointer2,
 	Droplets,
 	Dices,
+	Waves,
+	Grid,
+	MoveDiagonal,
 } from "lucide-react";
 import { useToast } from "../../context/ToastContext";
 import { useSoloist } from "../../context/SoloistContext";
 
 import { ImageCanvasPicker } from "./ImageCanvasPicker";
+import { MotionColorPicker } from "../MotionColorPicker";
+import { SharedSampler } from "../common/SharedSampler";
 
 import "./ColorCreator.css";
 
@@ -69,21 +73,33 @@ export const ColorCreator = ({
 		setSampledColors,
 		isSamplerActive,
 		setIsSamplerActive,
+		canvasState,
+		setCanvasState,
 	} = useSoloist();
 
+	const { zoom: zoomVal, rotate: rotateVal, activeImage } = canvasState;
+	const setZoomVal = (val: number) =>
+		setCanvasState((prev) => ({ ...prev, zoom: val }));
+	const setRotateVal = (val: number) =>
+		setCanvasState((prev) => ({ ...prev, rotate: val }));
+	const setActiveImage = (val: string | null) =>
+		setCanvasState((prev) => ({ ...prev, activeImage: val }));
+
 	const [wheelMode, setWheelMode] = useState<WheelMode>("default");
-	const [pickerMode, setPickerMode] = useState<"wheel" | "image">("wheel");
-	const [activeImage, setActiveImage] = useState<string | null>(null);
+	const [pickerMode, setPickerMode] = useState<"wheel" | "image" | "motion">(
+		"wheel"
+	);
 	const [lastUserImage, setLastUserImage] = useState<string | null>(null);
-	const [isSamplerHovered, setIsSamplerHovered] = useState(false);
 	const [hoverHex, setHoverHex] = useState<string | null>(null);
 
 	// Dynamic Control Bar State
 	// Kaleidoscope: speed + sensitivity | Image: zoom + rotate
 	const [speedVal, setSpeedVal] = useState(50);
 	const [senseVal, setSenseVal] = useState(50);
-	const [zoomVal, setZoomVal] = useState(50); // 50 = 1x, 0 = 0.5x, 100 = 2x
-	const [rotateVal, setRotateVal] = useState(0); // 0-360 degrees
+	// Zoom/Rotate/Image now managed by Global Context (canvasState)
+	// See SoloistContext for persistence
+	const [motionDensity, setMotionDensity] = useState(50);
+	const [motionSize, setMotionSize] = useState(50);
 
 	// Persist last uploaded image & sampler state across sessions via Figma clientStorage
 	useEffect(() => {
@@ -263,18 +279,6 @@ export const ColorCreator = ({
 		}
 	}, [harmonyMode, activeColorSlot, setActiveColorSlot]);
 
-	const toggleSampler = () => {
-		const newState = !isSamplerActive;
-		setIsSamplerActive(newState);
-		if (newState) {
-			parent.postMessage(
-				{ pluginMessage: { type: "request-selection-colors" } },
-				"*"
-			);
-		}
-		// PREVIOUSLY: setSampledColors([]); -> Removed to persist session state
-	};
-
 	// 1. Calculate Harmonies Instantly (Visual Feedack)
 	const harmonies = useMemo(() => {
 		const c = colord(seedColor);
@@ -358,7 +362,25 @@ export const ColorCreator = ({
 	const hsla = color.toHsl();
 
 	// Handle State Commits (Slot-Aware)
-	const commitHex = (hex: string) => {
+	// Handle State Commits (Slot-Aware)
+	const commitHex = (hex: string, options?: { skipRecording?: boolean }) => {
+		// Auto-add to Sampler if tool is active
+		if (isSamplerActive && !options?.skipRecording) {
+			setSampledColors((prev) => {
+				if (prev.includes(hex)) return prev;
+				if (prev.length >= 10) {
+					toast.standard(
+						<span>
+							<span className="text-accent-cyan">Orbit full</span>{" "}
+							(10/10)
+						</span>
+					);
+					return prev;
+				}
+				return [...prev, hex];
+			});
+		}
+
 		if (harmonyMode === "manual") {
 			if (activeColorSlot === "secondary") setSecondaryColor(hex);
 			else if (activeColorSlot === "tertiary") setTertiaryColor(hex);
@@ -369,14 +391,15 @@ export const ColorCreator = ({
 	};
 
 	const handleColorChange = (
-		updates: Partial<{ h: number; s: number; l: number }>
+		updates: Partial<{ h: number; s: number; l: number }>,
+		options?: { skipRecording?: boolean }
 	) => {
 		const newColor = colord({
 			h: updates.h ?? hsla.h,
 			s: updates.s ?? hsla.s,
 			l: updates.l ?? hsla.l,
 		}).toHex();
-		commitHex(newColor);
+		commitHex(newColor, options);
 	};
 
 	const applyWheelType = (type: WheelMode) => {
@@ -410,7 +433,7 @@ export const ColorCreator = ({
 				h = 30;
 				break;
 		}
-		handleColorChange({ h, s, l });
+		handleColorChange({ h, s, l }, { skipRecording: true });
 	};
 
 	const shuffleColor = () => {
@@ -419,7 +442,7 @@ export const ColorCreator = ({
 			s: 40 + Math.floor(Math.random() * 50),
 			l: 40 + Math.floor(Math.random() * 40),
 		}).toHex();
-		commitHex(randomHex);
+		commitHex(randomHex, { skipRecording: true });
 		setPickerMode("wheel");
 	};
 
@@ -465,7 +488,10 @@ export const ColorCreator = ({
 			</div>
 
 			{/* Harmony Selection Toolbar (Top) */}
-			<div className="flex-shrink-0 flex items-center p-1 gap-1.5 rounded-full bg-bg-raised/95 backdrop-blur-xl border border-glass-stroke shadow-monolith z-30">
+			<div
+				className="flex-shrink-0 flex items-center p-1 gap-1.5 rounded-full bg-bg-raised/95 backdrop-blur-xl border border-glass-stroke shadow-monolith z-30"
+				onClick={(e) => e.stopPropagation()}
+			>
 				{["manual", "complementary", "analogous", "triadic"].map(
 					(m) => {
 						const isActive = harmonyMode === m;
@@ -508,417 +534,13 @@ export const ColorCreator = ({
 
 			{/* Main Workbench Area */}
 			<div className="flex-1 flex flex-row items-center justify-center gap-10 w-full max-w-4xl relative z-10 px-8 animate-in fade-in duration-300">
-				{/* Left Column: Color Slot Selection (Vertical) */}
-				<div className="flex flex-col items-center gap-2 p-1.5 rounded-full bg-bg-raised/95 backdrop-blur-xl border border-glass-stroke shadow-monolith w-[44px]">
-					{[
-						{ id: "primary", num: "1", color: seedColor },
-						{ id: "secondary", num: "2", color: displaySecondary },
-						{ id: "tertiary", num: "3", color: displayTertiary },
-					].map((slot) => {
-						const isActive = activeColorSlot === slot.id;
-						const isManual = harmonyMode === "manual";
-
-						return (
-							<button
-								key={slot.id}
-								onClick={() =>
-									isManual &&
-									setActiveColorSlot?.(slot.id as any)
-								}
-								className={`group relative p-1 rounded-full transition-all duration-300 ${
-									isManual
-										? "cursor-pointer"
-										: "cursor-default"
-								} ${
-									isActive
-										? "bg-white/10 shadow-sm ring-1 ring-white/20"
-										: isManual
-										? "hover:bg-white/5"
-										: ""
-								}`}
-								title={
-									isManual
-										? `Switch to ${
-												slot.id
-													.charAt(0)
-													.toUpperCase() +
-												slot.id.slice(1)
-										  } Slot`
-										: `${
-												slot.id
-													.charAt(0)
-													.toUpperCase() +
-												slot.id.slice(1)
-										  } Channel`
-								}
-							>
-								<div
-									className={`w-6 h-6 rounded-full border border-white/20 shadow-sm transition-transform duration-300 flex items-center justify-center ${
-										isActive
-											? "scale-110 shadow-neon-glow"
-											: isManual
-											? "group-hover:scale-110"
-											: ""
-									}`}
-									style={{ backgroundColor: slot.color }}
-								>
-									<span className="text-[10px] font-black text-white mix-blend-difference opacity-60">
-										{slot.num}
-									</span>
-								</div>
-								{isActive && (
-									<motion.div
-										layoutId="active-slot-glow-vertical"
-										className="absolute -inset-0.5 rounded-full border border-accent-cyan/40 pointer-events-none"
-										initial={false}
-										transition={{
-											type: "spring",
-											stiffness: 500,
-											damping: 30,
-										}}
-									/>
-								)}
-							</button>
-						);
-					})}
-				</div>
-
-				{/* Center: The Core Interaction (Swappable Instrument) */}
-				<div className="relative w-[320px] h-[320px] flex-none flex items-center justify-center group scale-95 transition-all duration-300">
-					{pickerMode === "image" && activeImage ? (
-						<div className="absolute inset-0 w-full h-full flex items-center justify-center animate-in fade-in zoom-in duration-300 z-40 pointer-events-none">
-							<div className="pointer-events-auto w-full h-full flex items-center justify-center">
-								<ImageCanvasPicker
-									onSelectColor={(hex) => {
-										commitHex(hex);
-										setSampledColors((prev) => {
-											if (prev.includes(hex)) return prev;
-											if (prev.length >= 10) {
-												toast.standard(
-													<span>
-														<span className="text-accent-cyan">
-															Orbit full
-														</span>{" "}
-														(10/10)
-													</span>
-												);
-												return prev;
-											}
-											return [...prev, hex];
-										});
-									}}
-									imageUrl={activeImage}
-									speedVal={speedVal}
-									senseVal={senseVal}
-									zoomVal={zoomVal}
-									rotateVal={rotateVal}
-									onHoverColor={setHoverHex}
-								/>
-							</div>
-						</div>
-					) : (
-						<div className="absolute inset-0 flex items-center justify-center animate-in fade-in zoom-in duration-300 z-40 pointer-events-none">
-							<div className="pointer-events-auto">
-								<ColorWheel
-									size={320}
-									hue={hsla.h}
-									saturation={hsla.s}
-									onChange={(h, s) =>
-										handleColorChange({ h, s })
-									}
-									onHoverColor={setHoverHex}
-									secondaryColor={markerSecondary}
-									tertiaryColor={markerTertiary}
-									harmonyMode={harmonyMode}
-									lightness={hsla.l}
-									wheelMode={wheelMode}
-									showMarkers={true}
-								/>
-							</div>
-						</div>
-					)}
-
-					{/* Persistent Docked Control Bar */}
-					<div className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex items-center h-[42px] px-3 gap-2 rounded-full bg-bg-raised/95 backdrop-blur-xl border border-glass-stroke shadow-monolith z-30">
-						{/* Left Slider: Saturation (Wheel) / Speed (Atmosphere) / Zoom (Image) */}
-						<div
-							className="flex items-center gap-1.5 px-2"
-							title={
-								pickerMode === "wheel"
-									? "Saturation"
-									: activeImage === "generated:crayons"
-									? "Speed"
-									: "Zoom"
-							}
-						>
-							{pickerMode === "wheel" ? (
-								<Droplets size={16} className="text-white/40" />
-							) : activeImage === "generated:crayons" ? (
-								<Gauge size={16} className="text-white/40" />
-							) : (
-								<Search size={16} className="text-white/40" />
-							)}
-							<input
-								type="range"
-								min="0"
-								max="100"
-								value={
-									pickerMode === "wheel"
-										? hsla.s
-										: activeImage === "generated:crayons"
-										? speedVal
-										: zoomVal
-								}
-								onChange={(e) => {
-									const val = Number(e.target.value);
-									if (pickerMode === "wheel")
-										handleColorChange({ s: val });
-									else if (
-										activeImage === "generated:crayons"
-									)
-										setSpeedVal(val);
-									else setZoomVal(val);
-								}}
-								className="w-12 h-1 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-cyan [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-accent-cyan [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(63,227,242,0.5)]"
-							/>
-						</div>
-
-						{/* Hex Display (Reactive Background) */}
-						<div
-							className="px-3 h-[21px] flex items-center justify-center rounded-full border border-white/20 shadow-lg transition-colors duration-200"
-							style={{ backgroundColor: hoverHex || activeColor }}
-						>
-							<span
-								className="font-mono text-[11px] font-bold tracking-wider"
-								style={{
-									color: colord(
-										hoverHex || activeColor
-									).isDark()
-										? "rgba(255,255,255,0.95)"
-										: "rgba(0,0,0,0.9)",
-								}}
-							>
-								{(hoverHex || activeColor).toUpperCase()}
-							</span>
-						</div>
-
-						{/* Right Slider: Lightness (Wheel) / Sensitivity (Atmosphere) / Rotate (Image) */}
-						<div
-							className="flex items-center gap-1.5 px-2"
-							title={
-								pickerMode === "wheel"
-									? "Luminance"
-									: activeImage === "generated:crayons"
-									? "Sensitivity"
-									: "Rotate"
-							}
-						>
-							<input
-								type="range"
-								min="0"
-								max={
-									pickerMode === "wheel"
-										? "100"
-										: activeImage === "generated:crayons"
-										? "100"
-										: "360"
-								}
-								value={
-									pickerMode === "wheel"
-										? hsla.l
-										: activeImage === "generated:crayons"
-										? senseVal
-										: rotateVal
-								}
-								onChange={(e) => {
-									const val = Number(e.target.value);
-									if (pickerMode === "wheel")
-										handleColorChange({ l: val });
-									else if (
-										activeImage === "generated:crayons"
-									)
-										setSenseVal(val);
-									else setRotateVal(val);
-								}}
-								className="w-12 h-1 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-cyan [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-accent-cyan [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(63,227,242,0.5)]"
-							/>
-							{pickerMode === "wheel" ? (
-								<Sun size={16} className="text-white/40" />
-							) : activeImage === "generated:crayons" ? (
-								<MousePointer2
-									size={16}
-									className="text-white/40"
-								/>
-							) : (
-								<RotateCw size={16} className="text-white/40" />
-							)}
-						</div>
-					</div>
-				</div>
-
-				{/* Right Column: Orbital Sampler & Mode Selection */}
-				<div className="flex flex-col items-center gap-8 w-[52px]">
-					{/* Orbital Selection Sampler Container */}
-					<div
-						onMouseEnter={() => setIsSamplerHovered(true)}
-						onMouseLeave={() => setIsSamplerHovered(false)}
-						className="relative flex items-center justify-center w-14 h-14 bg-bg-surface backdrop-blur-xl rounded-full border border-glass-stroke shadow-monolith z-20"
-					>
-						{/* Center Toggle Button */}
-						<button
-							onClick={toggleSampler}
-							className={`relative w-10 h-10 rounded-full backdrop-blur-md border border-white/20 shadow-lg flex items-center justify-center transition-all duration-300 z-10 ${
-								isSamplerActive
-									? "bg-accent-cyan/20 text-accent-cyan scale-110"
-									: "bg-white/5 text-white/60 hover:bg-white/10 hover:scale-105"
-							}`}
-							title="Toggle Orbital Selection Mode"
-						>
-							{isSamplerActive ? (
-								<span className="font-mono text-[10px] font-bold">
-									{sampledColors.length}/10
-								</span>
-							) : (
-								<Crosshair
-									size={18}
-									className="hover:rotate-90 transition-transform duration-300"
-								/>
-							)}
-							{isSamplerActive && (
-								<div className="absolute inset-0 rounded-full animate-pulse bg-accent-cyan/20 -z-10" />
-							)}
-						</button>
-
-						{/* Orbiting Color Bubbles (Inside relative container) */}
-						{isSamplerActive &&
-							sampledColors
-								.slice(0, 10)
-								.map((hex: string, i: number) => {
-									const count = Math.min(
-										sampledColors.length,
-										10
-									);
-									const spreadAngle = (360 / count) * i;
-									const orbitAngle = (360 / count) * i;
-									const radius = isSamplerHovered
-										? 58
-										: 44 + (i % 2) * 6;
-									const scale = isSamplerHovered ? 1.25 : 1;
-
-									return (
-										<motion.div
-											key={`${hex}-${i}`}
-											className="absolute w-6 h-6"
-											style={{
-												left: "50%",
-												top: "50%",
-												marginLeft: "-12px",
-												marginTop: "-12px",
-											}}
-											animate={{
-												rotate: isSamplerHovered
-													? spreadAngle
-													: [
-															orbitAngle,
-															orbitAngle + 360,
-													  ],
-											}}
-											transition={{
-												rotate: isSamplerHovered
-													? {
-															type: "spring",
-															stiffness: 45,
-															damping: 14,
-													  }
-													: {
-															duration:
-																15 +
-																(i % 3) * 5,
-															repeat: Infinity,
-															ease: "linear",
-													  },
-											}}
-										>
-											<motion.div
-												className="absolute inset-0 group/bubble pointer-events-auto"
-												animate={{
-													x: radius,
-													scale: scale,
-													rotate: isSamplerHovered
-														? -spreadAngle
-														: [
-																-orbitAngle,
-																-(
-																	orbitAngle +
-																	360
-																),
-														  ],
-												}}
-												transition={{
-													x: {
-														type: "spring",
-														stiffness: 80,
-														damping: 12,
-													},
-													scale: {
-														type: "spring",
-														stiffness: 100,
-														damping: 10,
-													},
-													rotate: isSamplerHovered
-														? {
-																type: "spring",
-																stiffness: 45,
-																damping: 14,
-														  }
-														: {
-																duration:
-																	15 +
-																	(i % 3) * 5,
-																repeat: Infinity,
-																ease: "linear",
-														  },
-												}}
-											>
-												<button
-													onClick={() =>
-														commitHex(hex)
-													}
-													className="absolute inset-0 rounded-full border border-white/20 shadow-sm transition-transform duration-200 group-hover/bubble:scale-110 cursor-pointer"
-													style={{
-														backgroundColor: hex,
-													}}
-													title={`Sample ${hex}`}
-												/>
-												<button
-													onClick={(e) => {
-														e.stopPropagation();
-														setSampledColors(
-															(prev: string[]) =>
-																prev.filter(
-																	(
-																		c: string
-																	) =>
-																		c !==
-																		hex
-																)
-														);
-													}}
-													className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full text-white flex items-center justify-center opacity-0 group-hover/bubble:opacity-100 transition-all duration-200 scale-75 group-hover/bubble:scale-100 shadow-sm hover:bg-red-600 z-30"
-												>
-													<X
-														size={10}
-														strokeWidth={3}
-													/>
-												</button>
-											</motion.div>
-										</motion.div>
-									);
-								})}
-					</div>
-
-					{/* Vertical Toolkit (Modes) - Repositioned beneath sampler */}
-					<div className="flex flex-col items-center gap-1 p-1 rounded-full bg-bg-raised backdrop-blur-xl border border-glass-stroke shadow-monolith w-[40px]">
+				{/* Left Column: Mode Selection */}
+				{/* Vertical Toolkit (Modes) - Repositioned beneath sampler */}
+				<div
+					className="flex flex-col items-center w-[52px]"
+					onClick={(e) => e.stopPropagation()}
+				>
+					<div className="flex flex-col items-center gap-2 p-1.5 rounded-full bg-bg-raised/95 backdrop-blur-xl border border-glass-stroke shadow-monolith w-[44px]">
 						{[
 							{
 								id: "wheel",
@@ -926,6 +548,13 @@ export const ColorCreator = ({
 								color: "text-accent-cyan",
 								title: "Color Wheel",
 								action: () => setPickerMode("wheel"),
+							},
+							{
+								id: "motion",
+								icon: Waves,
+								color: "text-accent-cyan",
+								title: "Fluid",
+								action: () => setPickerMode("motion"),
 							},
 							{
 								id: "atmosphere",
@@ -955,6 +584,8 @@ export const ColorCreator = ({
 							const isActive =
 								mode.id === "wheel"
 									? pickerMode === "wheel"
+									: mode.id === "motion"
+									? pickerMode === "motion"
 									: mode.id === "atmosphere"
 									? pickerMode === "image" &&
 									  activeImage === "generated:crayons"
@@ -1023,12 +654,303 @@ export const ColorCreator = ({
 						})}
 					</div>
 				</div>
+
+				{/* Center: The Core Interaction (Swappable Instrument) */}
+				<div className="relative w-[320px] h-[320px] flex-none flex items-center justify-center group scale-95 transition-all duration-300">
+					{pickerMode === "motion" ? (
+						<div className="absolute inset-0 w-full h-full flex items-center justify-center animate-in fade-in zoom-in duration-300 z-40">
+							<MotionColorPicker
+								onChange={(hex) => commitHex(hex)}
+								onHoverColor={setHoverHex}
+								density={motionDensity}
+								size={motionSize}
+							/>
+						</div>
+					) : pickerMode === "image" && activeImage ? (
+						<div className="absolute inset-0 w-full h-full flex items-center justify-center animate-in fade-in zoom-in duration-300 z-40 pointer-events-none">
+							<div className="pointer-events-auto w-full h-full flex items-center justify-center">
+								<ImageCanvasPicker
+									onSelectColor={(hex) => commitHex(hex)}
+									imageUrl={activeImage}
+									speedVal={speedVal}
+									senseVal={senseVal}
+									zoomVal={zoomVal}
+									rotateVal={rotateVal}
+									onHoverColor={setHoverHex}
+								/>
+							</div>
+						</div>
+					) : (
+						<div className="absolute inset-0 flex items-center justify-center animate-in fade-in zoom-in duration-300 z-40 pointer-events-none">
+							<div className="pointer-events-auto">
+								<ColorWheel
+									size={320}
+									hue={hsla.h}
+									saturation={hsla.s}
+									onChange={(h, s) =>
+										handleColorChange({ h, s })
+									}
+									onHoverColor={setHoverHex}
+									secondaryColor={markerSecondary}
+									tertiaryColor={markerTertiary}
+									harmonyMode={harmonyMode}
+									lightness={hsla.l}
+									wheelMode={wheelMode}
+									showMarkers={true}
+								/>
+							</div>
+						</div>
+					)}
+
+					{/* Persistent Docked Control Bar */}
+					<div
+						className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex items-center h-[42px] px-3 gap-2 rounded-full bg-bg-raised/95 backdrop-blur-xl border border-glass-stroke shadow-monolith z-30"
+						onClick={(e) => e.stopPropagation()}
+					>
+						{/* Left Slider: Saturation (Wheel) / Speed (Atmosphere) / Zoom (Image) */}
+						<div
+							className="flex items-center gap-1.5 px-2"
+							title={
+								pickerMode === "wheel"
+									? "Saturation"
+									: pickerMode === "motion"
+									? "Density"
+									: activeImage === "generated:crayons"
+									? "Speed"
+									: "Zoom"
+							}
+						>
+							{pickerMode === "wheel" ? (
+								<Droplets size={16} className="text-white/40" />
+							) : pickerMode === "motion" ? (
+								<Grid size={16} className="text-white/40" />
+							) : activeImage === "generated:crayons" ? (
+								<Gauge size={16} className="text-white/40" />
+							) : (
+								<Search size={16} className="text-white/40" />
+							)}
+							<input
+								type="range"
+								min="0"
+								max="100"
+								value={
+									pickerMode === "wheel"
+										? hsla.s
+										: pickerMode === "motion"
+										? motionDensity
+										: activeImage === "generated:crayons"
+										? speedVal
+										: zoomVal
+								}
+								onChange={(e) => {
+									const val = Number(e.target.value);
+									if (pickerMode === "wheel")
+										handleColorChange(
+											{ s: val },
+											{ skipRecording: true }
+										);
+									else if (pickerMode === "motion")
+										setMotionDensity(val);
+									else if (
+										activeImage === "generated:crayons"
+									)
+										setSpeedVal(val);
+									else setZoomVal(val);
+								}}
+								className="w-12 h-1 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-cyan [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-accent-cyan [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(63,227,242,0.5)]"
+							/>
+						</div>
+
+						{/* Hex Display (Reactive Background) */}
+						<div
+							className="px-3 h-[21px] flex items-center justify-center rounded-full border border-white/20 shadow-lg transition-colors duration-200"
+							style={{ backgroundColor: hoverHex || activeColor }}
+						>
+							<span
+								className="font-mono text-[11px] font-bold tracking-wider"
+								style={{
+									color: colord(
+										hoverHex || activeColor
+									).isDark()
+										? "rgba(255,255,255,0.95)"
+										: "rgba(0,0,0,0.9)",
+								}}
+							>
+								{(hoverHex || activeColor).toUpperCase()}
+							</span>
+						</div>
+
+						{/* Right Slider: Lightness (Wheel) / Sensitivity (Atmosphere) / Rotate (Image) */}
+						<div
+							className="flex items-center gap-1.5 px-2"
+							title={
+								pickerMode === "wheel"
+									? "Luminance"
+									: pickerMode === "motion"
+									? "Size"
+									: activeImage === "generated:crayons"
+									? "Sensitivity"
+									: "Rotate"
+							}
+						>
+							<input
+								type="range"
+								min="0"
+								max={
+									pickerMode === "wheel"
+										? "100"
+										: pickerMode === "motion"
+										? "100"
+										: activeImage === "generated:crayons"
+										? "100"
+										: "360"
+								}
+								value={
+									pickerMode === "wheel"
+										? hsla.l
+										: pickerMode === "motion"
+										? motionSize
+										: activeImage === "generated:crayons"
+										? senseVal
+										: rotateVal
+								}
+								onChange={(e) => {
+									const val = Number(e.target.value);
+									if (pickerMode === "wheel")
+										handleColorChange(
+											{ l: val },
+											{ skipRecording: true }
+										);
+									else if (pickerMode === "motion")
+										setMotionSize(val);
+									else if (
+										activeImage === "generated:crayons"
+									)
+										setSenseVal(val);
+									else setRotateVal(val);
+								}}
+								className="w-12 h-1 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-cyan [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-accent-cyan [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(63,227,242,0.5)]"
+							/>
+							{pickerMode === "wheel" ? (
+								<Sun size={16} className="text-white/40" />
+							) : pickerMode === "motion" ? (
+								<MoveDiagonal
+									size={16}
+									className="text-white/40"
+								/>
+							) : activeImage === "generated:crayons" ? (
+								<MousePointer2
+									size={16}
+									className="text-white/40"
+								/>
+							) : (
+								<RotateCw size={16} className="text-white/40" />
+							)}
+						</div>
+					</div>
+				</div>
+
+				{/* Right Column: Orbital Sampler & Color Slots */}
+				<div className="flex flex-col items-center gap-8 w-[52px]">
+					{/* Orbital Selection Sampler Container */}
+					<SharedSampler onSelectColor={commitHex} />
+
+					{/* Color Slot Selection */}
+					<div className="flex flex-col items-center gap-2 p-1.5 rounded-full bg-bg-raised/95 backdrop-blur-xl border border-glass-stroke shadow-monolith w-[44px]">
+						{[
+							{ id: "primary", num: "1", color: seedColor },
+							{
+								id: "secondary",
+								num: "2",
+								color: displaySecondary,
+							},
+							{
+								id: "tertiary",
+								num: "3",
+								color: displayTertiary,
+							},
+						].map((slot) => {
+							const isActive = activeColorSlot === slot.id;
+							const isManual = harmonyMode === "manual";
+
+							return (
+								<button
+									key={slot.id}
+									onClick={() =>
+										isManual &&
+										setActiveColorSlot?.(slot.id as any)
+									}
+									className={`group relative p-1 rounded-full transition-all duration-300 ${
+										isManual
+											? "cursor-pointer"
+											: "cursor-default"
+									} ${
+										isActive
+											? "bg-white/10 shadow-sm ring-1 ring-white/20"
+											: isManual
+											? "hover:bg-white/5"
+											: ""
+									}`}
+									title={
+										isManual
+											? `Switch to ${
+													slot.id
+														.charAt(0)
+														.toUpperCase() +
+													slot.id.slice(1)
+											  } Slot`
+											: `${
+													slot.id
+														.charAt(0)
+														.toUpperCase() +
+													slot.id.slice(1)
+											  } Channel`
+									}
+								>
+									<div
+										className={`w-6 h-6 rounded-full border border-white/20 shadow-sm transition-transform duration-300 flex items-center justify-center ${
+											isActive
+												? "scale-110 shadow-neon-glow"
+												: isManual
+												? "group-hover:scale-110"
+												: ""
+										}`}
+										style={{ backgroundColor: slot.color }}
+									>
+										<span className="text-[10px] font-black text-white mix-blend-difference opacity-60">
+											{slot.num}
+										</span>
+									</div>
+									{isActive && (
+										<motion.div
+											layoutId="active-slot-glow-vertical"
+											className="absolute -inset-0.5 rounded-full border border-accent-cyan/40 pointer-events-none"
+											initial={false}
+											transition={{
+												type: "spring",
+												stiffness: 500,
+												damping: 30,
+											}}
+										/>
+									)}
+								</button>
+							);
+						})}
+					</div>
+				</div>
 			</div>
 
 			{/* Wheel Type Selector (Bottom Toolbar) */}
-			<div className="flex items-center h-[42px] px-1 gap-1 bg-bg-raised/95 backdrop-blur-xl rounded-full border border-glass-stroke shadow-monolith z-20">
+			<div
+				className="flex items-center h-[42px] px-1 gap-1 bg-bg-raised/95 backdrop-blur-xl rounded-full border border-glass-stroke shadow-monolith z-20"
+				onClick={(e) => e.stopPropagation()}
+			>
 				{[
-					{ id: "default", icon: RotateCcw, label: "Default" },
+					{
+						id: "default",
+						icon: RotateCcw,
+						label: "Reset Color Wheel",
+					},
 					{ id: "bright", icon: Sun, label: "Bright" },
 					{ id: "dark", icon: Moon, label: "Dark" },
 					{ id: "saturated", icon: Zap, label: "Vivid" },

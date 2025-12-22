@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ExploreView } from "./components/ExploreView";
 import { AssistantPanel } from "./components/AssistantPanel";
 import { useSoloist } from "./context/SoloistContext";
@@ -73,6 +73,15 @@ const App = () => {
 		setExploreTab("studio");
 		setActiveColorSlot("primary");
 	};
+
+	// Auto-Close Sampler when leaving "studio" (Create) tab
+	// This prevents accidental color sampling when in Library/Remix
+	const { setIsSamplerActive } = useSoloist();
+	useEffect(() => {
+		if (exploreTab !== "studio") {
+			setIsSamplerActive(false);
+		}
+	}, [exploreTab, setIsSamplerActive]);
 
 	return (
 		<div className="flex flex-col h-screen w-full bg-bg-void overflow-hidden text-sm relative">

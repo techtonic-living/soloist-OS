@@ -1,277 +1,274 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState } from "react";
+import { Shuffle, Lock, Unlock, Save } from "lucide-react";
 import { colord } from "colord";
-import { motion, AnimatePresence } from "framer-motion";
-import { Lock, Unlock, Copy, Plus, RefreshCw, Trash2 } from "lucide-react";
-import { HeartToggle } from "../common/HeartToggle";
-import { PresetColor } from "../../data/colorPresets";
+import { SharedSampler } from "../common/SharedSampler";
+import { PaletteCanvas } from "./PaletteCanvas";
 
 interface PaletteGeneratorProps {
-  onSavePalette: (colors: string[]) => void;
-  colors: string[];
-  setColors: (colors: string[] | ((prev: string[]) => string[])) => void;
-  favoriteColors: string[];
-  onToggleFavoriteColor: (
-    color: string,
-    existingMetadata?: PresetColor
-  ) => void;
-  inspectedIndex?: number | null;
-  onInspectColor?: (index: number | null) => void;
+	colors: string[];
+	setColors: (colors: string[]) => void;
+	onSavePalette: () => void;
+	favoriteColors?: string[];
+	onToggleFavoriteColor?: (color: string) => void;
+	inspectedIndex?: number;
+	onInspectColor?: (index: number) => void;
 }
 
 export const PaletteGenerator = ({
-  onSavePalette,
-  colors,
-  setColors,
-  favoriteColors = [],
-  onToggleFavoriteColor,
-  inspectedIndex,
-  onInspectColor,
+	colors = [],
+	setColors,
+	onSavePalette,
+	onInspectColor,
 }: PaletteGeneratorProps) => {
-  // We need to track locked state locally.
-  // When colors array changes length externally (if ever), we might desync, but since we control it here mostly:
-  // We will sync locked state whenever we add/remove.
-  const [locked, setLocked] = useState<boolean[]>(
-    new Array(colors.length).fill(false)
-  );
+	// Local State
+	const [activeSlotIndex, setActiveSlotIndex] = useState<number | null>(0);
+	const [locked, setLocked] = useState<boolean[]>(new Array(12).fill(false));
 
-  // Ensure locked array matches colors length (visual safety)
-  useEffect(() => {
-    if (locked.length !== colors.length) {
-      setLocked((prev) => {
-        const diff = colors.length - prev.length;
-        if (diff > 0) return [...prev, ...new Array(diff).fill(false)];
-        return prev.slice(0, colors.length);
-      });
-    }
-  }, [colors.length]);
+	// Helper to get active color
+	const activeColor =
+		activeSlotIndex !== null && colors[activeSlotIndex]
+			? colors[activeSlotIndex]
+			: colors[0] || "#000000";
 
-  const generate = useCallback(() => {
-    setColors((prev) =>
-      prev.map((c, i) => {
-        if (locked[i]) return c;
-        // Cinematic Random: Avoid extreme mud/neons sometimes?
-        // For now standard random with some saturation/lightness constraints for better looks
-        return colord({
-          h: Math.floor(Math.random() * 360),
-          s: 40 + Math.random() * 60, // 40-100% saturation
-          l: 20 + Math.random() * 60, // 20-80% lightness
-        }).toHex();
-      })
-    );
-  }, [locked, setColors]);
+	// Handle Slot Selection
+	const handleSlotSelect = (index: number) => {
+		setActiveSlotIndex(index);
+		onInspectColor?.(index);
+	};
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Only trigger if not editing an input
-      if (e.code === "Space" && document.activeElement?.tagName !== "INPUT") {
-        e.preventDefault();
-        generate();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [generate]);
+	// Handle Color Update (from Dock or Sampler)
+	const handleUpdateActiveColor = (newColor: string) => {
+		if (activeSlotIndex === null) return;
+		const nextColors = [...colors];
+		nextColors[activeSlotIndex] = newColor;
+		setColors(nextColors);
+	};
 
-  const toggleLock = (index: number) => {
-    const newLocked = [...locked];
-    newLocked[index] = !newLocked[index];
-    setLocked(newLocked);
-  };
+	// Handle Randomize (Respect Locks)
+	const handleRandomize = () => {
+		// Generate random colors for unlocked slots
+		const nextColors = colors.map((c, i) => {
+			if (locked[i]) return c;
+			// Simple random generation for now. AI generation comes later.
+			return colord({
+				h: Math.random() * 360,
+				s: Math.random() * 100,
+				l: Math.random() * 100,
+			}).toHex();
+		});
+		setColors(nextColors);
+	};
 
-  const addSlot = () => {
-    if (colors.length >= 10) return; // Max limit
-    setColors((prev) => [
-      ...prev,
-      colord({
-        h: Math.random() * 360,
-        s: 70,
-        l: 50,
-      }).toHex(),
-    ]);
-    // Locked state updates via useEffect, but let's be explicit for immediate UI feedback if needed
-    // standardizing on the effect is safer.
-  };
+	// Handle Add Slot
+	const handleAddSlot = () => {
+		if (colors.length >= 12) return;
+		// Generate a new color (maybe complementary to last?)
+		const newColor = colord(colors[colors.length - 1] || "#000000")
+			.rotate(30)
+			.toHex();
+		setColors([...colors, newColor]);
+		setActiveSlotIndex(colors.length); // Select new
+	};
 
-  const removeSlot = (index: number) => {
-    if (colors.length <= 2) return; // Min limit
-    const newColors = colors.filter((_, i) => i !== index);
-    setColors(newColors);
-    // Locked state will sync via Effect
-  };
+	// Toggle Lock
+	const handleToggleLock = (index: number) => {
+		const next = [...locked];
+		next[index] = !next[index];
+		setLocked(next);
+	};
 
-  return (
-    <div className="h-full w-full flex flex-col gap-4 relative">
-      {/* Toolbar */}
-      <div className="flex-shrink-0 flex items-center justify-between px-1">
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl font-brand text-white tracking-wide">Remix</h2>
-          <div className="h-4 w-px bg-white/10" />
-          <div className="flex items-center gap-2">
-            <button
-              onClick={generate}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white border border-white/5 transition-all text-xs font-mono"
-            >
-              <RefreshCw size={12} />
-              <span>Randomize</span>
-            </button>
-            <span className="text-[10px] text-gray-500 font-mono uppercase tracking-wider hidden md:block">
-              [Space]
-            </span>
-          </div>
-        </div>
+	return (
+		<div className="flex-1 h-full relative flex flex-col items-center justify-center p-8 overflow-hidden bg-bg-void">
+			{/* Ambient Background Glow */}
+			<div
+				className="absolute inset-0 pointer-events-none opacity-20 transition-colors duration-700 ease-cinematic"
+				style={{
+					background: `radial-gradient(circle at 50% 50%, ${activeColor}, transparent 70%)`,
+				}}
+			/>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={addSlot}
-            disabled={colors.length >= 10}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all text-xs font-mono ${
-              colors.length >= 10
-                ? "opacity-50 cursor-not-allowed border-transparent text-gray-500"
-                : "bg-white/5 hover:bg-white/10 text-accent-cyan border-accent-cyan/20 shadow-glow"
-            }`}
-          >
-            <Plus size={12} />
-            <span>Add Color</span>
-          </button>
+			<div className="absolute inset-0 bg-blueprint-grid opacity-10 pointer-events-none" />
 
-          <div className="h-4 w-px bg-white/10 mx-2" />
+			{/* Main Layout Container */}
+			<div className="relative w-full max-w-[800px] aspect-video flex items-center justify-between z-10">
+				{/* Left Toolbar (Slots 1-6) */}
+				<div className="w-12 flex flex-col gap-2">
+					{Array.from({ length: 6 }).map((_, i) => {
+						const index = i;
+						const color = colors[index];
+						if (!color)
+							return (
+								<div
+									key={i}
+									className="w-10 h-10 rounded-full border border-white/5 bg-white/5 flex items-center justify-center opacity-30"
+								>
+									<span className="text-[9px] font-mono text-white/50">
+										{index + 1}
+									</span>
+								</div>
+							);
 
-          {/* Palette "Save" replaced with Heart Action */}
-          {/* Note: Ideally we'd track if the palette itself is favorited, but for now we treat this action as "Save Palette" with a Heart UI */}
-          <button
-            onClick={() => onSavePalette(colors)}
-            className="flex items-center gap-2 px-4 py-1.5 bg-white/5 hover:bg-white/10 text-pink-500 border border-pink-500/30 hover:border-pink-500/50 rounded-lg font-mono text-xs shadow-lg transition-all group"
-          >
-            <HeartToggle
-              isFavorite={false} // Palette level state not fully tracked in this view, acting as trigger
-              onToggle={() => onSavePalette(colors)}
-              size={16}
-              className="text-pink-500"
-            />
-            <span className="group-hover:text-pink-400 transition-colors">
-              Save Palette
-            </span>
-          </button>
-        </div>
-      </div>
+						const isSelected = activeSlotIndex === index;
+						return (
+							<button
+								key={index}
+								onClick={() => handleSlotSelect(index)}
+								className={`w-10 h-10 rounded-full border transition-all duration-200 relative group flex-shrink-0 ${
+									isSelected
+										? "border-white scale-110 shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+										: "border-white/10 hover:border-white/50"
+								}`}
+								style={{ backgroundColor: color }}
+							>
+								{locked[index] && (
+									<div className="absolute inset-0 flex items-center justify-center text-black/50">
+										<Lock size={12} />
+									</div>
+								)}
+							</button>
+						);
+					})}
+				</div>
 
-      {/* Palette Area */}
-      <div className="flex-1 rounded-2xl border border-glass-stroke overflow-hidden flex shadow-monolith bg-bg-void relative group/container">
-        <AnimatePresence mode="popLayout">
-          {colors.map((color, i) => (
-            <motion.div
-              key={i} // Use just index to allow existing items to animate their layout change
-              layout
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9, width: 0 }}
-              transition={{ duration: 0.3, ease: "backOut" }}
-              className={`flex-1 h-full relative group flex flex-col items-center justify-center border-r border-white/5 last:border-0 hover:flex-[1.5] transition-all duration-500 ease-[cubic-bezier(0.32,0.12,0.0,1)] min-w-0 cursor-pointer ${
-                inspectedIndex === i
-                  ? "ring-4 ring-accent-cyan inset-0 z-20"
-                  : ""
-              }`}
-              style={{ backgroundColor: color }}
-              onClick={() => onInspectColor?.(i === inspectedIndex ? null : i)}
-            >
-              {/* Controls Overlay */}
-              <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+				{/* Center Canvas */}
+				<div className="relative w-[320px] h-[320px] flex-shrink-0">
+					<PaletteCanvas
+						colors={colors}
+						activeIndex={activeSlotIndex}
+						locked={locked}
+						onSelectSlot={handleSlotSelect}
+						onAddSlot={handleAddSlot}
+					/>
+				</div>
 
-              <div className="relative z-10 flex flex-col items-center gap-4 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0">
-                {/* Actions Cluster */}
-                <div className="flex flex-col gap-2 p-3 rounded-xl bg-bg-surface/90 backdrop-blur-md border border-glass-stroke shadow-2xl transform scale-90 group-hover:scale-100 transition-transform">
-                  <div className="flex items-center justify-between gap-2">
-                    {/* Color Favorite Toggle */}
-                    <HeartToggle
-                      isFavorite={favoriteColors.some(
-                        (c) => c.toUpperCase() === color.toUpperCase()
-                      )}
-                      onToggle={() => onToggleFavoriteColor(color)}
-                      size={16}
-                    />
+				{/* Right Toolbar (Slots 7-12 + Sampler) */}
+				<div className="w-12 flex flex-col gap-2 items-center">
+					{/* Integrated Shared Sampler */}
+					<div className="mb-2">
+						<SharedSampler
+							onSelectColor={handleUpdateActiveColor}
+						/>
+					</div>
 
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(color.toUpperCase());
-                      }}
-                      className="p-1.5 rounded-md hover:bg-white/10 text-white/70 hover:text-white transition-colors"
-                      title="Copy"
-                    >
-                      <Copy size={14} />
-                    </button>
-                  </div>
+					{Array.from({ length: 6 }).map((_, i) => {
+						const index = i + 6;
+						const color = colors[index];
+						if (!color)
+							return (
+								<div
+									key={index}
+									className="w-10 h-10 rounded-full border border-white/5 bg-white/5 flex items-center justify-center opacity-30"
+								>
+									<span className="text-[9px] font-mono text-white/50">
+										{index + 1}
+									</span>
+								</div>
+							);
 
-                  <div className="w-full h-px bg-white/10 my-1" />
+						const isSelected = activeSlotIndex === index;
+						return (
+							<button
+								key={index}
+								onClick={() => handleSlotSelect(index)}
+								className={`w-10 h-10 rounded-full border transition-all duration-200 relative group flex-shrink-0 ${
+									isSelected
+										? "border-white scale-110 shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+										: "border-white/10 hover:border-white/50"
+								}`}
+								style={{ backgroundColor: color }}
+							>
+								{locked[index] && (
+									<div className="absolute inset-0 flex items-center justify-center text-black/50">
+										<Lock size={12} />
+									</div>
+								)}
+							</button>
+						);
+					})}
+				</div>
+			</div>
 
-                  <div className="flex items-center justify-center py-1 mb-1">
-                    <span className="font-mono text-sm font-bold text-white uppercase tracking-wider">
-                      {color}
-                    </span>
-                  </div>
+			{/* Docked Control Bar */}
+			<div className="absolute bottom-6 left-1/2 -translate-x-1/2 h-14 bg-bg-surface/90 backdrop-blur-xl border border-glass-stroke rounded-full px-6 flex items-center gap-6 shadow-2xl z-50">
+				{/* Randomize Button */}
+				<button
+					onClick={handleRandomize}
+					className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors group relative"
+					title="Randomize Unlocked Colors"
+				>
+					<Shuffle
+						size={18}
+						className="group-hover:rotate-180 transition-transform duration-500"
+					/>
+				</button>
 
-                  <div className="flex items-center justify-between gap-2">
-                    <button
-                      onClick={() => toggleLock(i)}
-                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[10px] font-mono uppercase tracking-wider transition-all ${
-                        locked[i]
-                          ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                          : "hover:bg-white/10 text-gray-400 hover:text-white"
-                      }`}
-                    >
-                      {locked[i] ? (
-                        <>
-                          <Lock size={10} />
-                          LOCKED
-                        </>
-                      ) : (
-                        <>
-                          <Unlock size={10} />
-                          LOCK
-                        </>
-                      )}
-                    </button>
+				{/* Save Button */}
+				<button
+					onClick={onSavePalette}
+					className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors hover:text-accent-cyan"
+					title="Save Palette"
+				>
+					<Save size={18} />
+				</button>
 
-                    {colors.length > 2 && (
-                      <button
-                        onClick={() => removeSlot(i)}
-                        className="p-1.5 rounded-md hover:bg-red-500/20 text-gray-500 hover:text-red-400 transition-colors"
-                        title="Remove Slot"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
+				<div className="w-px h-8 bg-white/10" />
 
-              {/* Fixed Label if Locked (Visible when not hovering/active) */}
-              <AnimatePresence>
-                {locked[i] && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    className="absolute bottom-6 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 flex items-center gap-2 group-hover:opacity-0 transition-opacity"
-                  >
-                    <HeartToggle
-                      isFavorite={favoriteColors.some(
-                        (c) => c.toUpperCase() === color.toUpperCase()
-                      )}
-                      onToggle={() => onToggleFavoriteColor(color)}
-                      size={12}
-                    />
-                    {/* Lock icon moved to right of text or removed if redundant? keeping logic simple */}
-                    <div className="h-3 w-px bg-white/20" />
-                    <span className="text-white/90 font-mono text-xs uppercase">
-                      {color}
-                    </span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-    </div>
-  );
+				{/* Active Color Controls */}
+				<div className="flex items-center gap-4">
+					{activeSlotIndex !== null ? (
+						<>
+							{/* Mock Sliders for Sat/Light - Visual Only for Phase 1/3 */}
+							<div className="flex flex-col gap-1 w-24">
+								<div className="h-1 bg-white/10 rounded-full overflow-hidden">
+									<div className="h-full bg-gradient-to-r from-gray-500 to-white w-1/2" />
+								</div>
+								<div className="h-1 bg-white/10 rounded-full overflow-hidden">
+									<div className="h-full bg-gradient-to-r from-black to-white w-3/4" />
+								</div>
+							</div>
+
+							{/* Hex Display */}
+							<div className="font-mono text-xs text-white/90 font-bold bg-black/20 px-2 py-1 rounded">
+								{activeColor.toUpperCase()}
+							</div>
+
+							{/* Lock Toggle */}
+							<button
+								onClick={() =>
+									handleToggleLock(activeSlotIndex)
+								}
+								className={`p-1.5 rounded-full transition-colors ${
+									locked[activeSlotIndex]
+										? "bg-accent-cyan/20 text-accent-cyan"
+										: "text-white/40 hover:text-white"
+								}`}
+							>
+								{locked[activeSlotIndex] ? (
+									<Lock size={14} />
+								) : (
+									<Unlock size={14} />
+								)}
+							</button>
+						</>
+					) : (
+						<span className="text-white/30 text-xs tracking-wider uppercase font-mono">
+							Select a Slot
+						</span>
+					)}
+				</div>
+			</div>
+
+			{/* Top Toolbar (Harmony Placeholder) */}
+			<div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 p-1 bg-black/20 backdrop-blur-md rounded-full border border-white/5">
+				{["Shuffle", "Harmony", "Gradient", "Mono"].map((mode) => (
+					<button
+						key={mode}
+						className="px-3 py-1 rounded-full text-[10px] text-white/50 hover:bg-white/10 hover:text-white transition-all font-mono uppercase tracking-wider"
+					>
+						{mode}
+					</button>
+				))}
+			</div>
+		</div>
+	);
 };
