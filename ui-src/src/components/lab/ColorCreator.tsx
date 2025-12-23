@@ -77,18 +77,29 @@ export const ColorCreator = ({
 		setCanvasState,
 	} = useSoloist();
 
-	const { zoom: zoomVal, rotate: rotateVal, activeImage } = canvasState;
+	const {
+		zoom: zoomVal,
+		rotate: rotateVal,
+		activeImage,
+		motionDensity,
+		motionSize,
+	} = canvasState;
 	const setZoomVal = (val: number) =>
 		setCanvasState((prev) => ({ ...prev, zoom: val }));
 	const setRotateVal = (val: number) =>
 		setCanvasState((prev) => ({ ...prev, rotate: val }));
 	const setActiveImage = (val: string | null) =>
 		setCanvasState((prev) => ({ ...prev, activeImage: val }));
+	const setMotionDensity = (val: number) =>
+		setCanvasState((prev) => ({ ...prev, motionDensity: val }));
+	const setMotionSize = (val: number) =>
+		setCanvasState((prev) => ({ ...prev, motionSize: val }));
 
 	const [wheelMode, setWheelMode] = useState<WheelMode>("default");
-	const [pickerMode, setPickerMode] = useState<"wheel" | "image" | "motion">(
-		"wheel"
-	);
+	// pickerMode now comes from canvasState for session persistence
+	const { pickerMode } = canvasState;
+	const setPickerMode = (val: "wheel" | "image" | "motion") =>
+		setCanvasState((prev) => ({ ...prev, pickerMode: val }));
 	const [lastUserImage, setLastUserImage] = useState<string | null>(null);
 	const [hoverHex, setHoverHex] = useState<string | null>(null);
 
@@ -96,10 +107,7 @@ export const ColorCreator = ({
 	// Kaleidoscope: speed + sensitivity | Image: zoom + rotate
 	const [speedVal, setSpeedVal] = useState(50);
 	const [senseVal, setSenseVal] = useState(50);
-	// Zoom/Rotate/Image now managed by Global Context (canvasState)
-	// See SoloistContext for persistence
-	const [motionDensity, setMotionDensity] = useState(50);
-	const [motionSize, setMotionSize] = useState(50);
+	// NOTE: motionDensity and motionSize now come from canvasState (global context) for persistence parity
 
 	// Persist last uploaded image & sampler state across sessions via Figma clientStorage
 	useEffect(() => {
@@ -191,7 +199,7 @@ export const ColorCreator = ({
 				) {
 					setLastUserImage(data);
 					setActiveImage(data);
-					setPickerMode("image");
+					// Note: Don't override pickerMode here - it's now persisted in context
 				} else if (key === "soloist-sampled-colors") {
 					if (data) setSampledColors(data);
 				} else if (key === "soloist-sampler-active") {
@@ -656,7 +664,7 @@ export const ColorCreator = ({
 				</div>
 
 				{/* Center: The Core Interaction (Swappable Instrument) */}
-				<div className="relative w-[320px] h-[320px] flex-none flex items-center justify-center group scale-95 transition-all duration-300">
+				<div className="relative w-[400px] h-[400px] flex-none flex items-center justify-center group scale-95 transition-all duration-300 overflow-visible">
 					{pickerMode === "motion" ? (
 						<div className="absolute inset-0 w-full h-full flex items-center justify-center animate-in fade-in zoom-in duration-300 z-40">
 							<MotionColorPicker
@@ -684,7 +692,7 @@ export const ColorCreator = ({
 						<div className="absolute inset-0 flex items-center justify-center animate-in fade-in zoom-in duration-300 z-40 pointer-events-none">
 							<div className="pointer-events-auto">
 								<ColorWheel
-									size={320}
+									size={380}
 									hue={hsla.h}
 									saturation={hsla.s}
 									onChange={(h, s) =>
@@ -1156,11 +1164,7 @@ const ColorWheel = ({
 		<div
 			ref={wheelRef}
 			className={`rounded-full relative shadow-2xl shadow-black/80 transition-all duration-500 ${
-				isDragging
-					? "cursor-grabbing"
-					: isHovering
-					? "cursor-none"
-					: "cursor-crosshair"
+				isHovering || isDragging ? "cursor-none" : "cursor-crosshair"
 			}`}
 			style={{
 				width: size,

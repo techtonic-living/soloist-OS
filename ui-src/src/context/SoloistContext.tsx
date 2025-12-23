@@ -98,17 +98,23 @@ interface SoloistContextType {
 	stagedRemixPalettes: any[];
 	setStagedRemixPalettes: React.Dispatch<React.SetStateAction<any[]>>;
 
-	// Canvas State (Zoom/Rotation Persistence)
+	// Canvas State (Zoom/Rotation/Motion Picker Persistence)
 	canvasState: {
 		zoom: number;
 		rotate: number;
 		activeImage: string | null;
+		motionDensity: number;
+		motionSize: number;
+		pickerMode: "wheel" | "image" | "motion";
 	};
 	setCanvasState: React.Dispatch<
 		React.SetStateAction<{
 			zoom: number;
 			rotate: number;
 			activeImage: string | null;
+			motionDensity: number;
+			motionSize: number;
+			pickerMode: "wheel" | "image" | "motion";
 		}>
 	>;
 
@@ -216,15 +222,21 @@ export const SoloistProvider = ({ children }: { children: ReactNode }) => {
 	const [stagedRemixColors, setStagedRemixColors] = useState<string[]>([]);
 	const [stagedRemixPalettes, setStagedRemixPalettes] = useState<any[]>([]);
 
-	// 8. Image/Canvas Persistence
+	// 8. Image/Canvas Persistence (including Motion/Fluid picker settings)
 	const [canvasState, setCanvasState] = useState<{
 		zoom: number;
 		rotate: number;
 		activeImage: string | null;
+		motionDensity: number;
+		motionSize: number;
+		pickerMode: "wheel" | "image" | "motion";
 	}>({
 		zoom: 50,
 		rotate: 0,
 		activeImage: null,
+		motionDensity: 50,
+		motionSize: 50,
+		pickerMode: "wheel", // Default to Color Wheel
 	});
 
 	// 9. Manual Mode Persistence
