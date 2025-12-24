@@ -12,6 +12,9 @@ interface ImageCanvasPickerProps {
 	zoomVal?: number;
 	rotateVal?: number;
 	onHoverColor?: (hex: string | null) => void;
+	brightness?: number;
+	vibrance?: number;
+	isInverted?: boolean;
 }
 
 export const ImageCanvasPicker = ({
@@ -22,6 +25,9 @@ export const ImageCanvasPicker = ({
 	zoomVal = 50,
 	rotateVal = 0,
 	onHoverColor,
+	brightness = 1,
+	vibrance = 1,
+	isInverted = false,
 }: ImageCanvasPickerProps) => {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const [hoverColor, setHoverColor] = useState<string | null>(null);
@@ -32,49 +38,64 @@ export const ImageCanvasPicker = ({
 	// Kaleidoscope Configuration
 	const SEGMENTS = 12;
 
+	const sourceImageRef = useRef<HTMLImageElement | null>(null);
+	const accumulatedTimeRef = useRef(0);
+	const lastTimeRef = useRef(Date.now());
+
+	// Effect 1: Handle Image Loading & Clean Canvas (on URL change)
 	useEffect(() => {
 		const canvas = canvasRef.current;
 		if (!canvas) return;
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
+
+		// Clear canvas immediately when the URL changes to prevent leaks
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		setImageLoaded(false);
+		sourceImageRef.current = null;
+
+		const img = new Image();
+		if (imageUrl === "generated:crayons") {
+			img.src = ATMOSPHERE_IMAGE;
+		} else {
+			img.crossOrigin = "Anonymous";
+			img.src = imageUrl;
+		}
+
+		img.onload = () => {
+			sourceImageRef.current = img;
+			if (imageUrl === "generated:crayons") {
+				const size = Math.min(img.width, 800);
+				canvas.width = size;
+				canvas.height = size;
+			} else {
+				const canvasSize = 320;
+				canvas.width = canvasSize;
+				canvas.height = canvasSize;
+			}
+			setImageLoaded(true);
+		};
+	}, [imageUrl]);
+
+	// Effect 2: Rendering & Animation loop
+	useEffect(() => {
+		const canvas = canvasRef.current;
+		if (!canvas || !imageLoaded || !sourceImageRef.current) return;
 		const ctx = canvas.getContext("2d", { willReadFrequently: true });
 		if (!ctx) return;
 
 		let animationFrameId: number;
-		let sourceImage: HTMLImageElement | null = null;
+		const sourceImage = sourceImageRef.current;
 
-		// Physics from props
-		// Kaleidoscope: speedVal (0-100) -> 0.5x to 2.5x, senseVal (0-100) -> 0.2x to 1.2x
-		// Image: zoomVal (0-100) -> 0.5x to 2x, rotateVal (0-360) degrees
+		// Physics/Transform values correctly derived from current props
 		const speedMult = 0.5 + speedVal / 50;
 		const senseMult = 0.2 + senseVal / 100;
-		const imagezoom = 0.5 + zoomVal / 66.67; // 0-100 -> 0.5x to 2x
-		const imageRotate = (rotateVal * Math.PI) / 180; // degrees to radians
+		const imagezoom = 0.5 + zoomVal / 66.67;
+		const imageRotate = (rotateVal * Math.PI) / 180;
 
-		if (imageUrl === "generated:crayons") {
-			const img = new Image();
-			img.src = ATMOSPHERE_IMAGE;
-			img.onload = () => {
-				sourceImage = img;
-				const size = Math.min(img.width, 800);
-				canvas.width = size;
-				canvas.height = size;
-				setImageLoaded(true);
-				render();
-			};
-		} else {
-			// Image mode with zoom/rotate transforms
-			const img = new Image();
-			img.crossOrigin = "Anonymous";
-			img.src = imageUrl;
-			img.onload = () => {
-				// Canvas is fixed at 320x320 (circle container)
-				const canvasSize = 320;
-				canvas.width = canvasSize;
-				canvas.height = canvasSize;
-				sourceImage = img;
-				setImageLoaded(true);
-				renderImage();
-			};
-		}
+		const filterString = `brightness(${brightness}) saturate(${vibrance}) ${
+			isInverted ? "invert(1)" : ""
+		}`;
 
 		const renderImage = () => {
 			if (!sourceImage) return;
@@ -85,6 +106,7 @@ export const ImageCanvasPicker = ({
 
 			ctx.clearRect(0, 0, width, height);
 			ctx.save();
+			ctx.filter = filterString;
 
 			// Clip to circle
 			ctx.beginPath();
@@ -112,6 +134,13 @@ export const ImageCanvasPicker = ({
 
 		const render = () => {
 			if (imageUrl === "generated:crayons" && sourceImage) {
+				const now = Date.now();
+				const deltaTime = (now - lastTimeRef.current) * 0.0002;
+				lastTimeRef.current = now;
+
+				// Incrementally track time to prevent jumps when speed changes
+				accumulatedTimeRef.current += deltaTime * speedMult;
+
 				const width = canvas.width;
 				const height = canvas.height;
 				const cx = width / 2;
@@ -121,18 +150,22 @@ export const ImageCanvasPicker = ({
 				const mx = isHovering ? mouseRef.current.x / width : 0.5;
 				const my = isHovering ? mouseRef.current.y / height : 0.5;
 
-				// Physics tuned by sliders
-				const angleOffset = mx * Math.PI * 2 * senseMult;
+				// Sensitivity is now centered. Adjusting slider when not hovering (0.5) won't rotate.
+				const angleOffset = (mx - 0.5) * Math.PI * 2 * senseMult;
 				const zoom = 1.0 + my * 1.5;
 
-				const time = Date.now() * 0.0002 * speedMult;
 				const sourceX =
-					(Math.cos(time) * 0.2 + 0.5) * sourceImage.width;
+					(Math.cos(accumulatedTimeRef.current) * 0.2 + 0.5) *
+					sourceImage.width;
 				const sourceY =
-					(Math.sin(time) * 0.2 + 0.5) * sourceImage.height;
+					(Math.sin(accumulatedTimeRef.current) * 0.2 + 0.5) *
+					sourceImage.height;
 
 				ctx.fillStyle = "#000";
 				ctx.fillRect(0, 0, width, height);
+
+				ctx.save();
+				ctx.filter = filterString;
 
 				const sliceAngle = (Math.PI * 2) / SEGMENTS;
 
@@ -183,10 +216,25 @@ export const ImageCanvasPicker = ({
 			}
 		};
 
+		// Start the appropriate render path
+		if (imageUrl === "generated:crayons") {
+			render();
+		} else {
+			renderImage();
+		}
+
 		return () => {
 			if (animationFrameId) cancelAnimationFrame(animationFrameId);
 		};
-	}, [imageUrl, isHovering, speedVal, senseVal, zoomVal, rotateVal]);
+	}, [
+		imageUrl,
+		imageLoaded,
+		isHovering,
+		speedVal,
+		senseVal,
+		zoomVal,
+		rotateVal,
+	]);
 
 	const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
 		const canvas = canvasRef.current;
@@ -239,6 +287,19 @@ export const ImageCanvasPicker = ({
 						: "0 0 50px rgba(0,0,0,0.5)",
 				}}
 			>
+				{/* Outer gradient ring decoration */}
+				<div
+					className="absolute inset-0 rounded-full border-[1.5px] border-transparent opacity-80 pointer-events-none z-10"
+					style={{
+						background:
+							"linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet) border-box",
+						WebkitMask:
+							"linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0)",
+						WebkitMaskComposite: "destination-out",
+						maskComposite: "exclude",
+					}}
+				/>
+
 				<canvas
 					ref={canvasRef}
 					onMouseMove={handleMouseMove}
@@ -248,7 +309,7 @@ export const ImageCanvasPicker = ({
 						onHoverColor?.(null);
 					}}
 					onClick={handleClick}
-					className="w-full h-full object-contain cursor-crosshair active:scale-95 transition-transform duration-200"
+					className="w-full h-full object-contain cursor-crosshair transition-transform duration-200"
 				/>
 
 				{/* Custom Cursor */}

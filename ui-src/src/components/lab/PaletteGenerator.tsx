@@ -198,7 +198,10 @@ export const PaletteGenerator = ({
 	};
 
 	return (
-		<div className="flex-1 h-full relative flex flex-col items-center justify-center p-8 overflow-hidden bg-bg-void">
+		<div
+			className="flex-1 h-full relative flex flex-col items-center justify-center p-8 overflow-y-auto overflow-x-hidden custom-scrollbar bg-bg-void"
+			style={{ scrollbarGutter: "stable" }}
+		>
 			{/* Ambient Background Glow */}
 			<div
 				className="absolute inset-0 pointer-events-none opacity-20 transition-colors duration-700 ease-cinematic"
@@ -341,16 +344,23 @@ export const PaletteGenerator = ({
 							<div className="flex flex-col gap-1.5 w-28">
 								{/* Saturation Slider */}
 								<div className="flex items-center gap-2">
-									<span className="text-[8px] text-white/40 w-3">S</span>
+									<span className="text-[8px] text-white/40 w-3">
+										S
+									</span>
 									<input
 										type="range"
 										min="0"
 										max="100"
 										value={colord(activeColor).toHsl().s}
 										onChange={(e) => {
-											const hsl = colord(activeColor).toHsl();
+											const hsl =
+												colord(activeColor).toHsl();
 											handleUpdateActiveColor(
-colord({ h: hsl.h, s: Number(e.target.value), l: hsl.l }).toHex()
+												colord({
+													h: hsl.h,
+													s: Number(e.target.value),
+													l: hsl.l,
+												}).toHex()
 											);
 										}}
 										className="w-full h-1 appearance-none bg-gradient-to-r from-gray-500 to-white rounded-full cursor-pointer"
@@ -358,16 +368,23 @@ colord({ h: hsl.h, s: Number(e.target.value), l: hsl.l }).toHex()
 								</div>
 								{/* Lightness Slider */}
 								<div className="flex items-center gap-2">
-									<span className="text-[8px] text-white/40 w-3">L</span>
+									<span className="text-[8px] text-white/40 w-3">
+										L
+									</span>
 									<input
 										type="range"
 										min="0"
 										max="100"
 										value={colord(activeColor).toHsl().l}
 										onChange={(e) => {
-											const hsl = colord(activeColor).toHsl();
+											const hsl =
+												colord(activeColor).toHsl();
 											handleUpdateActiveColor(
-colord({ h: hsl.h, s: hsl.s, l: Number(e.target.value) }).toHex()
+												colord({
+													h: hsl.h,
+													s: hsl.s,
+													l: Number(e.target.value),
+												}).toHex()
 											);
 										}}
 										className="w-full h-1 appearance-none bg-gradient-to-r from-black via-gray-500 to-white rounded-full cursor-pointer"
@@ -418,19 +435,21 @@ colord({ h: hsl.h, s: hsl.s, l: Number(e.target.value) }).toHex()
 
 			{/* Top Toolbar (Harmony Modes) */}
 			<div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 p-1 bg-black/20 backdrop-blur-md rounded-full border border-white/5">
-				{(["shuffle", "harmony", "gradient", "mono"] as const).map((mode) => (
-<button
-						key={mode}
-						onClick={() => handleModeSelect(mode)}
-						className={`px-3 py-1 rounded-full text-[10px] transition-all font-mono uppercase tracking-wider ${
-activeMode === mode
-? "bg-white/20 text-white"
-: "text-white/50 hover:bg-white/10 hover:text-white"
-}`}
-					>
-						{mode}
-					</button>
-				))}
+				{(["shuffle", "harmony", "gradient", "mono"] as const).map(
+					(mode) => (
+						<button
+							key={mode}
+							onClick={() => handleModeSelect(mode)}
+							className={`px-3 py-1 rounded-full text-[10px] transition-all font-mono uppercase tracking-wider ${
+								activeMode === mode
+									? "bg-white/20 text-white"
+									: "text-white/50 hover:bg-white/10 hover:text-white"
+							}`}
+						>
+							{mode}
+						</button>
+					)
+				)}
 			</div>
 		</div>
 	);

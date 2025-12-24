@@ -1,3 +1,6 @@
+// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
+import storybook from "eslint-plugin-storybook";
+
 /**
  * Soloist OS ESLint configuration
  *
@@ -5,6 +8,7 @@
  */
 
 import js from "@eslint/js";
+import reactHooks from "eslint-plugin-react-hooks";
 import * as tsParser from "@typescript-eslint/parser";
 import globals from "globals";
 
@@ -22,6 +26,9 @@ export default [
 	},
 	{
 		files: ["ui-src/src/**/*.{js,jsx,ts,tsx}"],
+		plugins: {
+			"react-hooks": reactHooks,
+		},
 		languageOptions: {
 			parser: tsParser,
 			ecmaVersion: 2021,
@@ -39,6 +46,19 @@ export default [
 		},
 		rules: {
 			...js.configs.recommended.rules,
+			...reactHooks.configs.recommended.rules,
+
+			// The latest react-hooks plugin includes several React Compiler-focused rules.
+			// They're great when you're actively targeting React Compiler constraints, but
+			// they are too disruptive for this codebase right now (lots of legitimate
+			// setState-in-effect and component factories).
+			// Keep the classic hooks safety rules, but relax the compiler-centric ones.
+			"react-hooks/immutability": "off",
+			"react-hooks/preserve-manual-memoization": "off",
+			"react-hooks/purity": "off",
+			"react-hooks/set-state-in-effect": "off",
+			"react-hooks/static-components": "off",
+
 			// Catch common issues (warn, not error, for relaxed feedback)
 			"no-unused-vars": [
 				"warn",
@@ -58,8 +78,7 @@ export default [
 			"max-nested-callbacks": "off",
 			"sonarjs/cognitive-complexity": "off",
 		},
-	},
-	// Exception: Interactive color picker components require inline styles for dynamic values
+	}, // Exception: Interactive color picker components require inline styles for dynamic values
 	// (computed positioning, gradients, and colors cannot be static Tailwind classes)
 	{
 		files: [
@@ -70,4 +89,5 @@ export default [
 			"no-inline-styles": "off",
 		},
 	},
+	...storybook.configs["flat/recommended"],
 ];

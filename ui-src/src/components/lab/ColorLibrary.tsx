@@ -26,6 +26,7 @@ import { colord } from "colord";
 import { ColorGroup, UiPreferences } from "../../hooks/useSoloistSystem";
 import { ConfirmationModal } from "../common/ConfirmationModal";
 import { HeartToggle } from "../common/HeartToggle";
+import { motion, AnimatePresence } from "framer-motion";
 import { useCopyFeedback } from "../../hooks/useCopyFeedback";
 import { useToast } from "../../context/ToastContext";
 import { ToggleFavoriteResult } from "../../utils/favorites";
@@ -34,6 +35,7 @@ import {
 	positionOrganizeDragGhost,
 	setOrganizeDragCursorActive,
 } from "../../utils/organizeDnD";
+import { PopoverMenu } from "../common/PopoverMenu";
 
 // --- Helper Functions ---
 // Ensure labels are unique within a render pass (case-insensitive)
@@ -104,7 +106,7 @@ export const ColorLibrary = ({
 	type SortOption = "custom" | "name" | "sat-asc" | "shade-asc";
 	const [sortOption, setSortOption] = useState<SortOption>("custom");
 	const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
-	const sortMenuRef = useRef<HTMLDivElement | null>(null);
+	const sortButtonRef = useRef<HTMLButtonElement | null>(null);
 
 	const getColorSaturation = (c: string | PresetColor) => {
 		const hex = typeof c === "string" ? c : c.value;
@@ -537,36 +539,7 @@ export const ColorLibrary = ({
 		setIsSortMenuOpen(false);
 	}, [activeSubTab]);
 
-	// Close sort menu on outside-click / Escape (polish)
-	useEffect(() => {
-		if (!isSortMenuOpen) return;
-
-		const onPointerDown = (event: MouseEvent | TouchEvent) => {
-			const target = event.target as Node | null;
-			if (!target) return;
-			const el = sortMenuRef.current;
-			if (el && !el.contains(target)) {
-				setIsSortMenuOpen(false);
-			}
-		};
-
-		const onKeyDown = (event: KeyboardEvent) => {
-			if (event.key === "Escape") {
-				setIsSortMenuOpen(false);
-			}
-		};
-
-		document.addEventListener("mousedown", onPointerDown);
-		document.addEventListener("touchstart", onPointerDown, {
-			passive: true,
-		});
-		document.addEventListener("keydown", onKeyDown);
-		return () => {
-			document.removeEventListener("mousedown", onPointerDown);
-			document.removeEventListener("touchstart", onPointerDown);
-			document.removeEventListener("keydown", onKeyDown);
-		};
-	}, [isSortMenuOpen]);
+	// Outside-click / Escape handling lives in PopoverMenu.
 
 	// Toggling favorite checks if it exists in the library prop
 	const isFavorite = (color: string) => {
@@ -791,9 +764,10 @@ export const ColorLibrary = ({
 							<span className="text-[10px] text-gray-500 font-mono uppercase">
 								Sort
 							</span>
-							<div className="relative" ref={sortMenuRef}>
+							<div className="relative">
 								<button
 									type="button"
+									ref={sortButtonRef}
 									onClick={() => setIsSortMenuOpen((v) => !v)}
 									className="w-28 appearance-none bg-black/20 border border-white/10 rounded px-2 py-0.5 text-[10px] text-gray-300 font-mono uppercase focus:outline-none focus:border-accent-cyan cursor-pointer pr-6 hover:bg-white/5 transition-colors flex items-center gap-2"
 									aria-label="Sort order"
@@ -808,50 +782,54 @@ export const ColorLibrary = ({
 										: "Name (A-Z)"}
 								</button>
 
-								{isSortMenuOpen && (
-									<div className="absolute right-0 mt-1 bg-bg-raised border border-glass-stroke rounded shadow-monolith z-50 min-w-max">
-										<button
-											type="button"
-											onClick={() => {
-												setSortOption("custom");
-												setIsSortMenuOpen(false);
-											}}
-											className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
-										>
-											Custom
-										</button>
-										<button
-											type="button"
-											onClick={() => {
-												setSortOption("name");
-												setIsSortMenuOpen(false);
-											}}
-											className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
-										>
-											Name (A-Z)
-										</button>
-										<button
-											type="button"
-											onClick={() => {
-												setSortOption("sat-asc");
-												setIsSortMenuOpen(false);
-											}}
-											className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
-										>
-											SAT (L-H)
-										</button>
-										<button
-											type="button"
-											onClick={() => {
-												setSortOption("shade-asc");
-												setIsSortMenuOpen(false);
-											}}
-											className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
-										>
-											SHADE (D-B)
-										</button>
-									</div>
-								)}
+								<PopoverMenu
+									open={isSortMenuOpen}
+									anchorRef={sortButtonRef}
+									onClose={() => setIsSortMenuOpen(false)}
+									align="end"
+									className="bg-bg-raised/95 border border-glass-stroke rounded-xl shadow-monolith z-[200] min-w-[220px] py-1 overflow-hidden backdrop-blur-xl"
+								>
+									<button
+										type="button"
+										onClick={() => {
+											setSortOption("custom");
+											setIsSortMenuOpen(false);
+										}}
+										className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
+									>
+										Custom
+									</button>
+									<button
+										type="button"
+										onClick={() => {
+											setSortOption("name");
+											setIsSortMenuOpen(false);
+										}}
+										className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
+									>
+										Name (A-Z)
+									</button>
+									<button
+										type="button"
+										onClick={() => {
+											setSortOption("sat-asc");
+											setIsSortMenuOpen(false);
+										}}
+										className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
+									>
+										SAT (L-H)
+									</button>
+									<button
+										type="button"
+										onClick={() => {
+											setSortOption("shade-asc");
+											setIsSortMenuOpen(false);
+										}}
+										className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 cursor-pointer transition-colors"
+									>
+										SHADE (D-B)
+									</button>
+								</PopoverMenu>
 
 								<div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
 									<svg
@@ -908,313 +886,357 @@ export const ColorLibrary = ({
 				ref={scrollContainerRef}
 				onScroll={handleScroll}
 				className="flex-1 overflow-y-auto overflow-x-hidden pr-2 pb-20 custom-scrollbar"
+				style={{ scrollbarGutter: "stable" }}
 			>
 				<div className="space-y-12">
-					{/* Palettes */}
-					{(view === "all" || view === "palettes") && (
-						<div className="space-y-4">
-							<h3 className="text-sm font-mono text-gray-400 uppercase tracking-widest border-b border-glass-stroke pb-2">
-								Saved Palettes
-							</h3>
-							{library.palettes.length === 0 ? (
-								<p className="text-gray-600 text-xs italic">
-									No saved palettes.
-								</p>
-							) : (
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-									{library.palettes.map(
-										(p: any, i: number) => (
-											<div
-												key={i}
-												className="bg-bg-raised border border-glass-stroke p-4 rounded-xl space-y-3 group"
-											>
-												<div className="flex items-center justify-between">
-													<span className="text-xs font-mono text-white">
-														{p.name}
-													</span>
-													<button
-														onClick={() =>
-															onRemovePalette(i)
-														}
-														className="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-														title="Delete Palette"
-														aria-label="Delete Palette"
-													>
-														<Trash2 size={12} />
-													</button>
-												</div>
-												<div className="h-12 flex rounded-lg overflow-hidden w-full">
-													{p.colors.map(
-														(
-															c: string,
-															ci: number
-														) => (
-															<div
-																key={ci}
-																className="flex-1 h-full"
-															>
-																<svg className="w-full h-full">
-																	<rect
-																		x="0"
-																		y="0"
-																		width="100%"
-																		height="100%"
-																		fill={c}
-																	/>
-																</svg>
-															</div>
-														)
-													)}
-												</div>
-												<div className="flex justify-end">
-													<button
-														onClick={() =>
-															onLoadColor(
-																p.colors[0]
+					<AnimatePresence mode="wait">
+						{/* Palettes */}
+						{(view === "all" || view === "palettes") && (
+							<div className="space-y-4">
+								<h3 className="text-sm font-mono text-gray-400 uppercase tracking-widest border-b border-glass-stroke pb-2">
+									Saved Palettes
+								</h3>
+								{library.palettes.length === 0 ? (
+									<p className="text-gray-600 text-xs italic">
+										No saved palettes.
+									</p>
+								) : (
+									<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+										{library.palettes.map(
+											(p: any, i: number) => (
+												<div
+													key={i}
+													className="bg-bg-raised border border-glass-stroke p-4 rounded-xl space-y-3 group"
+												>
+													<div className="flex items-center justify-between">
+														<span className="text-xs font-mono text-white">
+															{p.name}
+														</span>
+														<button
+															onClick={() =>
+																onRemovePalette(
+																	i
+																)
+															}
+															className="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+															title="Delete Palette"
+															aria-label="Delete Palette"
+														>
+															<Trash2 size={12} />
+														</button>
+													</div>
+													<div className="h-12 flex rounded-lg overflow-hidden w-full">
+														{p.colors.map(
+															(
+																c: string,
+																ci: number
+															) => (
+																<div
+																	key={ci}
+																	className="flex-1 h-full"
+																>
+																	<svg className="w-full h-full">
+																		<rect
+																			x="0"
+																			y="0"
+																			width="100%"
+																			height="100%"
+																			fill={
+																				c
+																			}
+																		/>
+																	</svg>
+																</div>
 															)
-														}
-														className="text-[10px] text-accent-cyan hover:underline"
-													>
-														Use Base
-													</button>
+														)}
+													</div>
+													<div className="flex justify-end">
+														<button
+															onClick={() =>
+																onLoadColor(
+																	p.colors[0]
+																)
+															}
+															className="text-[10px] text-accent-cyan hover:underline"
+														>
+															Use Base
+														</button>
+													</div>
 												</div>
-											</div>
-										)
-									)}
-								</div>
-							)}
-						</div>
-					)}
-
-					{/* Colors: Favorites View */}
-					{(view === "all" ||
-						(view === "colors" &&
-							activeSubTab === "favorites")) && (
-						<div className="space-y-8">
-							{/* My Favorites (Unassigned) */}
-							<div
-								className={`space-y-4 transition-all duration-300 ${
-									isGlobalAnchored
-										? "-mx-4 px-4 pt-4 pb-4 border-b sticky top-0 z-20 bg-bg-void border-glass-stroke shadow-2xl rounded-none"
-										: isEditingLibrary
-										? "p-4 bg-accent-cyan/5 border border-accent-cyan/30 border-dashed rounded-xl relative overflow-hidden mx-0"
-										: "-mx-4 px-4 pt-4 pb-4 border-b border-transparent rounded-none"
-								}`}
-								data-organize-dropzone={
-									isPointerOrganizeEnabled ? "1" : undefined
-								}
-								data-organize-group={
-									isPointerOrganizeEnabled
-										? "null"
-										: undefined
-								}
-							>
-								{/* Blueprint Pattern Background (Edit Mode) */}
-								{isEditingLibrary && (
-									<div className="absolute inset-0 z-0 opacity-10 pointer-events-none bg-blueprint-grid" />
+											)
+										)}
+									</div>
 								)}
+							</div>
+						)}
 
-								<div className="space-y-1 relative z-10">
-									<div className="flex items-center justify-between group/section">
-										<div className="flex items-center gap-2">
-											<Globe
-												size={14}
-												className="text-accent-cyan"
-											/>
-											<h3 className="text-sm font-bold text-white tracking-wide">
-												Global
-											</h3>
-											<span className="text-xs text-gray-500 font-mono ml-1">
-												({unassignedColors.length})
-											</span>
-										</div>
-										<div className="flex items-center gap-2 transition-opacity">
-											{/* Anchor Toggle */}
-											<button
-												onClick={() =>
-													setIsGlobalAnchored(
-														!isGlobalAnchored
-													)
-												}
-												disabled={!isAtScrollTop}
-												className={`p-1.5 rounded-full transition-colors ${
-													isGlobalAnchored
-														? "text-accent-cyan bg-accent-cyan/10"
-														: "text-gray-500 hover:text-white"
-												} ${
-													!isAtScrollTop
-														? "opacity-20 cursor-default"
-														: ""
-												}`}
-												title={
-													isGlobalAnchored
-														? "Unpin Global Section"
-														: "Pin Global Section to Top"
-												}
-											>
-												<Pin
+						{/* Colors: Favorites View */}
+						{(view === "all" ||
+							(view === "colors" &&
+								activeSubTab === "favorites")) && (
+							<motion.div
+								key="favorites-list"
+								initial={{ opacity: 0, x: -10 }}
+								animate={{ opacity: 1, x: 0 }}
+								exit={{ opacity: 0, x: 10 }}
+								className="space-y-8"
+							>
+								{/* My Favorites (Unassigned) */}
+								<div
+									className={`space-y-4 transition-all duration-300 ${
+										isGlobalAnchored
+											? "-mx-4 px-4 pt-4 pb-4 border-b sticky top-0 z-20 bg-bg-void border-glass-stroke shadow-2xl rounded-none"
+											: isEditingLibrary
+											? "p-4 bg-accent-cyan/5 border border-accent-cyan/30 border-dashed rounded-xl relative overflow-hidden mx-0"
+											: "-mx-4 px-4 pt-4 pb-4 border-b border-transparent rounded-none"
+									}`}
+									data-organize-dropzone={
+										isPointerOrganizeEnabled
+											? "1"
+											: undefined
+									}
+									data-organize-group={
+										isPointerOrganizeEnabled
+											? "null"
+											: undefined
+									}
+								>
+									{/* Blueprint Pattern Background (Edit Mode) */}
+									{isEditingLibrary && (
+										<div className="absolute inset-0 z-0 opacity-10 pointer-events-none bg-blueprint-grid" />
+									)}
+
+									<div className="space-y-1 relative z-10">
+										<div className="flex items-center justify-between group/section">
+											<div className="flex items-center gap-2">
+												<Globe
 													size={14}
-													className={
-														isGlobalAnchored
-															? "fill-current"
-															: ""
-													}
+													className="text-accent-cyan"
 												/>
-											</button>
-											{onCreateGroup && (
+												<h3 className="text-sm font-bold text-white tracking-wide">
+													Global
+												</h3>
+												<span className="text-xs text-gray-500 font-mono ml-1">
+													({unassignedColors.length})
+												</span>
+											</div>
+											<div className="flex items-center gap-2 transition-opacity">
+												{/* Anchor Toggle */}
 												<button
 													onClick={() =>
-														setIsCreatingGroup(true)
-													}
-													className="p-1.5 hover:bg-white/10 rounded-full text-gray-500 hover:text-white transition-colors"
-													title="Create New Group"
-												>
-													<FolderPlus size={14} />
-												</button>
-											)}
-											{onRemoveColors && (
-												<button
-													disabled={
-														unassignedColors.length ===
-														0
-													}
-													onClick={() => {
-														if (
-															unassignedColors.length ===
-															0
+														setIsGlobalAnchored(
+															!isGlobalAnchored
 														)
-															return;
-														setConfirmState({
-															isOpen: true,
-															title: "Remove Global Favorites",
-															message: (
-																<span className="text-gray-300">
-																	Are you sure
-																	you want to
-																	remove all
-																	colors saved
-																	to Global
-																	from
-																	Favorites?
-																</span>
-															),
-															onConfirm: () => {
-																if (
-																	onRemoveColors
-																) {
-																	onRemoveColors(
-																		unassignedColors.map(
-																			(
-																				c:
-																					| string
-																					| PresetColor
-																			) =>
-																				typeof c ===
-																				"string"
-																					? {
-																							name: c,
-																							value: c,
-																							id: c,
-																					  }
-																					: c
-																		) as PresetColor[]
-																	);
-																}
-																closeConfirm();
-															},
-														});
-													}}
+													}
+													disabled={!isAtScrollTop}
 													className={`p-1.5 rounded-full transition-colors ${
-														unassignedColors.length ===
-														0
-															? "text-gray-600 opacity-40 cursor-default"
-															: "hover:bg-white/10 text-red-500 hover:text-red-400"
+														isGlobalAnchored
+															? "text-accent-cyan bg-accent-cyan/10"
+															: "text-gray-500 hover:text-white"
+													} ${
+														!isAtScrollTop
+															? "opacity-20 cursor-default"
+															: ""
 													}`}
 													title={
-														unassignedColors.length ===
-														0
-															? "No colors to remove"
-															: "Unfavorite All in Global"
+														isGlobalAnchored
+															? "Unpin Global Section"
+															: "Pin Global Section to Top"
 													}
 												>
-													<Heart
+													<Pin
 														size={14}
 														className={
-															unassignedColors.length ===
-															0
-																? ""
-																: "fill-current"
+															isGlobalAnchored
+																? "fill-current"
+																: ""
 														}
 													/>
 												</button>
-											)}
-										</div>
-									</div>
-									<p className="text-xs text-white/80 leading-relaxed border-b border-glass-stroke pb-2">
-										Colors saved here will always be active
-										and accessible.
-									</p>
-								</div>
-
-								{/* Create Group Input */}
-								{isCreatingGroup &&
-									(() => {
-										const isDuplicate = (
-											(library.colorGroups as ColorGroup[]) ||
-											[]
-										).some(
-											(g) =>
-												g.name.trim().toLowerCase() ===
-												newGroupName
-													.trim()
-													.toLowerCase()
-										);
-										const isValid =
-											newGroupName.trim().length > 0 &&
-											!isDuplicate;
-
-										const handleCreate = () => {
-											if (isValid && onCreateGroup) {
-												onCreateGroup(
-													newGroupName.trim(),
-													newGroupDesc
-												);
-												setIsCreatingGroup(false);
-												setNewGroupName("");
-												setNewGroupDesc("");
-												setIsEditingLibrary(true);
-											}
-										};
-
-										const handleKeyDown = (
-											e: React.KeyboardEvent
-										) => {
-											if (e.key === "Enter") {
-												e.preventDefault();
-												handleCreate();
-											} else if (e.key === "Escape") {
-												e.preventDefault();
-												setIsCreatingGroup(false);
-												setNewGroupName("");
-												setNewGroupDesc("");
-											}
-										};
-
-										return (
-											<div className="bg-black/20 p-3 rounded-lg space-y-3 mb-4 border border-glass-stroke">
-												<div className="space-y-1">
-													<input
-														autoFocus
-														type="text"
-														placeholder="Group Name"
-														className={`w-full bg-black/20 border text-sm text-white font-sans px-3 py-2 rounded-lg focus:outline-none focus:ring-2 transition-colors ${
-															isDuplicate
-																? "border-red-500 focus:border-red-500 focus:ring-red-500/30"
-																: "border-white/10 focus:border-accent-cyan focus:ring-accent-cyan/20"
+												{onCreateGroup && (
+													<button
+														onClick={() =>
+															setIsCreatingGroup(
+																true
+															)
+														}
+														className="p-1.5 hover:bg-white/10 rounded-full text-gray-500 hover:text-white transition-colors"
+														title="Create New Group"
+													>
+														<FolderPlus size={14} />
+													</button>
+												)}
+												{onRemoveColors && (
+													<button
+														disabled={
+															unassignedColors.length ===
+															0
+														}
+														onClick={() => {
+															if (
+																unassignedColors.length ===
+																0
+															)
+																return;
+															setConfirmState({
+																isOpen: true,
+																title: "Remove Global Favorites",
+																message: (
+																	<span className="text-gray-300">
+																		Are you
+																		sure you
+																		want to
+																		remove
+																		all
+																		colors
+																		saved to
+																		Global
+																		from
+																		Favorites?
+																	</span>
+																),
+																onConfirm:
+																	() => {
+																		if (
+																			onRemoveColors
+																		) {
+																			onRemoveColors(
+																				unassignedColors.map(
+																					(
+																						c:
+																							| string
+																							| PresetColor
+																					) =>
+																						typeof c ===
+																						"string"
+																							? {
+																									name: c,
+																									value: c,
+																									id: c,
+																							  }
+																							: c
+																				) as PresetColor[]
+																			);
+																		}
+																		closeConfirm();
+																	},
+															});
+														}}
+														className={`p-1.5 rounded-full transition-colors ${
+															unassignedColors.length ===
+															0
+																? "text-gray-600 opacity-40 cursor-default"
+																: "hover:bg-white/10 text-red-500 hover:text-red-400"
 														}`}
-														value={newGroupName}
+														title={
+															unassignedColors.length ===
+															0
+																? "No colors to remove"
+																: "Unfavorite All in Global"
+														}
+													>
+														<Heart
+															size={14}
+															className={
+																unassignedColors.length ===
+																0
+																	? ""
+																	: "fill-current"
+															}
+														/>
+													</button>
+												)}
+											</div>
+										</div>
+										<p className="text-xs text-white/80 leading-relaxed border-b border-glass-stroke pb-2">
+											Colors saved here will always be
+											active and accessible.
+										</p>
+									</div>
+
+									{/* Create Group Input */}
+									{isCreatingGroup &&
+										(() => {
+											const isDuplicate = (
+												(library.colorGroups as ColorGroup[]) ||
+												[]
+											).some(
+												(g) =>
+													g.name
+														.trim()
+														.toLowerCase() ===
+													newGroupName
+														.trim()
+														.toLowerCase()
+											);
+											const isValid =
+												newGroupName.trim().length >
+													0 && !isDuplicate;
+
+											const handleCreate = () => {
+												if (isValid && onCreateGroup) {
+													onCreateGroup(
+														newGroupName.trim(),
+														newGroupDesc
+													);
+													setIsCreatingGroup(false);
+													setNewGroupName("");
+													setNewGroupDesc("");
+													setIsEditingLibrary(true);
+												}
+											};
+
+											const handleKeyDown = (
+												e: React.KeyboardEvent
+											) => {
+												if (e.key === "Enter") {
+													e.preventDefault();
+													handleCreate();
+												} else if (e.key === "Escape") {
+													e.preventDefault();
+													setIsCreatingGroup(false);
+													setNewGroupName("");
+													setNewGroupDesc("");
+												}
+											};
+
+											return (
+												<div className="bg-black/20 p-3 rounded-lg space-y-3 mb-4 border border-glass-stroke">
+													<div className="space-y-1">
+														<input
+															autoFocus
+															type="text"
+															placeholder="Group Name"
+															className={`w-full bg-black/20 border text-sm text-white font-sans px-3 py-2 rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+																isDuplicate
+																	? "border-red-500 focus:border-red-500 focus:ring-red-500/30"
+																	: "border-white/10 focus:border-accent-cyan focus:ring-accent-cyan/20"
+															}`}
+															value={newGroupName}
+															onChange={(e) =>
+																setNewGroupName(
+																	e.target
+																		.value
+																)
+															}
+															onKeyDown={
+																handleKeyDown
+															}
+														/>
+														{isDuplicate && (
+															<p className="text-[10px] text-red-400 font-medium">
+																Group name must
+																be unique.
+															</p>
+														)}
+													</div>
+													<input
+														type="text"
+														placeholder="Description (Optional)"
+														className="w-full bg-black/20 border border-white/10 text-xs text-gray-400 font-sans px-3 py-2 rounded-lg focus:outline-none focus:border-accent-cyan focus:ring-2 focus:ring-accent-cyan/20 transition-colors"
+														value={newGroupDesc}
 														onChange={(e) =>
-															setNewGroupName(
+															setNewGroupDesc(
 																e.target.value
 															)
 														}
@@ -1222,308 +1244,371 @@ export const ColorLibrary = ({
 															handleKeyDown
 														}
 													/>
-													{isDuplicate && (
-														<p className="text-[10px] text-red-400 font-medium">
-															Group name must be
-															unique.
-														</p>
-													)}
+													<div className="flex justify-end gap-2">
+														<button
+															onClick={() => {
+																setIsCreatingGroup(
+																	false
+																);
+																setNewGroupName(
+																	""
+																);
+																setNewGroupDesc(
+																	""
+																);
+															}}
+															className="text-xs text-gray-500 hover:text-white px-2 py-1"
+														>
+															Cancel
+														</button>
+														<button
+															disabled={!isValid}
+															onClick={
+																handleCreate
+															}
+															className={`text-xs px-3 py-1 rounded transition-colors ${
+																!isValid
+																	? "bg-accent-cyan/5 text-accent-cyan/50 cursor-default"
+																	: "bg-accent-cyan/20 text-accent-cyan hover:bg-accent-cyan/30"
+															}`}
+														>
+															Create
+														</button>
+													</div>
 												</div>
-												<input
-													type="text"
-													placeholder="Description (Optional)"
-													className="w-full bg-black/20 border border-white/10 text-xs text-gray-400 font-sans px-3 py-2 rounded-lg focus:outline-none focus:border-accent-cyan focus:ring-2 focus:ring-accent-cyan/20 transition-colors"
-													value={newGroupDesc}
-													onChange={(e) =>
-														setNewGroupDesc(
-															e.target.value
-														)
-													}
-													onKeyDown={handleKeyDown}
+											);
+										})()}
+
+									{unassignedColors.length === 0 ? (
+										isEditingLibrary ? (
+											<div
+												className="border-2 border-dashed border-white/10 rounded-lg p-6 flex flex-col items-center justify-center text-gray-500 gap-2 bg-black/5 relative z-10 transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan/70"
+												data-organize-dropzone={
+													isPointerOrganizeEnabled
+														? "1"
+														: undefined
+												}
+												data-organize-group={
+													isPointerOrganizeEnabled
+														? "null"
+														: undefined
+												}
+											>
+												<Globe
+													size={24}
+													className="opacity-50"
 												/>
-												<div className="flex justify-end gap-2">
-													<button
-														onClick={() => {
-															setIsCreatingGroup(
-																false
-															);
-															setNewGroupName("");
-															setNewGroupDesc("");
-														}}
-														className="text-xs text-gray-500 hover:text-white px-2 py-1"
-													>
-														Cancel
-													</button>
-													<button
-														disabled={!isValid}
-														onClick={handleCreate}
-														className={`text-xs px-3 py-1 rounded transition-colors ${
-															!isValid
-																? "bg-accent-cyan/5 text-accent-cyan/50 cursor-default"
-																: "bg-accent-cyan/20 text-accent-cyan hover:bg-accent-cyan/30"
-														}`}
-													>
-														Create
-													</button>
-												</div>
+												<span className="text-xs font-mono uppercase tracking-wider">
+													Drop Colors Here
+												</span>
 											</div>
-										);
-									})()}
-
-								{unassignedColors.length === 0 ? (
-									isEditingLibrary ? (
-										<div
-											className="border-2 border-dashed border-white/10 rounded-lg p-6 flex flex-col items-center justify-center text-gray-500 gap-2 bg-black/5 relative z-10 transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan/70"
-											data-organize-dropzone={
-												isPointerOrganizeEnabled
-													? "1"
-													: undefined
-											}
-											data-organize-group={
-												isPointerOrganizeEnabled
-													? "null"
-													: undefined
-											}
-										>
-											<Globe
-												size={24}
-												className="opacity-50"
-											/>
-											<span className="text-xs font-mono uppercase tracking-wider">
-												Drop Colors Here
-											</span>
-										</div>
+										) : (
+											<p className="text-gray-600 text-xs italic">
+												No global favorites.
+											</p>
+										)
 									) : (
-										<p className="text-gray-600 text-xs italic">
-											No global favorites.
-										</p>
-									)
-								) : (
-									<div
-										className={`grid gap-3 transition-all duration-300 relative z-10 ${densityClass}`}
-									>
-										{unassignedColors.map(
-											(
-												c: PresetColor | string,
-												idx: number
-											) => {
-												const colorItem = c;
-												const hexValue =
-													typeof colorItem ===
-													"string"
-														? colorItem
-														: colorItem.value;
-												const finalName =
-													typeof colorItem ===
-													"string"
-														? "Custom Color"
-														: colorItem.name;
-												return (
-													<SmartColorCard
-														key={`${hexValue}-${idx}`}
-														color={hexValue}
-														label={finalName}
-														name={finalName}
-														isFavorite={true}
-														draggable={
-															isPointerOrganizeEnabled
-														}
-														usePointerDnD={
-															isPointerOrganizeEnabled
-														}
-														organizeDnd={{
-															groupId: null,
-															id: hexValue,
-														}}
-														onPointerDown={
-															isPointerOrganizeEnabled
-																? (e) =>
-																		startPointerOrganizeDrag(
-																			e,
-																			hexValue,
-																			null,
-																			finalName
-																		)
-																: undefined
-														}
-														onClickCapture={(e) => {
-															if (
-																isPointerDraggingRef.current
-															) {
-																e.preventDefault();
-																e.stopPropagation();
-															}
-														}}
-														onMoveRequest={() =>
-															setColorToMove({
-																value: hexValue,
-																groupId: null,
-															})
-														}
-														onClick={() => {
-															onLoadColor(
-																hexValue
-															);
-
-															// Use stored name directly
-
-															if (onInspectColor)
-																onInspectColor(
-																	typeof c ===
-																		"string"
-																		? {
-																				name: finalName,
-																				value: hexValue,
-																		  }
-																		: c
-																);
-														}}
-														onToggleFavorite={async () => {
-															const res =
-																await onToggleFavorite(
-																	hexValue,
-																	{
-																		name: finalName,
-																		value: hexValue,
-																	}
-																);
-															if (
-																res &&
-																res.action ===
-																	"removed"
-															) {
-																toast.standard(
-																	<>
-																		Removed{" "}
-																		<span className="text-accent-cyan">
-																			{
-																				finalName
-																			}
-																		</span>{" "}
-																		from
-																		favorites
-																	</>
-																);
-															} else if (
-																res &&
-																res.action ===
-																	"added" &&
-																(
-																	res.color as PresetColor
-																).isAutoRenamed
-															) {
-																toast.standard(
-																	<>
-																		Saved as{" "}
-																		<span className="text-accent-cyan">
-																			{
-																				(
-																					res.color as PresetColor
-																				)
-																					.name
-																			}
-																		</span>
-																	</>
-																);
-															}
-														}}
-													/>
-												);
-											}
-										)}
-									</div>
-								)}
-							</div>
-
-							{/* Custom Groups */}
-							{library.colorGroups?.map(
-								(group: ColorGroup, index: number) => {
-									const groupItems =
-										groupColorsMap[group.id] || [];
-
-									return (
 										<div
-											key={group.id}
-											className={`space-y-4 transition-all duration-300 ${
-												group.isHidden
-													? "opacity-50"
-													: ""
-											} ${
-												isEditingLibrary
-													? "bg-accent-cyan/5 border border-accent-cyan/30 border-dashed rounded-xl p-4 relative overflow-hidden"
-													: "rounded-none p-0"
-											}`}
-											data-organize-dropzone={
-												isPointerOrganizeEnabled
-													? "1"
-													: undefined
-											}
-											data-organize-group={
-												isPointerOrganizeEnabled
-													? group.id
-													: undefined
-											}
+											className={`grid gap-3 transition-all duration-300 relative z-10 ${densityClass}`}
 										>
-											{/* Blueprint Pattern Background (Edit Mode) */}
-											{isEditingLibrary && (
-												<div className="absolute inset-0 z-0 opacity-10 pointer-events-none bg-blueprint-grid" />
-											)}
+											{unassignedColors.map(
+												(
+													c: PresetColor | string,
+													idx: number
+												) => {
+													const colorItem = c;
+													const hexValue =
+														typeof colorItem ===
+														"string"
+															? colorItem
+															: colorItem.value;
+													const finalName =
+														typeof colorItem ===
+														"string"
+															? "Custom Color"
+															: colorItem.name;
+													return (
+														<SmartColorCard
+															key={`${hexValue}-${idx}`}
+															color={hexValue}
+															label={finalName}
+															name={finalName}
+															isFavorite={true}
+															draggable={
+																isPointerOrganizeEnabled
+															}
+															usePointerDnD={
+																isPointerOrganizeEnabled
+															}
+															organizeDnd={{
+																groupId: null,
+																id: hexValue,
+															}}
+															onPointerDown={
+																isPointerOrganizeEnabled
+																	? (e) =>
+																			startPointerOrganizeDrag(
+																				e,
+																				hexValue,
+																				null,
+																				finalName
+																			)
+																	: undefined
+															}
+															onClickCapture={(
+																e
+															) => {
+																if (
+																	isPointerDraggingRef.current
+																) {
+																	e.preventDefault();
+																	e.stopPropagation();
+																}
+															}}
+															onMoveRequest={() =>
+																setColorToMove({
+																	value: hexValue,
+																	groupId:
+																		null,
+																})
+															}
+															onClick={() => {
+																onLoadColor(
+																	hexValue
+																);
 
-											<div className="group/header relative z-10">
-												<div className="flex items-center justify-between mb-1">
-													<div className="flex items-center gap-2 flex-1 relative">
-														{group.id ===
-														editingGroupId ? (
-															(() => {
-																// Validation Logic
-																const currentName =
-																	tempEditData?.name ??
-																	group.name;
-																const isDuplicate =
-																	(
-																		(library.colorGroups as ColorGroup[]) ||
-																		[]
-																	).some(
-																		(g) =>
-																			g.id !==
-																				group.id &&
-																			g.name
-																				.trim()
-																				.toLowerCase() ===
-																				currentName
-																					.trim()
-																					.toLowerCase()
+																// Use stored name directly
+
+																if (
+																	onInspectColor
+																)
+																	onInspectColor(
+																		typeof c ===
+																			"string"
+																			? {
+																					name: finalName,
+																					value: hexValue,
+																			  }
+																			: c
 																	);
-																const isValid =
-																	currentName.trim()
-																		.length >
-																		0 &&
-																	!isDuplicate;
+															}}
+															onToggleFavorite={async () => {
+																const res =
+																	await onToggleFavorite(
+																		hexValue,
+																		{
+																			name: finalName,
+																			value: hexValue,
+																		}
+																	);
+																if (
+																	res &&
+																	res.action ===
+																		"removed"
+																) {
+																	toast.standard(
+																		<>
+																			Removed{" "}
+																			<span className="text-accent-cyan">
+																				{
+																					finalName
+																				}
+																			</span>{" "}
+																			from
+																			favorites
+																		</>
+																	);
+																} else if (
+																	res &&
+																	res.action ===
+																		"added" &&
+																	(
+																		res.color as PresetColor
+																	)
+																		.isAutoRenamed
+																) {
+																	toast.standard(
+																		<>
+																			Saved
+																			as{" "}
+																			<span className="text-accent-cyan">
+																				{
+																					(
+																						res.color as PresetColor
+																					)
+																						.name
+																				}
+																			</span>
+																		</>
+																	);
+																}
+															}}
+														/>
+													);
+												}
+											)}
+										</div>
+									)}
+								</div>
 
-																return (
-																	<>
-																		<div className="fixed inset-0 z-40 bg-transparent cursor-default" />
-																		<div className="relative z-50 flex flex-row items-start gap-2 flex-1 w-full">
-																			<div className="flex flex-col gap-1 flex-1 min-w-0">
-																				<div className="relative">
-																					<input
-																						autoFocus
-																						type="text"
-																						className={`bg-black/40 text-white text-sm font-brand font-bold px-3 py-1.5 rounded-lg border focus:outline-none focus:ring-2 w-full shadow-lg transition-colors ${
-																							isDuplicate
-																								? "border-red-500 focus:border-red-500 focus:ring-red-500/30"
-																								: "border-white/20 focus:border-accent-cyan focus:ring-accent-cyan/20"
-																						}`}
+								{/* Custom Groups */}
+								{library.colorGroups?.map(
+									(group: ColorGroup, index: number) => {
+										const groupItems =
+											groupColorsMap[group.id] || [];
+
+										return (
+											<div
+												key={group.id}
+												className={`space-y-4 transition-all duration-300 ${
+													group.isHidden
+														? "opacity-50"
+														: ""
+												} ${
+													isEditingLibrary
+														? "bg-accent-cyan/5 border border-accent-cyan/30 border-dashed rounded-xl p-4 relative overflow-hidden"
+														: "rounded-none p-0"
+												}`}
+												data-organize-dropzone={
+													isPointerOrganizeEnabled
+														? "1"
+														: undefined
+												}
+												data-organize-group={
+													isPointerOrganizeEnabled
+														? group.id
+														: undefined
+												}
+											>
+												{/* Blueprint Pattern Background (Edit Mode) */}
+												{isEditingLibrary && (
+													<div className="absolute inset-0 z-0 opacity-10 pointer-events-none bg-blueprint-grid" />
+												)}
+
+												<div className="group/header relative z-10">
+													<div className="flex items-center justify-between mb-1">
+														<div className="flex items-center gap-2 flex-1 relative">
+															{group.id ===
+															editingGroupId ? (
+																(() => {
+																	// Validation Logic
+																	const currentName =
+																		tempEditData?.name ??
+																		group.name;
+																	const isDuplicate =
+																		(
+																			(library.colorGroups as ColorGroup[]) ||
+																			[]
+																		).some(
+																			(
+																				g
+																			) =>
+																				g.id !==
+																					group.id &&
+																				g.name
+																					.trim()
+																					.toLowerCase() ===
+																					currentName
+																						.trim()
+																						.toLowerCase()
+																		);
+																	const isValid =
+																		currentName.trim()
+																			.length >
+																			0 &&
+																		!isDuplicate;
+
+																	return (
+																		<>
+																			<div className="fixed inset-0 z-40 bg-transparent cursor-default" />
+																			<div className="relative z-50 flex flex-row items-start gap-2 flex-1 w-full">
+																				<div className="flex flex-col gap-1 flex-1 min-w-0">
+																					<div className="relative">
+																						<input
+																							autoFocus
+																							type="text"
+																							className={`bg-black/40 text-white text-sm font-brand font-bold px-3 py-1.5 rounded-lg border focus:outline-none focus:ring-2 w-full shadow-lg transition-colors ${
+																								isDuplicate
+																									? "border-red-500 focus:border-red-500 focus:ring-red-500/30"
+																									: "border-white/20 focus:border-accent-cyan focus:ring-accent-cyan/20"
+																							}`}
+																							defaultValue={
+																								group.name
+																							}
+																							placeholder="Group Name"
+																							onKeyDown={(
+																								e
+																							) => {
+																								if (
+																									e.key ===
+																									"Enter"
+																								) {
+																									e.preventDefault();
+																									if (
+																										isValid &&
+																										onUpdateGroup &&
+																										tempEditData
+																									) {
+																										onUpdateGroup(
+																											group.id,
+																											tempEditData
+																										);
+																										setEditingGroupId(
+																											null
+																										);
+																									}
+																								} else if (
+																									e.key ===
+																									"Escape"
+																								) {
+																									setEditingGroupId(
+																										null
+																									);
+																								}
+																							}}
+																							onChange={(
+																								e
+																							) => {
+																								setTempEditData(
+																									(
+																										prev
+																									) => ({
+																										name: e
+																											.target
+																											.value,
+																										description:
+																											prev?.description ||
+																											"",
+																									})
+																								);
+																							}}
+																						/>
+																						{!isValid && (
+																							<div className="absolute top-full left-0 mt-1 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded shadow-lg z-[60]">
+																								{currentName.trim()
+																									.length ===
+																								0
+																									? "Name is required."
+																									: "Group name must be unique."}
+																							</div>
+																						)}
+																					</div>
+																					<textarea
+																						className="w-full bg-black/20 text-xs text-gray-400 px-3 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-accent-cyan focus:ring-2 focus:ring-accent-cyan/20 resize-none shadow-inner font-sans leading-relaxed"
 																						defaultValue={
-																							group.name
+																							group.description
 																						}
-																						placeholder="Group Name"
+																						placeholder="Add a description..."
+																						rows={
+																							2
+																						}
 																						onKeyDown={(
 																							e
 																						) => {
 																							if (
 																								e.key ===
-																								"Enter"
+																									"Enter" &&
+																								!e.shiftKey
 																							) {
 																								e.preventDefault();
 																								if (
@@ -1555,44 +1640,39 @@ export const ColorLibrary = ({
 																								(
 																									prev
 																								) => ({
-																									name: e
-																										.target
-																										.value,
-																									description:
-																										prev?.description ||
+																									name:
+																										prev?.name ||
 																										"",
+																									description:
+																										e
+																											.target
+																											.value,
 																								})
 																							);
 																						}}
 																					/>
-																					{!isValid && (
-																						<div className="absolute top-full left-0 mt-1 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded shadow-lg z-[60]">
-																							{currentName.trim()
-																								.length ===
-																							0
-																								? "Name is required."
-																								: "Group name must be unique."}
-																						</div>
-																					)}
 																				</div>
-																				<textarea
-																					className="w-full bg-black/20 text-xs text-gray-400 px-3 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-accent-cyan focus:ring-2 focus:ring-accent-cyan/20 resize-none shadow-inner font-sans leading-relaxed"
-																					defaultValue={
-																						group.description
-																					}
-																					placeholder="Add a description..."
-																					rows={
-																						2
-																					}
-																					onKeyDown={(
-																						e
-																					) => {
-																						if (
-																							e.key ===
-																								"Enter" &&
-																							!e.shiftKey
-																						) {
-																							e.preventDefault();
+																				<div className="flex flex-row items-center gap-1 shrink-0 pt-0.5">
+																					<button
+																						onClick={() =>
+																							setEditingGroupId(
+																								null
+																							)
+																						}
+																						className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors backdrop-blur-sm"
+																						title="Cancel"
+																					>
+																						<X
+																							size={
+																								12
+																							}
+																						/>
+																					</button>
+																					<button
+																						disabled={
+																							!isValid
+																						}
+																						onClick={() => {
 																							if (
 																								isValid &&
 																								onUpdateGroup &&
@@ -1606,1027 +1686,101 @@ export const ColorLibrary = ({
 																									null
 																								);
 																							}
-																						} else if (
-																							e.key ===
-																							"Escape"
-																						) {
-																							setEditingGroupId(
-																								null
-																							);
+																						}}
+																						className={`p-1.5 rounded-full text-white transition-colors backdrop-blur-sm ${
+																							!isValid
+																								? "bg-gray-500 opacity-50"
+																								: "bg-green-500/80 hover:bg-green-500"
+																						}`}
+																						title={
+																							!isValid
+																								? isDuplicate
+																									? "Group Name Must Be Unique"
+																									: "Name Cannot Be Empty"
+																								: "Save"
 																						}
-																					}}
-																					onChange={(
-																						e
-																					) => {
-																						setTempEditData(
-																							(
-																								prev
-																							) => ({
-																								name:
-																									prev?.name ||
-																									"",
-																								description:
-																									e
-																										.target
-																										.value,
-																							})
-																						);
-																					}}
-																				/>
+																					>
+																						<Check
+																							size={
+																								12
+																							}
+																						/>
+																					</button>
+																				</div>
 																			</div>
-																			<div className="flex flex-row items-center gap-1 shrink-0 pt-0.5">
-																				<button
-																					onClick={() =>
-																						setEditingGroupId(
-																							null
-																						)
-																					}
-																					className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors backdrop-blur-sm"
-																					title="Cancel"
-																				>
-																					<X
-																						size={
-																							12
-																						}
-																					/>
-																				</button>
-																				<button
-																					disabled={
-																						!isValid
-																					}
-																					onClick={() => {
-																						if (
-																							isValid &&
-																							onUpdateGroup &&
-																							tempEditData
-																						) {
-																							onUpdateGroup(
-																								group.id,
-																								tempEditData
-																							);
-																							setEditingGroupId(
-																								null
-																							);
-																						}
-																					}}
-																					className={`p-1.5 rounded-full text-white transition-colors backdrop-blur-sm ${
-																						!isValid
-																							? "bg-gray-500 opacity-50"
-																							: "bg-green-500/80 hover:bg-green-500"
-																					}`}
-																					title={
-																						!isValid
-																							? isDuplicate
-																								? "Group Name Must Be Unique"
-																								: "Name Cannot Be Empty"
-																							: "Save"
-																					}
-																				>
-																					<Check
-																						size={
-																							12
-																						}
-																					/>
-																				</button>
-																			</div>
-																		</div>
 
-																		{/* Actions (Outside) */}
-																		{/* Actions Moved Inline */}
-																	</>
-																);
-															})()
-														) : (
-															// Display Mode
-															<>
-																{group.isHidden ? (
-																	<EyeOff
-																		size={
-																			14
-																		}
-																		className="text-gray-600"
-																	/>
-																) : (
-																	<FolderOpen
-																		size={
-																			14
-																		}
-																		className="text-accent-purple"
-																	/>
-																)}
-																<div className="flex items-center gap-2">
-																	<h3 className="text-sm font-bold text-white tracking-wide">
-																		{
-																			group.name
-																		}
-																	</h3>
-																	<span className="text-xs text-gray-500 font-mono ml-1">
-																		(
-																		{
-																			groupItems.length
-																		}
-																		)
-																	</span>
-																</div>
-															</>
-														)}
-													</div>
-
-													{/* Actions */}
-													<div className="flex items-center gap-1 transition-opacity">
-														{isEditingLibrary &&
-															onReorderGroups && (
-																<div className="flex items-center gap-1 border-r border-glass-stroke mr-1 pr-1">
-																	{index >
-																		0 && (
-																		<div className="flex items-center">
-																			{/* Move to Top (Only show if more than 1 step from top) */}
-																			{index >
-																				1 && (
-																				<button
-																					onClick={() => {
-																						// Move to Top
-																						const newGroups =
-																							[
-																								...library.colorGroups,
-																							];
-																						const [
-																							moved,
-																						] =
-																							newGroups.splice(
-																								index,
-																								1
-																							);
-																						newGroups.unshift(
-																							moved
-																						);
-																						onReorderGroups(
-																							newGroups
-																						);
-																					}}
-																					className="p-1.5 text-gray-500 hover:text-white"
-																					title="Move to Top"
-																				>
-																					<ChevronsUp
-																						size={
-																							14
-																						}
-																					/>
-																				</button>
-																			)}
-
-																			<button
-																				onClick={() => {
-																					// Move Up - simplified using index
-																					const newGroups =
-																						[
-																							...library.colorGroups,
-																						];
-																					[
-																						newGroups[
-																							index -
-																								1
-																						],
-																						newGroups[
-																							index
-																						],
-																					] =
-																						[
-																							newGroups[
-																								index
-																							],
-																							newGroups[
-																								index -
-																									1
-																							],
-																						];
-																					onReorderGroups(
-																						newGroups
-																					);
-																				}}
-																				className="p-1.5 text-gray-500 hover:text-white"
-																				title="Move Up"
-																			>
-																				<ChevronUp
-																					size={
-																						14
-																					}
-																				/>
-																			</button>
-																		</div>
-																	)}
-																	{index <
-																		library
-																			.colorGroups
-																			.length -
-																			1 && (
-																		<div className="flex items-center">
-																			<button
-																				onClick={() => {
-																					// Move Down - simplified using index
-																					const newGroups =
-																						[
-																							...library.colorGroups,
-																						];
-																					[
-																						newGroups[
-																							index +
-																								1
-																						],
-																						newGroups[
-																							index
-																						],
-																					] =
-																						[
-																							newGroups[
-																								index
-																							],
-																							newGroups[
-																								index +
-																									1
-																							],
-																						];
-																					onReorderGroups(
-																						newGroups
-																					);
-																				}}
-																				className="p-1.5 text-gray-500 hover:text-white"
-																				title="Move Down"
-																			>
-																				<ChevronDown
-																					size={
-																						14
-																					}
-																				/>
-																			</button>
-																			{/* Move to Bottom (Only show if more than 1 step from bottom) */}
-																			{index <
-																				library
-																					.colorGroups
-																					.length -
-																					2 && (
-																				<button
-																					onClick={() => {
-																						// Move to Bottom
-																						const newGroups =
-																							[
-																								...library.colorGroups,
-																							];
-																						const [
-																							moved,
-																						] =
-																							newGroups.splice(
-																								index,
-																								1
-																							);
-																						newGroups.push(
-																							moved
-																						);
-																						onReorderGroups(
-																							newGroups
-																						);
-																					}}
-																					className="p-1.5 text-gray-500 hover:text-white"
-																					title="Move to Bottom"
-																				>
-																					<ChevronsDown
-																						size={
-																							14
-																						}
-																					/>
-																				</button>
-																			)}
-																		</div>
-																	)}
-																</div>
-															)}
-
-														{/* Edit/Delete Group Buttons */}
-														{onUpdateGroup && (
-															<>
-																<button
-																	onClick={() =>
-																		onUpdateGroup(
-																			group.id,
-																			{
-																				isHidden:
-																					!group.isHidden,
-																			}
-																		)
-																	}
-																	className={
-																		group.isHidden
-																			? "p-1.5 text-accent-cyan hover:text-accent-cyan/80"
-																			: "p-1.5 text-gray-500 hover:text-white"
-																	}
-																	title={
-																		group.isHidden
-																			? "Show Group"
-																			: "Hide Group"
-																	}
-																>
+																			{/* Actions (Outside) */}
+																			{/* Actions Moved Inline */}
+																		</>
+																	);
+																})()
+															) : (
+																// Display Mode
+																<>
 																	{group.isHidden ? (
 																		<EyeOff
 																			size={
 																				14
 																			}
+																			className="text-gray-600"
 																		/>
 																	) : (
-																		<Eye
+																		<FolderOpen
 																			size={
 																				14
 																			}
+																			className="text-accent-purple"
 																		/>
 																	)}
-																</button>
-																<button
-																	onClick={() => {
-																		setEditingGroupId(
-																			group.id
-																		);
-																		setTempEditData(
+																	<div className="flex items-center gap-2">
+																		<h3 className="text-sm font-bold text-white tracking-wide">
 																			{
-																				name: group.name,
-																				description:
-																					group.description,
+																				group.name
 																			}
-																		);
-																	}}
-																	className="p-1.5 text-gray-500 hover:text-accent-cyan disabled:opacity-30 disabled:hover:text-gray-500"
-																	title="Edit Group Name and Description"
-																	disabled={
-																		editingGroupId ===
-																		group.id
-																	}
-																>
-																	<Edit3
-																		size={
-																			14
-																		}
-																	/>
-																</button>
-															</>
-														)}
-														{onDeleteGroup && (
-															<button
-																onClick={() => {
-																	setConfirmState(
-																		{
-																			isOpen: true,
-																			title: `Delete ${group.name}?`,
-																			message:
-																				"Are you sure you want to delete this group? Colors assigned to this group will be returned to Global.",
-																			variant:
-																				"danger",
-																			confirmLabel:
-																				"Delete Group",
-																			onConfirm:
-																				() => {
-																					if (
-																						onDeleteGroup
-																					) {
-																						onDeleteGroup(
-																							group.id
-																						);
-																					}
-																					closeConfirm();
-																				},
-																		}
-																	);
-																}}
-																className="p-1.5 text-gray-500 hover:text-red-500"
-																title="Delete Group"
-															>
-																<Trash2
-																	size={14}
-																/>
-															</button>
-														)}
-														{onRemoveColors && (
-															<button
-																onClick={() => {
-																	setConfirmState(
-																		{
-																			isOpen: true,
-																			title: "Unfavorite All in Group",
-																			message:
-																				(
-																					<span className="text-gray-300">
-																						Are
-																						you
-																						sure
-																						you
-																						want
-																						to
-																						remove
-																						all
-																						colors
-																						assigned
-																						to{" "}
-																						<strong className="text-white">
-																							{
-																								group.name
-																							}
-																						</strong>{" "}
-																						from
-																						Favorites?
-																					</span>
-																				),
-																			onConfirm:
-																				() => {
-																					if (
-																						onRemoveColors
-																					) {
-																						onRemoveColors(
-																							groupItems.map(
-																								(
-																									c:
-																										| string
-																										| PresetColor
-																								) =>
-																									typeof c ===
-																									"string"
-																										? {
-																												name: c,
-																												value: c,
-																												id: c,
-																										  }
-																										: c
-																							) as PresetColor[]
-																						);
-																					}
-																					closeConfirm();
-																				},
-																			variant:
-																				"danger",
-																		}
-																	);
-																}}
-																className="p-1.5 rounded-full transition-colors hover:bg-white/10 text-gray-500 hover:text-red-400 group-btn-heart disabled:opacity-30 disabled:hover:text-gray-500"
-																title={
-																	groupItems.length ===
-																	0
-																		? "No Colors to Remove"
-																		: "Unfavorite All in Group"
-																}
-																disabled={
-																	groupItems.length ===
-																	0
-																}
-															>
-																<Heart
-																	size={14}
-																	className={
-																		groupItems.length >
-																		0
-																			? "fill-red-500 text-red-500"
-																			: ""
-																	}
-																/>
-															</button>
-														)}
-													</div>
-												</div>
-												{editingGroupId !== group.id &&
-													group.description && (
-														<p className="text-xs text-white/80 leading-relaxed border-b border-glass-stroke pb-2">
-															{group.description}
-														</p>
-													)}
-											</div>
-
-											{!group.isHidden && (
-												<div
-													className={`grid gap-3 transition-all duration-300 ${densityClass}`}
-													data-organize-dropzone={
-														isPointerOrganizeEnabled
-															? "1"
-															: undefined
-													}
-													data-organize-group={
-														isPointerOrganizeEnabled
-															? group.id
-															: undefined
-													}
-												>
-													{groupItems.map(
-														(
-															colorItem:
-																| string
-																| PresetColor,
-															idx: number
-														) => {
-															const hexValue =
-																typeof colorItem ===
-																"string"
-																	? colorItem
-																	: colorItem.value;
-															const baseLabel =
-																typeof colorItem ===
-																"string"
-																	? hexValue.toUpperCase()
-																	: colorItem.name;
-															const finalName =
-																typeof colorItem ===
-																"string"
-																	? "Custom Color"
-																	: colorItem.name;
-															const colorObject: PresetColor =
-																typeof colorItem ===
-																"string"
-																	? {
-																			name: baseLabel,
-																			value: hexValue,
-																	  }
-																	: colorItem;
-
-															return (
-																<SmartColorCard
-																	key={`${hexValue}-${idx}`}
-																	color={
-																		hexValue
-																	}
-																	label={
-																		finalName
-																	}
-																	name={
-																		finalName
-																	}
-																	isFavorite={
-																		true
-																	}
-																	draggable={
-																		isPointerOrganizeEnabled
-																	}
-																	usePointerDnD={
-																		isPointerOrganizeEnabled
-																	}
-																	organizeDnd={{
-																		groupId:
-																			group.id,
-																		id: hexValue,
-																	}}
-																	onPointerDown={
-																		isPointerOrganizeEnabled
-																			? (
-																					e
-																			  ) =>
-																					startPointerOrganizeDrag(
-																						e,
-																						hexValue,
-																						group.id,
-																						finalName
-																					)
-																			: undefined
-																	}
-																	onClickCapture={(
-																		e
-																	) => {
-																		if (
-																			isPointerDraggingRef.current
-																		) {
-																			e.preventDefault();
-																			e.stopPropagation();
-																		}
-																	}}
-																	onMoveRequest={() =>
-																		setColorToMove(
-																			{
-																				value: hexValue,
-																				groupId:
-																					group.id,
-																			}
-																		)
-																	}
-																	onClick={() => {
-																		onLoadColor(
-																			hexValue
-																		);
-																		if (
-																			onInspectColor
-																		)
-																			onInspectColor(
-																				colorObject
-																			);
-																	}}
-																	onToggleFavorite={async () => {
-																		const res =
-																			await onToggleFavorite(
-																				hexValue,
-																				colorObject
-																			);
-																		if (
-																			res &&
-																			res.action ===
-																				"removed"
-																		) {
-																			toast.standard(
-																				<>
-																					Removed{" "}
-																					<span className="text-accent-cyan">
-																						{(
-																							res.color as PresetColor
-																						)
-																							.name ||
-																							hexValue}
-																					</span>{" "}
-																					from
-																					favorites
-																				</>
-																			);
-																		}
-																		if (
-																			res &&
-																			res.action ===
-																				"added" &&
+																		</h3>
+																		<span className="text-xs text-gray-500 font-mono ml-1">
 																			(
-																				res.color as PresetColor
+																			{
+																				groupItems.length
+																			}
 																			)
-																				.isAutoRenamed
-																		) {
-																			toast.standard(
-																				<>
-																					Saved
-																					as{" "}
-																					<span className="text-accent-cyan">
-																						{
-																							(
-																								res.color as PresetColor
-																							)
-																								.name
-																						}
-																					</span>
-																				</>
-																			);
-																		}
-																	}}
-																/>
-															);
-														}
-													)}
-												</div>
-											)}
+																		</span>
+																	</div>
+																</>
+															)}
+														</div>
 
-											{/* Empty State Drop Zone */}
-											{groupItems.length === 0 &&
-												isEditingLibrary && (
-													<div
-														className="border-2 border-dashed border-white/10 rounded-lg p-6 flex flex-col items-center justify-center text-gray-500 gap-2 bg-black/5 relative z-10 transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan/70"
-														data-organize-dropzone={
-															isPointerOrganizeEnabled
-																? "1"
-																: undefined
-														}
-														data-organize-group={
-															isPointerOrganizeEnabled
-																? group.id
-																: undefined
-														}
-													>
-														<FolderPlus
-															size={24}
-															className="opacity-50"
-														/>
-														<span className="text-xs font-mono uppercase tracking-wider">
-															Drop Colors Here
-														</span>
-													</div>
-												)}
-										</div>
-									);
-								}
-							)}
-						</div>
-					)}
-					{/* Move Color Modal/Menu */}
-					{colorToMove && (
-						<div
-							role="dialog"
-							aria-modal="true"
-							aria-label="Move color dialog"
-							className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
-							onClick={() => setColorToMove(null)}
-							onKeyDown={(e) => {
-								if (e.key === "Escape") setColorToMove(null);
-							}}
-						>
-							<div
-								className="bg-bg-raised border border-glass-stroke rounded-xl shadow-2xl p-4 w-full max-w-xs space-y-4"
-								onClick={(e) => e.stopPropagation()}
-							>
-								<div className="flex items-center justify-between border-b border-glass-stroke pb-2">
-									<h4 className="text-sm font-brand text-white">
-										Move Color
-									</h4>
-									<button
-										onClick={() => setColorToMove(null)}
-										className="text-gray-500 hover:text-white"
-										title="Close"
-										aria-label="Close"
-									>
-										<X size={14} />
-									</button>
-								</div>
-
-								<div className="space-y-1 max-h-[300px] overflow-y-auto custom-scrollbar">
-									<div className="text-[10px] uppercase font-mono text-gray-500 mb-1 px-2">
-										Available Groups
-									</div>
-									<button
-										disabled={colorToMove?.groupId === null}
-										onClick={() => {
-											if (onMoveColor && colorToMove)
-												onMoveColor(
-													colorToMove.value,
-													null
-												); // Move to Global
-											setColorToMove(null);
-										}}
-										className={`w-full text-left px-3 py-2 rounded-md text-xs flex items-center justify-between group ${
-											colorToMove?.groupId === null
-												? "opacity-30 text-gray-500"
-												: "text-gray-300 hover:bg-white/5 hover:text-white"
-										}`}
-									>
-										<span className="flex items-center gap-2">
-											<Globe
-												size={12}
-												className="text-accent-cyan"
-											/>
-											Global Favorites
-										</span>
-										{colorToMove?.groupId === null && (
-											<span className="text-[9px] opacity-50 uppercase tracking-wider">
-												Current
-											</span>
-										)}
-									</button>
-									{(library.colorGroups || []).map(
-										(g: ColorGroup) => (
-											<button
-												key={g.id}
-												disabled={
-													colorToMove?.groupId ===
-													g.id
-												}
-												onClick={() => {
-													if (onMoveColor)
-														onMoveColor(
-															colorToMove.value,
-															g.id
-														);
-													setColorToMove(null);
-												}}
-												className={`w-full text-left px-3 py-2 rounded-md text-xs flex items-center gap-2 truncate ${
-													colorToMove?.groupId ===
-													g.id
-														? "opacity-30 text-gray-500"
-														: "text-gray-300 hover:bg-white/5 hover:text-white"
-												}`}
-											>
-												<FolderOpen
-													size={12}
-													className="text-accent-purple shrink-0"
-												/>
-												<span className="truncate">
-													{g.name}
-												</span>
-												{colorToMove?.groupId ===
-													g.id && (
-													<span className="text-[9px] opacity-50 ml-auto uppercase tracking-wider">
-														Current
-													</span>
-												)}
-											</button>
-										)
-									)}
-								</div>
-							</div>
-						</div>
-					)}
-
-					{/* Colors: Presets View */}
-					{view === "colors" && activeSubTab === "presets" && (
-						<div className="space-y-8 pt-4">
-							{!PRESET_LIBRARIES ||
-							PRESET_LIBRARIES.length === 0 ? (
-								<p className="text-gray-500 italic">
-									No preset libraries found.
-								</p>
-							) : (
-								(() => {
-									const hiddenLibraries =
-										colorPresetCustom.hiddenLibraries || {};
-									const hiddenItems =
-										colorPresetCustom.hiddenItems || {};
-
-									const baseLibraryNames =
-										PRESET_LIBRARIES.map((p) => p.name);
-
-									const orderedLibraryNames =
-										sortOption === "custom"
-											? normalizeOrder(
-													baseLibraryNames,
-													colorPresetCustom.libraryOrder
-											  )
-											: baseLibraryNames;
-
-									const libraryByName = new Map(
-										PRESET_LIBRARIES.map((p) => [p.name, p])
-									);
-
-									const orderedLibraries = orderedLibraryNames
-										.map((name) => libraryByName.get(name))
-										.filter(
-											Boolean
-										) as typeof PRESET_LIBRARIES;
-
-									const visibleLibraries =
-										sortOption === "custom" &&
-										!isEditingPresets
-											? orderedLibraries.filter(
-													(p) =>
-														!hiddenLibraries[p.name]
-											  )
-											: orderedLibraries;
-
-									return visibleLibraries.map(
-										(preset, libraryIndex) => {
-											const isLibraryHidden = Boolean(
-												hiddenLibraries[preset.name]
-											);
-
-											const isFullyFavorited =
-												preset.colors.every((c) =>
-													isFavorite(c.value)
-												);
-
-											// Determine which colors to show & in what order
-											let sortedPresetColors = [
-												...preset.colors,
-											];
-
-											const byName = (
-												a: PresetColor,
-												b: PresetColor
-											) => a.name.localeCompare(b.name);
-
-											if (sortOption === "name") {
-												sortedPresetColors.sort(
-													(a, b) =>
-														a.name.localeCompare(
-															b.name
-														)
-												);
-											} else if (
-												sortOption === "sat-asc"
-											) {
-												sortedPresetColors.sort(
-													(a, b) => {
-														const d =
-															colord(
-																a.value
-															).toHsl().s -
-															colord(
-																b.value
-															).toHsl().s;
-														return d !== 0
-															? d
-															: byName(a, b);
-													}
-												);
-											} else if (
-												sortOption === "shade-asc"
-											) {
-												sortedPresetColors.sort(
-													(a, b) => {
-														const d =
-															colord(
-																a.value
-															).toHsl().l -
-															colord(
-																b.value
-															).toHsl().l;
-														return d !== 0
-															? d
-															: byName(a, b);
-													}
-												);
-											}
-
-											if (
-												sortOption === "custom" &&
-												!isEditingPresets
-											) {
-												sortedPresetColors =
-													sortedPresetColors.filter(
-														(c) =>
-															!hiddenItems[
-																`${preset.name}::${c.value}`
-															]
-													);
-											}
-
-											return (
-												<div
-													key={preset.name}
-													className={`space-y-4 ${
-														sortOption ===
-															"custom" &&
-														isEditingPresets &&
-														isLibraryHidden
-															? "opacity-50"
-															: ""
-													}`}
-												>
-													<div className="space-y-1">
-														<div className="flex items-center justify-between group/library">
-															<div className="flex items-center gap-2">
-																{sortOption ===
-																	"custom" &&
-																isEditingPresets &&
-																isLibraryHidden ? (
-																	<EyeOff
-																		size={
-																			14
-																		}
-																		className="text-gray-600"
-																	/>
-																) : (
-																	<Book
-																		size={
-																			14
-																		}
-																		className="text-accent-cyan"
-																	/>
-																)}
-																<h4 className="text-sm font-bold text-white tracking-wide">
-																	{
-																		preset.name
-																	}
-																</h4>
-																<span className="text-xs text-gray-500 font-mono ml-1">
-																	(
-																	{
-																		preset
-																			.colors
-																			.length
-																	}
-																	)
-																</span>
-															</div>
-
-															<div className="flex items-center gap-1">
-																{sortOption ===
-																	"custom" &&
-																	isEditingPresets && (
-																		<>
-																			<div className="flex items-center gap-0.5 border-r border-glass-stroke mr-1 pr-1">
-																				{libraryIndex >
+														{/* Actions */}
+														<div className="flex items-center gap-1 transition-opacity">
+															{isEditingLibrary &&
+																onReorderGroups && (
+																	<div className="flex items-center gap-1 border-r border-glass-stroke mr-1 pr-1">
+																		{index >
+																			0 && (
+																			<div className="flex items-center">
+																				{/* Move to Top (Only show if more than 1 step from top) */}
+																				{index >
 																					1 && (
 																					<button
 																						onClick={() => {
-																							const base =
-																								PRESET_LIBRARIES.map(
-																									(
-																										p
-																									) =>
-																										p.name
+																							// Move to Top
+																							const newGroups =
+																								[
+																									...library.colorGroups,
+																								];
+																							const [
+																								moved,
+																							] =
+																								newGroups.splice(
+																									index,
+																									1
 																								);
-																							const current =
-																								normalizeOrder(
-																									base,
-																									colorPresetCustom.libraryOrder
-																								);
-																							const idx =
-																								current.indexOf(
-																									preset.name
-																								);
-																							if (
-																								idx >
-																								0
-																							) {
-																								const next =
-																									[
-																										...current,
-																									];
-																								const [
-																									moved,
-																								] =
-																									next.splice(
-																										idx,
-																										1
-																									);
-																								next.unshift(
-																									moved
-																								);
-																								updateColorPresetCustom(
-																									{
-																										libraryOrder:
-																											next,
-																									}
-																								);
-																							}
+																							newGroups.unshift(
+																								moved
+																							);
+																							onReorderGroups(
+																								newGroups
+																							);
 																						}}
 																						className="p-1.5 text-gray-500 hover:text-white"
 																						title="Move to Top"
@@ -2638,124 +1792,81 @@ export const ColorLibrary = ({
 																						/>
 																					</button>
 																				)}
-																				{libraryIndex >
-																					0 && (
-																					<button
-																						onClick={() => {
-																							const base =
-																								PRESET_LIBRARIES.map(
-																									(
-																										p
-																									) =>
-																										p.name
-																								);
-																							const current =
-																								normalizeOrder(
-																									base,
-																									colorPresetCustom.libraryOrder
-																								);
-																							const idx =
-																								current.indexOf(
-																									preset.name
-																								);
-																							if (
-																								idx >
-																								0
-																							) {
-																								const next =
-																									[
-																										...current,
-																									];
-																								[
-																									next[
-																										idx -
-																											1
-																									],
-																									next[
-																										idx
-																									],
-																								] =
-																									[
-																										next[
-																											idx
-																										],
-																										next[
-																											idx -
-																												1
-																										],
-																									];
-																								updateColorPresetCustom(
-																									{
-																										libraryOrder:
-																											next,
-																									}
-																								);
-																							}
-																						}}
-																						className="p-1.5 text-gray-500 hover:text-white"
-																						title="Move Up"
-																					>
-																						<ChevronUp
-																							size={
-																								14
-																							}
-																						/>
-																					</button>
-																				)}
+
 																				<button
 																					onClick={() => {
-																						const base =
-																							PRESET_LIBRARIES.map(
-																								(
-																									p
-																								) =>
-																									p.name
-																							);
-																						const current =
-																							normalizeOrder(
-																								base,
-																								colorPresetCustom.libraryOrder
-																							);
-																						const idx =
-																							current.indexOf(
-																								preset.name
-																							);
-																						if (
-																							idx !==
-																								-1 &&
-																							idx <
-																								current.length -
-																									1
-																						) {
-																							const next =
-																								[
-																									...current,
-																								];
+																						// Move Up - simplified using index
+																						const newGroups =
 																							[
-																								next[
-																									idx +
+																								...library.colorGroups,
+																							];
+																						[
+																							newGroups[
+																								index -
+																									1
+																							],
+																							newGroups[
+																								index
+																							],
+																						] =
+																							[
+																								newGroups[
+																									index
+																								],
+																								newGroups[
+																									index -
 																										1
 																								],
-																								next[
-																									idx
-																								],
-																							] =
-																								[
-																									next[
-																										idx
-																									],
-																									next[
-																										idx +
-																											1
-																									],
-																								];
-																							updateColorPresetCustom(
-																								{
-																									libraryOrder:
-																										next,
-																								}
-																							);
+																							];
+																						onReorderGroups(
+																							newGroups
+																						);
+																					}}
+																					className="p-1.5 text-gray-500 hover:text-white"
+																					title="Move Up"
+																				>
+																					<ChevronUp
+																						size={
+																							14
 																						}
+																					/>
+																				</button>
+																			</div>
+																		)}
+																		{index <
+																			library
+																				.colorGroups
+																				.length -
+																				1 && (
+																			<div className="flex items-center">
+																				<button
+																					onClick={() => {
+																						// Move Down - simplified using index
+																						const newGroups =
+																							[
+																								...library.colorGroups,
+																							];
+																						[
+																							newGroups[
+																								index +
+																									1
+																							],
+																							newGroups[
+																								index
+																							],
+																						] =
+																							[
+																								newGroups[
+																									index
+																								],
+																								newGroups[
+																									index +
+																										1
+																								],
+																							];
+																						onReorderGroups(
+																							newGroups
+																						);
 																					}}
 																					className="p-1.5 text-gray-500 hover:text-white"
 																					title="Move Down"
@@ -2766,55 +1877,32 @@ export const ColorLibrary = ({
 																						}
 																					/>
 																				</button>
-																				{libraryIndex <
-																					visibleLibraries.length -
+																				{/* Move to Bottom (Only show if more than 1 step from bottom) */}
+																				{index <
+																					library
+																						.colorGroups
+																						.length -
 																						2 && (
 																					<button
 																						onClick={() => {
-																							const base =
-																								PRESET_LIBRARIES.map(
-																									(
-																										p
-																									) =>
-																										p.name
+																							// Move to Bottom
+																							const newGroups =
+																								[
+																									...library.colorGroups,
+																								];
+																							const [
+																								moved,
+																							] =
+																								newGroups.splice(
+																									index,
+																									1
 																								);
-																							const current =
-																								normalizeOrder(
-																									base,
-																									colorPresetCustom.libraryOrder
-																								);
-																							const idx =
-																								current.indexOf(
-																									preset.name
-																								);
-																							if (
-																								idx !==
-																									-1 &&
-																								idx <
-																									current.length -
-																										1
-																							) {
-																								const next =
-																									[
-																										...current,
-																									];
-																								const [
-																									moved,
-																								] =
-																									next.splice(
-																										idx,
-																										1
-																									);
-																								next.push(
-																									moved
-																								);
-																								updateColorPresetCustom(
-																									{
-																										libraryOrder:
-																											next,
-																									}
-																								);
-																							}
+																							newGroups.push(
+																								moved
+																							);
+																							onReorderGroups(
+																								newGroups
+																							);
 																						}}
 																						className="p-1.5 text-gray-500 hover:text-white"
 																						title="Move to Bottom"
@@ -2827,99 +1915,261 @@ export const ColorLibrary = ({
 																					</button>
 																				)}
 																			</div>
+																		)}
+																	</div>
+																)}
 
-																			<button
-																				onClick={() => {
-																					updateColorPresetCustom(
-																						{
-																							hiddenLibraries:
-																								{
-																									...hiddenLibraries,
-																									[preset.name]:
-																										!isLibraryHidden,
-																								},
-																						}
-																					);
-																				}}
-																				className={
-																					isLibraryHidden
-																						? "p-1.5 text-accent-cyan hover:text-accent-cyan/80"
-																						: "p-1.5 text-gray-500 hover:text-white"
+															{/* Edit/Delete Group Buttons */}
+															{onUpdateGroup && (
+																<>
+																	<button
+																		onClick={() =>
+																			onUpdateGroup(
+																				group.id,
+																				{
+																					isHidden:
+																						!group.isHidden,
 																				}
-																				title={
-																					isLibraryHidden
-																						? "Show Library"
-																						: "Hide Library"
-																				}
-																			>
-																				{isLibraryHidden ? (
-																					<EyeOff
-																						size={
-																							14
-																						}
-																					/>
-																				) : (
-																					<Eye
-																						size={
-																							14
-																						}
-																					/>
-																				)}
-																			</button>
-																		</>
-																	)}
-
-																{onAddColors && (
-																	<HeartToggle
-																		isFavorite={
-																			isFullyFavorited
-																		}
-																		onToggle={() =>
-																			handleBulkFavorite(
-																				preset.colors
 																			)
 																		}
+																		className={
+																			group.isHidden
+																				? "p-1.5 text-accent-cyan hover:text-accent-cyan/80"
+																				: "p-1.5 text-gray-500 hover:text-white"
+																		}
+																		title={
+																			group.isHidden
+																				? "Show Group"
+																				: "Hide Group"
+																		}
+																	>
+																		{group.isHidden ? (
+																			<EyeOff
+																				size={
+																					14
+																				}
+																			/>
+																		) : (
+																			<Eye
+																				size={
+																					14
+																				}
+																			/>
+																		)}
+																	</button>
+																	<button
+																		onClick={() => {
+																			setEditingGroupId(
+																				group.id
+																			);
+																			setTempEditData(
+																				{
+																					name: group.name,
+																					description:
+																						group.description,
+																				}
+																			);
+																		}}
+																		className="p-1.5 text-gray-500 hover:text-accent-cyan disabled:opacity-30 disabled:hover:text-gray-500"
+																		title="Edit Group Name and Description"
+																		disabled={
+																			editingGroupId ===
+																			group.id
+																		}
+																	>
+																		<Edit3
+																			size={
+																				14
+																			}
+																		/>
+																	</button>
+																</>
+															)}
+															{onDeleteGroup && (
+																<button
+																	onClick={() => {
+																		setConfirmState(
+																			{
+																				isOpen: true,
+																				title: `Delete ${group.name}?`,
+																				message:
+																					"Are you sure you want to delete this group? Colors assigned to this group will be returned to Global.",
+																				variant:
+																					"danger",
+																				confirmLabel:
+																					"Delete Group",
+																				onConfirm:
+																					() => {
+																						if (
+																							onDeleteGroup
+																						) {
+																							onDeleteGroup(
+																								group.id
+																							);
+																						}
+																						closeConfirm();
+																					},
+																			}
+																		);
+																	}}
+																	className="p-1.5 text-gray-500 hover:text-red-500"
+																	title="Delete Group"
+																>
+																	<Trash2
+																		size={
+																			14
+																		}
+																	/>
+																</button>
+															)}
+															{onRemoveColors && (
+																<button
+																	onClick={() => {
+																		setConfirmState(
+																			{
+																				isOpen: true,
+																				title: "Unfavorite All in Group",
+																				message:
+																					(
+																						<span className="text-gray-300">
+																							Are
+																							you
+																							sure
+																							you
+																							want
+																							to
+																							remove
+																							all
+																							colors
+																							assigned
+																							to{" "}
+																							<strong className="text-white">
+																								{
+																									group.name
+																								}
+																							</strong>{" "}
+																							from
+																							Favorites?
+																						</span>
+																					),
+																				onConfirm:
+																					() => {
+																						if (
+																							onRemoveColors
+																						) {
+																							onRemoveColors(
+																								groupItems.map(
+																									(
+																										c:
+																											| string
+																											| PresetColor
+																									) =>
+																										typeof c ===
+																										"string"
+																											? {
+																													name: c,
+																													value: c,
+																													id: c,
+																											  }
+																											: c
+																								) as PresetColor[]
+																							);
+																						}
+																						closeConfirm();
+																					},
+																				variant:
+																					"danger",
+																			}
+																		);
+																	}}
+																	className="p-1.5 rounded-full transition-colors hover:bg-white/10 text-gray-500 hover:text-red-400 group-btn-heart disabled:opacity-30 disabled:hover:text-gray-500"
+																	title={
+																		groupItems.length ===
+																		0
+																			? "No Colors to Remove"
+																			: "Unfavorite All in Group"
+																	}
+																	disabled={
+																		groupItems.length ===
+																		0
+																	}
+																>
+																	<Heart
 																		size={
 																			14
 																		}
 																		className={
-																			isFullyFavorited
-																				? "scale-110"
-																				: "text-gray-500 hover:text-red-500 hover:scale-110"
+																			groupItems.length >
+																			0
+																				? "fill-red-500 text-red-500"
+																				: ""
 																		}
 																	/>
-																)}
-															</div>
+																</button>
+															)}
 														</div>
-														<p className="text-xs text-white/80 leading-relaxed border-b border-glass-stroke pb-2">
-															{preset.description}
-														</p>
 													</div>
+													{editingGroupId !==
+														group.id &&
+														group.description && (
+															<p className="text-xs text-white/80 leading-relaxed border-b border-glass-stroke pb-2">
+																{
+																	group.description
+																}
+															</p>
+														)}
+												</div>
 
+												{!group.isHidden && (
 													<div
 														className={`grid gap-3 transition-all duration-300 ${densityClass}`}
+														data-organize-dropzone={
+															isPointerOrganizeEnabled
+																? "1"
+																: undefined
+														}
+														data-organize-group={
+															isPointerOrganizeEnabled
+																? group.id
+																: undefined
+														}
 													>
-														{sortedPresetColors.map(
-															(c, idx) => {
+														{groupItems.map(
+															(
+																colorItem:
+																	| string
+																	| PresetColor,
+																idx: number
+															) => {
+																const hexValue =
+																	typeof colorItem ===
+																	"string"
+																		? colorItem
+																		: colorItem.value;
+																const baseLabel =
+																	typeof colorItem ===
+																	"string"
+																		? hexValue.toUpperCase()
+																		: colorItem.name;
 																const finalName =
-																	c.name;
-																const hideKey = `${preset.name}::${c.value}`;
-																const itemHidden =
-																	Boolean(
-																		hiddenItems[
-																			hideKey
-																		]
-																	);
-																const isCustomizing =
-																	sortOption ===
-																		"custom" &&
-																	isEditingPresets;
+																	typeof colorItem ===
+																	"string"
+																		? "Custom Color"
+																		: colorItem.name;
+																const colorObject: PresetColor =
+																	typeof colorItem ===
+																	"string"
+																		? {
+																				name: baseLabel,
+																				value: hexValue,
+																		  }
+																		: colorItem;
 
 																return (
 																	<SmartColorCard
-																		key={`${c.value}-${idx}`}
+																		key={`${hexValue}-${idx}`}
 																		color={
-																			c.value
+																			hexValue
 																		}
 																		label={
 																			finalName
@@ -2927,50 +2177,89 @@ export const ColorLibrary = ({
 																		name={
 																			finalName
 																		}
-																		isFavorite={isFavorite(
-																			c.value
-																		)}
-																		isCustomizing={
-																			isCustomizing
+																		isFavorite={
+																			true
 																		}
-																		isHidden={
-																			isCustomizing
-																				? itemHidden
-																				: false
+																		draggable={
+																			isPointerOrganizeEnabled
 																		}
-																		onToggleHidden={
-																			isCustomizing
-																				? () => {
-																						updateColorPresetCustom(
-																							{
-																								hiddenItems:
-																									{
-																										...hiddenItems,
-																										[hideKey]:
-																											!itemHidden,
-																									},
-																							}
-																						);
-																				  }
+																		usePointerDnD={
+																			isPointerOrganizeEnabled
+																		}
+																		organizeDnd={{
+																			groupId:
+																				group.id,
+																			id: hexValue,
+																		}}
+																		onPointerDown={
+																			isPointerOrganizeEnabled
+																				? (
+																						e
+																				  ) =>
+																						startPointerOrganizeDrag(
+																							e,
+																							hexValue,
+																							group.id,
+																							finalName
+																						)
 																				: undefined
+																		}
+																		onClickCapture={(
+																			e
+																		) => {
+																			if (
+																				isPointerDraggingRef.current
+																			) {
+																				e.preventDefault();
+																				e.stopPropagation();
+																			}
+																		}}
+																		onMoveRequest={() =>
+																			setColorToMove(
+																				{
+																					value: hexValue,
+																					groupId:
+																						group.id,
+																				}
+																			)
 																		}
 																		onClick={() => {
 																			onLoadColor(
-																				c.value
+																				hexValue
 																			);
 																			if (
 																				onInspectColor
 																			)
 																				onInspectColor(
-																					c
+																					colorObject
 																				);
 																		}}
 																		onToggleFavorite={async () => {
 																			const res =
 																				await onToggleFavorite(
-																					c.value,
-																					c
+																					hexValue,
+																					colorObject
 																				);
+																			if (
+																				res &&
+																				res.action ===
+																					"removed"
+																			) {
+																				toast.standard(
+																					<>
+																						Removed{" "}
+																						<span className="text-accent-cyan">
+																							{(
+																								res.color as PresetColor
+																							)
+																								.name ||
+																								hexValue}
+																						</span>{" "}
+																						from
+																						favorites
+																					</>
+																				);
+																			}
 																			if (
 																				res &&
 																				res.action ===
@@ -3001,14 +2290,774 @@ export const ColorLibrary = ({
 															}
 														)}
 													</div>
-												</div>
-											);
-										}
-									);
-								})()
-							)}
-						</div>
-					)}
+												)}
+
+												{/* Empty State Drop Zone */}
+												{groupItems.length === 0 &&
+													isEditingLibrary && (
+														<div
+															className="border-2 border-dashed border-white/10 rounded-lg p-6 flex flex-col items-center justify-center text-gray-500 gap-2 bg-black/5 relative z-10 transition-colors hover:border-accent-cyan/30 hover:text-accent-cyan/70"
+															data-organize-dropzone={
+																isPointerOrganizeEnabled
+																	? "1"
+																	: undefined
+															}
+															data-organize-group={
+																isPointerOrganizeEnabled
+																	? group.id
+																	: undefined
+															}
+														>
+															<FolderPlus
+																size={24}
+																className="opacity-50"
+															/>
+															<span className="text-xs font-mono uppercase tracking-wider">
+																Drop Colors Here
+															</span>
+														</div>
+													)}
+											</div>
+										);
+									}
+								)}
+							</motion.div>
+						)}
+						{/* Move Color Modal/Menu */}
+						{colorToMove && (
+							<div
+								role="dialog"
+								aria-modal="true"
+								aria-label="Move color dialog"
+								className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+								onClick={() => setColorToMove(null)}
+								onKeyDown={(e) => {
+									if (e.key === "Escape")
+										setColorToMove(null);
+								}}
+							>
+								<div
+									className="bg-bg-raised border border-glass-stroke rounded-xl shadow-2xl p-4 w-full max-w-xs space-y-4"
+									onClick={(e) => e.stopPropagation()}
+								>
+									<div className="flex items-center justify-between border-b border-glass-stroke pb-2">
+										<h4 className="text-sm font-brand text-white">
+											Move Color
+										</h4>
+										<button
+											onClick={() => setColorToMove(null)}
+											className="text-gray-500 hover:text-white"
+											title="Close"
+											aria-label="Close"
+										>
+											<X size={14} />
+										</button>
+									</div>
+
+									<div className="space-y-1 max-h-[300px] overflow-y-auto custom-scrollbar">
+										<div className="text-[10px] uppercase font-mono text-gray-500 mb-1 px-2">
+											Available Groups
+										</div>
+										<button
+											disabled={
+												colorToMove?.groupId === null
+											}
+											onClick={() => {
+												if (onMoveColor && colorToMove)
+													onMoveColor(
+														colorToMove.value,
+														null
+													); // Move to Global
+												setColorToMove(null);
+											}}
+											className={`w-full text-left px-3 py-2 rounded-md text-xs flex items-center justify-between group ${
+												colorToMove?.groupId === null
+													? "opacity-30 text-gray-500"
+													: "text-gray-300 hover:bg-white/5 hover:text-white"
+											}`}
+										>
+											<span className="flex items-center gap-2">
+												<Globe
+													size={12}
+													className="text-accent-cyan"
+												/>
+												Global Favorites
+											</span>
+											{colorToMove?.groupId === null && (
+												<span className="text-[9px] opacity-50 uppercase tracking-wider">
+													Current
+												</span>
+											)}
+										</button>
+										{(library.colorGroups || []).map(
+											(g: ColorGroup) => (
+												<button
+													key={g.id}
+													disabled={
+														colorToMove?.groupId ===
+														g.id
+													}
+													onClick={() => {
+														if (onMoveColor)
+															onMoveColor(
+																colorToMove.value,
+																g.id
+															);
+														setColorToMove(null);
+													}}
+													className={`w-full text-left px-3 py-2 rounded-md text-xs flex items-center gap-2 truncate ${
+														colorToMove?.groupId ===
+														g.id
+															? "opacity-30 text-gray-500"
+															: "text-gray-300 hover:bg-white/5 hover:text-white"
+													}`}
+												>
+													<FolderOpen
+														size={12}
+														className="text-accent-purple shrink-0"
+													/>
+													<span className="truncate">
+														{g.name}
+													</span>
+													{colorToMove?.groupId ===
+														g.id && (
+														<span className="text-[9px] opacity-50 ml-auto uppercase tracking-wider">
+															Current
+														</span>
+													)}
+												</button>
+											)
+										)}
+									</div>
+								</div>
+							</div>
+						)}
+
+						{/* Colors: Presets View */}
+						{view === "colors" && activeSubTab === "presets" && (
+							<motion.div
+								key="presets-list"
+								initial={{ opacity: 0, x: 10 }}
+								animate={{ opacity: 1, x: 0 }}
+								exit={{ opacity: 0, x: -10 }}
+								className="space-y-8 pt-4"
+							>
+								{!PRESET_LIBRARIES ||
+								PRESET_LIBRARIES.length === 0 ? (
+									<p className="text-gray-500 italic">
+										No preset libraries found.
+									</p>
+								) : (
+									(() => {
+										const hiddenLibraries =
+											colorPresetCustom.hiddenLibraries ||
+											{};
+										const hiddenItems =
+											colorPresetCustom.hiddenItems || {};
+
+										const baseLibraryNames =
+											PRESET_LIBRARIES.map((p) => p.name);
+
+										const orderedLibraryNames =
+											sortOption === "custom"
+												? normalizeOrder(
+														baseLibraryNames,
+														colorPresetCustom.libraryOrder
+												  )
+												: baseLibraryNames;
+
+										const libraryByName = new Map(
+											PRESET_LIBRARIES.map((p) => [
+												p.name,
+												p,
+											])
+										);
+
+										const orderedLibraries =
+											orderedLibraryNames
+												.map((name) =>
+													libraryByName.get(name)
+												)
+												.filter(
+													Boolean
+												) as typeof PRESET_LIBRARIES;
+
+										const visibleLibraries =
+											sortOption === "custom" &&
+											!isEditingPresets
+												? orderedLibraries.filter(
+														(p) =>
+															!hiddenLibraries[
+																p.name
+															]
+												  )
+												: orderedLibraries;
+
+										return visibleLibraries.map(
+											(preset, libraryIndex) => {
+												const isLibraryHidden = Boolean(
+													hiddenLibraries[preset.name]
+												);
+
+												const isFullyFavorited =
+													preset.colors.every((c) =>
+														isFavorite(c.value)
+													);
+
+												// Determine which colors to show & in what order
+												let sortedPresetColors = [
+													...preset.colors,
+												];
+
+												const byName = (
+													a: PresetColor,
+													b: PresetColor
+												) =>
+													a.name.localeCompare(
+														b.name
+													);
+
+												if (sortOption === "name") {
+													sortedPresetColors.sort(
+														(a, b) =>
+															a.name.localeCompare(
+																b.name
+															)
+													);
+												} else if (
+													sortOption === "sat-asc"
+												) {
+													sortedPresetColors.sort(
+														(a, b) => {
+															const d =
+																colord(
+																	a.value
+																).toHsl().s -
+																colord(
+																	b.value
+																).toHsl().s;
+															return d !== 0
+																? d
+																: byName(a, b);
+														}
+													);
+												} else if (
+													sortOption === "shade-asc"
+												) {
+													sortedPresetColors.sort(
+														(a, b) => {
+															const d =
+																colord(
+																	a.value
+																).toHsl().l -
+																colord(
+																	b.value
+																).toHsl().l;
+															return d !== 0
+																? d
+																: byName(a, b);
+														}
+													);
+												}
+
+												if (
+													sortOption === "custom" &&
+													!isEditingPresets
+												) {
+													sortedPresetColors =
+														sortedPresetColors.filter(
+															(c) =>
+																!hiddenItems[
+																	`${preset.name}::${c.value}`
+																]
+														);
+												}
+
+												return (
+													<div
+														key={preset.name}
+														className={`space-y-4 ${
+															sortOption ===
+																"custom" &&
+															isEditingPresets &&
+															isLibraryHidden
+																? "opacity-50"
+																: ""
+														}`}
+													>
+														<div className="space-y-1">
+															<div className="flex items-center justify-between group/library">
+																<div className="flex items-center gap-2">
+																	{sortOption ===
+																		"custom" &&
+																	isEditingPresets &&
+																	isLibraryHidden ? (
+																		<EyeOff
+																			size={
+																				14
+																			}
+																			className="text-gray-600"
+																		/>
+																	) : (
+																		<Book
+																			size={
+																				14
+																			}
+																			className="text-accent-cyan"
+																		/>
+																	)}
+																	<h4 className="text-sm font-bold text-white tracking-wide">
+																		{
+																			preset.name
+																		}
+																	</h4>
+																	<span className="text-xs text-gray-500 font-mono ml-1">
+																		(
+																		{
+																			preset
+																				.colors
+																				.length
+																		}
+																		)
+																	</span>
+																</div>
+
+																<div className="flex items-center gap-1">
+																	{sortOption ===
+																		"custom" &&
+																		isEditingPresets && (
+																			<>
+																				<div className="flex items-center gap-0.5 border-r border-glass-stroke mr-1 pr-1">
+																					{libraryIndex >
+																						1 && (
+																						<button
+																							onClick={() => {
+																								const base =
+																									PRESET_LIBRARIES.map(
+																										(
+																											p
+																										) =>
+																											p.name
+																									);
+																								const current =
+																									normalizeOrder(
+																										base,
+																										colorPresetCustom.libraryOrder
+																									);
+																								const idx =
+																									current.indexOf(
+																										preset.name
+																									);
+																								if (
+																									idx >
+																									0
+																								) {
+																									const next =
+																										[
+																											...current,
+																										];
+																									const [
+																										moved,
+																									] =
+																										next.splice(
+																											idx,
+																											1
+																										);
+																									next.unshift(
+																										moved
+																									);
+																									updateColorPresetCustom(
+																										{
+																											libraryOrder:
+																												next,
+																										}
+																									);
+																								}
+																							}}
+																							className="p-1.5 text-gray-500 hover:text-white"
+																							title="Move to Top"
+																						>
+																							<ChevronsUp
+																								size={
+																									14
+																								}
+																							/>
+																						</button>
+																					)}
+																					{libraryIndex >
+																						0 && (
+																						<button
+																							onClick={() => {
+																								const base =
+																									PRESET_LIBRARIES.map(
+																										(
+																											p
+																										) =>
+																											p.name
+																									);
+																								const current =
+																									normalizeOrder(
+																										base,
+																										colorPresetCustom.libraryOrder
+																									);
+																								const idx =
+																									current.indexOf(
+																										preset.name
+																									);
+																								if (
+																									idx >
+																									0
+																								) {
+																									const next =
+																										[
+																											...current,
+																										];
+																									[
+																										next[
+																											idx -
+																												1
+																										],
+																										next[
+																											idx
+																										],
+																									] =
+																										[
+																											next[
+																												idx
+																											],
+																											next[
+																												idx -
+																													1
+																											],
+																										];
+																									updateColorPresetCustom(
+																										{
+																											libraryOrder:
+																												next,
+																										}
+																									);
+																								}
+																							}}
+																							className="p-1.5 text-gray-500 hover:text-white"
+																							title="Move Up"
+																						>
+																							<ChevronUp
+																								size={
+																									14
+																								}
+																							/>
+																						</button>
+																					)}
+																					<button
+																						onClick={() => {
+																							const base =
+																								PRESET_LIBRARIES.map(
+																									(
+																										p
+																									) =>
+																										p.name
+																								);
+																							const current =
+																								normalizeOrder(
+																									base,
+																									colorPresetCustom.libraryOrder
+																								);
+																							const idx =
+																								current.indexOf(
+																									preset.name
+																								);
+																							if (
+																								idx !==
+																									-1 &&
+																								idx <
+																									current.length -
+																										1
+																							) {
+																								const next =
+																									[
+																										...current,
+																									];
+																								[
+																									next[
+																										idx +
+																											1
+																									],
+																									next[
+																										idx
+																									],
+																								] =
+																									[
+																										next[
+																											idx
+																										],
+																										next[
+																											idx +
+																												1
+																										],
+																									];
+																								updateColorPresetCustom(
+																									{
+																										libraryOrder:
+																											next,
+																									}
+																								);
+																							}
+																						}}
+																						className="p-1.5 text-gray-500 hover:text-white"
+																						title="Move Down"
+																					>
+																						<ChevronDown
+																							size={
+																								14
+																							}
+																						/>
+																					</button>
+																					{libraryIndex <
+																						visibleLibraries.length -
+																							2 && (
+																						<button
+																							onClick={() => {
+																								const base =
+																									PRESET_LIBRARIES.map(
+																										(
+																											p
+																										) =>
+																											p.name
+																									);
+																								const current =
+																									normalizeOrder(
+																										base,
+																										colorPresetCustom.libraryOrder
+																									);
+																								const idx =
+																									current.indexOf(
+																										preset.name
+																									);
+																								if (
+																									idx !==
+																										-1 &&
+																									idx <
+																										current.length -
+																											1
+																								) {
+																									const next =
+																										[
+																											...current,
+																										];
+																									const [
+																										moved,
+																									] =
+																										next.splice(
+																											idx,
+																											1
+																										);
+																									next.push(
+																										moved
+																									);
+																									updateColorPresetCustom(
+																										{
+																											libraryOrder:
+																												next,
+																										}
+																									);
+																								}
+																							}}
+																							className="p-1.5 text-gray-500 hover:text-white"
+																							title="Move to Bottom"
+																						>
+																							<ChevronsDown
+																								size={
+																									14
+																								}
+																							/>
+																						</button>
+																					)}
+																				</div>
+
+																				<button
+																					onClick={() => {
+																						updateColorPresetCustom(
+																							{
+																								hiddenLibraries:
+																									{
+																										...hiddenLibraries,
+																										[preset.name]:
+																											!isLibraryHidden,
+																									},
+																							}
+																						);
+																					}}
+																					className={
+																						isLibraryHidden
+																							? "p-1.5 text-accent-cyan hover:text-accent-cyan/80"
+																							: "p-1.5 text-gray-500 hover:text-white"
+																					}
+																					title={
+																						isLibraryHidden
+																							? "Show Library"
+																							: "Hide Library"
+																					}
+																				>
+																					{isLibraryHidden ? (
+																						<EyeOff
+																							size={
+																								14
+																							}
+																						/>
+																					) : (
+																						<Eye
+																							size={
+																								14
+																							}
+																						/>
+																					)}
+																				</button>
+																			</>
+																		)}
+
+																	{onAddColors && (
+																		<HeartToggle
+																			isFavorite={
+																				isFullyFavorited
+																			}
+																			onToggle={() =>
+																				handleBulkFavorite(
+																					preset.colors
+																				)
+																			}
+																			size={
+																				14
+																			}
+																			className={
+																				isFullyFavorited
+																					? "scale-110"
+																					: "text-gray-500 hover:text-red-500 hover:scale-110"
+																			}
+																		/>
+																	)}
+																</div>
+															</div>
+															<p className="text-xs text-white/80 leading-relaxed border-b border-glass-stroke pb-2">
+																{
+																	preset.description
+																}
+															</p>
+														</div>
+
+														<div
+															className={`grid gap-3 transition-all duration-300 ${densityClass}`}
+														>
+															{sortedPresetColors.map(
+																(c, idx) => {
+																	const finalName =
+																		c.name;
+																	const hideKey = `${preset.name}::${c.value}`;
+																	const itemHidden =
+																		Boolean(
+																			hiddenItems[
+																				hideKey
+																			]
+																		);
+																	const isCustomizing =
+																		sortOption ===
+																			"custom" &&
+																		isEditingPresets;
+
+																	return (
+																		<SmartColorCard
+																			key={`${c.value}-${idx}`}
+																			color={
+																				c.value
+																			}
+																			label={
+																				finalName
+																			}
+																			name={
+																				finalName
+																			}
+																			isFavorite={isFavorite(
+																				c.value
+																			)}
+																			isCustomizing={
+																				isCustomizing
+																			}
+																			isHidden={
+																				isCustomizing
+																					? itemHidden
+																					: false
+																			}
+																			onToggleHidden={
+																				isCustomizing
+																					? () => {
+																							updateColorPresetCustom(
+																								{
+																									hiddenItems:
+																										{
+																											...hiddenItems,
+																											[hideKey]:
+																												!itemHidden,
+																										},
+																								}
+																							);
+																					  }
+																					: undefined
+																			}
+																			onClick={() => {
+																				onLoadColor(
+																					c.value
+																				);
+																				if (
+																					onInspectColor
+																				)
+																					onInspectColor(
+																						c
+																					);
+																			}}
+																			onToggleFavorite={async () => {
+																				const res =
+																					await onToggleFavorite(
+																						c.value,
+																						c
+																					);
+																				if (
+																					res &&
+																					res.action ===
+																						"added" &&
+																					(
+																						res.color as PresetColor
+																					)
+																						.isAutoRenamed
+																				) {
+																					toast.standard(
+																						<>
+																							Saved
+																							as{" "}
+																							<span className="text-accent-cyan">
+																								{
+																									(
+																										res.color as PresetColor
+																									)
+																										.name
+																								}
+																							</span>
+																						</>
+																					);
+																				}
+																			}}
+																		/>
+																	);
+																}
+															)}
+														</div>
+													</div>
+												);
+											}
+										);
+									})()
+								)}
+							</motion.div>
+						)}
+					</AnimatePresence>
 				</div>
 			</div>
 			<ConfirmationModal

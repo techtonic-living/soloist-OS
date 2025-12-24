@@ -478,7 +478,7 @@ export const ExploreView = (props: ExploreViewProps) => {
 							animate={{ opacity: 1, y: 0 }}
 							exit={{ opacity: 0, y: -10 }}
 							transition={{ duration: 0.2 }}
-							className="h-full p-6"
+							className="h-full p-6 overflow-y-auto custom-scrollbar"
 						>
 							<ColorLibrary
 								view="colors"
@@ -533,7 +533,7 @@ export const ExploreView = (props: ExploreViewProps) => {
 							animate={{ opacity: 1, y: 0 }}
 							exit={{ opacity: 0, y: -10 }}
 							transition={{ duration: 0.2 }}
-							className="h-full p-6"
+							className="h-full p-6 overflow-y-auto custom-scrollbar"
 						>
 							<PaletteLibrary
 								library={
@@ -594,7 +594,7 @@ export const ExploreView = (props: ExploreViewProps) => {
 							animate={{ opacity: 1, y: 0 }}
 							exit={{ opacity: 0, y: -10 }}
 							transition={{ duration: 0.2 }}
-							className="h-full"
+							className="h-full p-6 overflow-y-auto custom-scrollbar"
 						>
 							<ColorCreator
 								seedColor={seedColor}
@@ -619,7 +619,7 @@ export const ExploreView = (props: ExploreViewProps) => {
 							animate={{ opacity: 1, y: 0 }}
 							exit={{ opacity: 0, y: -10 }}
 							transition={{ duration: 0.2 }}
-							className="h-full p-6"
+							className="h-full p-6 overflow-y-auto custom-scrollbar"
 						>
 							<PaletteGenerator
 								onSavePalette={() =>

@@ -234,8 +234,8 @@ export const SoloistProvider = ({ children }: { children: ReactNode }) => {
 		zoom: 50,
 		rotate: 0,
 		activeImage: null,
-		motionDensity: 50,
-		motionSize: 50,
+		motionDensity: 100,
+		motionSize: 100,
 		pickerMode: "wheel", // Default to Color Wheel
 	});
 

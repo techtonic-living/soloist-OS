@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
 	FolderOpen,
 	Book,
@@ -33,6 +33,7 @@ import {
 	createOrganizeDragGhost,
 	positionOrganizeDragGhost,
 } from "../../utils/organizeDnD";
+import { PopoverMenu } from "../common/PopoverMenu";
 
 interface PaletteLibraryProps {
 	library: any;
@@ -90,14 +91,16 @@ export const PaletteLibrary = ({
 	}, [activeSubTab, librarySortOption]);
 
 	const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
-	const sortMenuRef = useRef<HTMLDivElement | null>(null);
+	const sortButtonRef = useRef<HTMLButtonElement | null>(null);
 
-	const getPaletteColorCount = (p: any) =>
-		Array.isArray(p?.colors) ? p.colors.length : 0;
+	const getPaletteColorCount = useCallback(
+		(p: any) => (Array.isArray(p?.colors) ? p.colors.length : 0),
+		[]
+	);
 
 	// Average saturation (0..1) across all colors in the palette.
 	// Uses HSL saturation as a pragmatic proxy for "intensity".
-	const getPaletteAvgSaturation = (p: any) => {
+	const getPaletteAvgSaturation = useCallback((p: any) => {
 		const colors: unknown = p?.colors;
 		if (!Array.isArray(colors) || colors.length === 0) return 0;
 		let sum = 0;
@@ -110,7 +113,7 @@ export const PaletteLibrary = ({
 			n += 1;
 		}
 		return n > 0 ? sum / n : 0;
-	};
+	}, []);
 
 	const [density, setDensity] = useState(
 		uiPreferences?.paletteGridDensity?.[
@@ -219,7 +222,7 @@ export const PaletteLibrary = ({
 				// Move-only mode: do nothing when dropping within the same collection.
 				if (!canReorderInCurrentSort) {
 					pointerDragRef.current = null;
-					window.setTimeout(() => {
+					globalThis.setTimeout(() => {
 						isPointerDraggingRef.current = false;
 					}, 0);
 					return;
@@ -233,14 +236,12 @@ export const PaletteLibrary = ({
 					);
 
 					const targetId = st.target.id;
-					const targetIdx =
-						targetId !== undefined
-							? allPalettes.findIndex(
-									(p: any) =>
-										String(p?.name ?? "") ===
-										String(targetId)
-							  )
-							: allPalettes.length - 1;
+					const targetIdx = targetId
+						? allPalettes.findIndex(
+								(p: any) =>
+									String(p?.name ?? "") === String(targetId)
+						  )
+						: allPalettes.length - 1;
 
 					if (
 						sourceIdx !== -1 &&
@@ -264,12 +265,11 @@ export const PaletteLibrary = ({
 					);
 
 					const targetId = st.target.id;
-					const targetIndex =
-						targetId !== undefined
-							? ids.findIndex(
-									(pid) => String(pid) === String(targetId)
-							  )
-							: ids.length - 1;
+					const targetIndex = targetId
+						? ids.findIndex(
+								(pid) => String(pid) === String(targetId)
+						  )
+						: ids.length - 1;
 
 					if (
 						sourceIndex !== -1 &&
@@ -283,14 +283,12 @@ export const PaletteLibrary = ({
 				}
 			} else {
 				// Cross-group move
-				if (onMovePalette) {
-					onMovePalette(st.sourceName, targetGroupId);
-				}
+				onMovePalette?.(st.sourceName, targetGroupId);
 			}
 		}
 
 		pointerDragRef.current = null;
-		window.setTimeout(() => {
+		globalThis.setTimeout(() => {
 			isPointerDraggingRef.current = false;
 		}, 0);
 	};
@@ -383,8 +381,9 @@ export const PaletteLibrary = ({
 				const targetSelector = canReorderInCurrentSort
 					? "[data-organize-drop='1'], [data-organize-dropzone='1']"
 					: "[data-organize-dropzone='1']";
-				const targetEl = (under?.closest?.(targetSelector) ||
-					null) as HTMLElement | null;
+				const targetElRaw = under?.closest?.(targetSelector) ?? null;
+				const targetEl =
+					targetElRaw instanceof HTMLElement ? targetElRaw : null;
 
 				if (targetEl !== st.activeTargetEl) {
 					clearActiveTarget();
@@ -417,15 +416,15 @@ export const PaletteLibrary = ({
 		const onUpOrCancel = (ev: PointerEvent) => {
 			const st = pointerDragRef.current;
 			if (!st || st.pointerId !== ev.pointerId) return;
-			window.removeEventListener("pointermove", onMove);
-			window.removeEventListener("pointerup", onUpOrCancel);
-			window.removeEventListener("pointercancel", onUpOrCancel);
+			globalThis.removeEventListener("pointermove", onMove);
+			globalThis.removeEventListener("pointerup", onUpOrCancel);
+			globalThis.removeEventListener("pointercancel", onUpOrCancel);
 			endPointerDrag();
 		};
 
-		window.addEventListener("pointermove", onMove);
-		window.addEventListener("pointerup", onUpOrCancel);
-		window.addEventListener("pointercancel", onUpOrCancel);
+		globalThis.addEventListener("pointermove", onMove);
+		globalThis.addEventListener("pointerup", onUpOrCancel);
+		globalThis.addEventListener("pointercancel", onUpOrCancel);
 	};
 
 	// Organize is only supported in Favorites.
@@ -440,36 +439,7 @@ export const PaletteLibrary = ({
 		setIsSortMenuOpen(false);
 	}, [activeSubTab]);
 
-	// Close sort menu on outside-click / Escape (polish parity with Color Library)
-	useEffect(() => {
-		if (!isSortMenuOpen) return;
-
-		const onPointerDown = (event: MouseEvent | TouchEvent) => {
-			const target = event.target as Node | null;
-			if (!target) return;
-			const el = sortMenuRef.current;
-			if (el && !el.contains(target)) {
-				setIsSortMenuOpen(false);
-			}
-		};
-
-		const onKeyDown = (event: KeyboardEvent) => {
-			if (event.key === "Escape") {
-				setIsSortMenuOpen(false);
-			}
-		};
-
-		document.addEventListener("mousedown", onPointerDown);
-		document.addEventListener("touchstart", onPointerDown, {
-			passive: true,
-		});
-		document.addEventListener("keydown", onKeyDown);
-		return () => {
-			document.removeEventListener("mousedown", onPointerDown);
-			document.removeEventListener("touchstart", onPointerDown);
-			document.removeEventListener("keydown", onKeyDown);
-		};
-	}, [isSortMenuOpen]);
+	// Outside-click / Escape handling lives in PopoverMenu.
 
 	// Derived state for validation
 	const isDuplicate = (library.paletteGroups || []).some(
@@ -498,16 +468,11 @@ export const PaletteLibrary = ({
 
 	// Sync Density with Preferences
 	useEffect(() => {
-		if (uiPreferences && uiPreferences.paletteGridDensity) {
-			const savedDensity =
-				activeSubTab === "favorites"
-					? uiPreferences.paletteGridDensity.favorites
-					: uiPreferences.paletteGridDensity.presets;
-
-			if (savedDensity) {
-				setDensity(savedDensity);
-			}
-		}
+		const savedDensity =
+			activeSubTab === "favorites"
+				? uiPreferences?.paletteGridDensity?.favorites
+				: uiPreferences?.paletteGridDensity?.presets;
+		if (typeof savedDensity === "number") setDensity(savedDensity);
 	}, [activeSubTab, uiPreferences]);
 
 	const commitDensityChange = (newDensity: number) => {
@@ -532,7 +497,7 @@ export const PaletteLibrary = ({
 		if (!onUpdateUiPreferences) return;
 		onUpdateUiPreferences({
 			palettePresetCustom: {
-				...(uiPreferences?.palettePresetCustom || {}),
+				...uiPreferences?.palettePresetCustom,
 				...updates,
 			},
 		} as Partial<UiPreferences>);
@@ -598,21 +563,20 @@ export const PaletteLibrary = ({
 
 			const byColorsAsc = (a: any, b: any) => {
 				const d = getPaletteColorCount(a) - getPaletteColorCount(b);
-				return d !== 0 ? d : byName(a, b);
+				if (d === 0) return byName(a, b);
+				return d;
 			};
 
 			const bySatAsc = (a: any, b: any) => {
 				const d =
 					getPaletteAvgSaturation(a) - getPaletteAvgSaturation(b);
-				return d !== 0 ? d : byName(a, b);
+				if (d === 0) return byName(a, b);
+				return d;
 			};
 
-			const compare =
-				sortOption === "name"
-					? byName
-					: sortOption === "colors-asc"
-					? byColorsAsc
-					: bySatAsc;
+			let compare = bySatAsc;
+			if (sortOption === "name") compare = byName;
+			else if (sortOption === "colors-asc") compare = byColorsAsc;
 
 			const sortedUnassigned = [...unassigned].sort(compare);
 			const sortedGrouped: Record<string, any[]> = {};
@@ -663,13 +627,43 @@ export const PaletteLibrary = ({
 		.map((id) => presetLibraryById.get(id))
 		.filter(Boolean);
 
+	const sortOptionLabel = (opt: string) => {
+		switch (opt) {
+			case "custom":
+				return "Custom";
+			case "name":
+				return "Name (A-Z)";
+			case "sat-asc":
+				return "SAT (L-H)";
+			default:
+				return "SIZE (S-L)";
+		}
+	};
+
+	const currentSortLabel =
+		activeSubTab === "favorites"
+			? sortOptionLabel(sortOption)
+			: sortOptionLabel(librarySortOption);
+
+	let globalSectionClassName =
+		"flex flex-col gap-3 transition-all duration-300 -mx-4 px-4 pt-4 pb-4 border-b border-transparent rounded-none";
+	if (isGlobalAnchored) {
+		globalSectionClassName =
+			"flex flex-col gap-3 transition-all duration-300 -mx-4 px-4 pt-4 pb-4 border-b sticky top-0 z-20 bg-bg-void border-glass-stroke shadow-2xl rounded-none";
+	} else if (isEditingLibrary) {
+		globalSectionClassName =
+			"flex flex-col gap-3 transition-all duration-300 p-4 bg-accent-cyan/5 border border-accent-cyan/30 border-dashed rounded-xl relative overflow-hidden mx-0";
+	}
+
+	const canAnchorGlobal = isAtScrollTop;
+
 	return (
 		<div className="h-full flex flex-col overflow-hidden">
 			{/* Sub-Navigation */}
 			{/* Sub-Navigation Standardized Header */}
-			<div className="flex flex-col gap-4 mb-6 border-b border-glass-stroke px-2">
-				<div className="flex items-center justify-between">
-					<div className="flex gap-4">
+			<div className="flex flex-col gap-2 mb-6 border-b border-glass-stroke px-2">
+				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+					<div className="flex flex-wrap gap-4 min-w-0">
 						<button
 							onClick={() => setActiveSubTab("favorites")}
 							className={`pb-2 text-xs font-mono tracking-wider transition-colors relative ${
@@ -698,15 +692,12 @@ export const PaletteLibrary = ({
 						</button>
 					</div>
 
-					<div className="flex items-center gap-4">
+					<div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 w-full sm:w-auto sm:pb-2">
 						{/* Sort + Organize group */}
-						<div className="flex items-center gap-2 pb-2 border-l border-white/10 pl-4 ml-2">
+						<div className="flex flex-wrap items-center gap-2 sm:border-l sm:border-white/10 sm:pl-4 sm:ml-2">
 							{/* Organize (always visible; disabled in Libraries unless sort is Custom) */}
 							<div className="flex items-center py-1">
 								{(() => {
-									// No longer disabled if not custom sort
-									const isDisabled = false;
-
 									const isActive =
 										activeSubTab === "favorites"
 											? isEditingLibrary
@@ -717,25 +708,38 @@ export const PaletteLibrary = ({
 											? sortOption === "custom"
 											: librarySortOption === "custom";
 
-									const label =
-										activeSubTab === "favorites"
-											? isEditingLibrary
-												? "Done Organizing"
-												: isCustomSort
-												? "Organize Palettes and Groups"
-												: "Organize Palettes and Groups (Move only)"
-											: isEditingPresetLibraries
-											? "Done Customizing"
-											: isCustomSort
-											? "Customize Libraries"
-											: "Switch to Custom Order to Organize";
+									let label = "";
+									if (activeSubTab === "favorites") {
+										if (isEditingLibrary)
+											label = "Done Organizing";
+										else if (isCustomSort)
+											label =
+												"Organize Palettes and Groups";
+										else
+											label =
+												"Organize Palettes and Groups (Move only)";
+									} else if (isEditingPresetLibraries) {
+										label = "Done Customizing";
+									} else if (isCustomSort) {
+										label = "Customize Libraries";
+									} else {
+										label =
+											"Switch to Custom Order to Organize";
+									}
+
+									let buttonClassName =
+										"p-1.5 rounded-full transition-all ";
+									if (isActive) {
+										buttonClassName +=
+											"text-accent-cyan bg-accent-cyan/10 ring-1 ring-accent-cyan/30";
+									} else {
+										buttonClassName +=
+											"text-gray-500 hover:text-white hover:bg-white/10";
+									}
 
 									return (
 										<button
-											disabled={isDisabled}
 											onClick={() => {
-												if (isDisabled) return;
-
 												if (!isCustomSort) {
 													if (
 														activeSubTab ===
@@ -762,13 +766,7 @@ export const PaletteLibrary = ({
 													);
 												}
 											}}
-											className={`p-1.5 rounded-full transition-all ${
-												isActive
-													? "text-accent-cyan bg-accent-cyan/10 ring-1 ring-accent-cyan/30"
-													: isDisabled
-													? "text-gray-600 opacity-40 cursor-default"
-													: "text-gray-500 hover:text-white hover:bg-white/10"
-											}`}
+											className={buttonClassName}
 											title={label}
 											aria-label={label}
 										>
@@ -782,153 +780,124 @@ export const PaletteLibrary = ({
 								})()}
 							</div>
 
-							<span className="text-[10px] text-gray-500 font-mono uppercase">
+							<span className="text-[10px] text-gray-500 font-mono uppercase hidden sm:inline">
 								Sort
 							</span>
-							<div className="relative" ref={sortMenuRef}>
+							<div className="relative">
 								<button
 									type="button"
+									ref={sortButtonRef}
 									onClick={() => setIsSortMenuOpen((v) => !v)}
-									className="w-28 appearance-none bg-black/20 border border-white/10 rounded px-2 py-0.5 text-[10px] text-gray-300 font-mono uppercase focus:outline-none focus:border-accent-cyan pr-6 hover:bg-white/5 transition-colors flex items-center gap-2"
+									className="w-24 sm:w-28 appearance-none bg-black/20 border border-white/10 rounded px-2 py-0.5 text-[10px] text-gray-300 font-mono uppercase focus:outline-none focus:border-accent-cyan pr-6 hover:bg-white/5 transition-colors flex items-center gap-2"
 									aria-label="Sort order"
 									aria-haspopup="menu"
 								>
-									{activeSubTab === "favorites"
-										? sortOption === "custom"
-											? "Custom"
-											: sortOption === "name"
-											? "Name (A-Z)"
-											: sortOption === "sat-asc"
-											? "SAT (L-H)"
-											: "SIZE (S-L)"
-										: librarySortOption === "custom"
-										? "Custom"
-										: librarySortOption === "name"
-										? "Name (A-Z)"
-										: librarySortOption === "sat-asc"
-										? "SAT (L-H)"
-										: "SIZE (S-L)"}
+									{currentSortLabel}
 								</button>
 
-								{isSortMenuOpen && (
-									<div className="absolute right-0 mt-1 bg-bg-raised border border-glass-stroke rounded shadow-monolith z-50 min-w-max">
-										{activeSubTab === "favorites" ? (
-											<>
-												<button
-													type="button"
-													onClick={() => {
-														setSortOption("custom");
-														setIsSortMenuOpen(
-															false
-														);
-													}}
-													className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 transition-colors"
-												>
-													Custom
-												</button>
-												<button
-													type="button"
-													onClick={() => {
-														setSortOption("name");
-														setIsSortMenuOpen(
-															false
-														);
-													}}
-													className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 transition-colors"
-												>
-													Name (A-Z)
-												</button>
-												<button
-													type="button"
-													onClick={() => {
-														setSortOption(
-															"sat-asc"
-														);
-														setIsSortMenuOpen(
-															false
-														);
-													}}
-													className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 transition-colors"
-												>
-													SAT (L-H)
-												</button>
-												<button
-													type="button"
-													onClick={() => {
-														setSortOption(
-															"colors-asc"
-														);
-														setIsSortMenuOpen(
-															false
-														);
-													}}
-													className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 transition-colors"
-												>
-													SIZE (S-L)
-												</button>
-											</>
-										) : (
-											<>
-												<button
-													type="button"
-													onClick={() => {
-														setLibrarySortOption(
-															"custom"
-														);
-														setIsSortMenuOpen(
-															false
-														);
-													}}
-													className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 transition-colors"
-												>
-													Custom
-												</button>
-												<button
-													type="button"
-													onClick={() => {
-														setLibrarySortOption(
-															"name"
-														);
-														setIsSortMenuOpen(
-															false
-														);
-													}}
-													className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 transition-colors"
-												>
-													Name (A-Z)
-												</button>
-												<button
-													type="button"
-													onClick={() => {
-														setLibrarySortOption(
-															"sat-asc"
-														);
-														setIsSortMenuOpen(
-															false
-														);
-													}}
-													className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 transition-colors"
-												>
-													SAT (L-H)
-												</button>
-												<button
-													type="button"
-													onClick={() => {
-														setLibrarySortOption(
-															"colors-asc"
-														);
-														setIsSortMenuOpen(
-															false
-														);
-													}}
-													className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 transition-colors"
-												>
-													SIZE (S-L)
-												</button>
-											</>
-										)}
-									</div>
-								)}
+								<PopoverMenu
+									open={isSortMenuOpen}
+									anchorRef={sortButtonRef}
+									onClose={() => setIsSortMenuOpen(false)}
+									align="end"
+									className="bg-bg-raised/95 border border-glass-stroke rounded-xl shadow-monolith z-[200] min-w-[220px] py-1 overflow-hidden backdrop-blur-xl"
+								>
+									{activeSubTab === "favorites" ? (
+										<>
+											<button
+												type="button"
+												onClick={() => {
+													setSortOption("custom");
+													setIsSortMenuOpen(false);
+												}}
+												className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 transition-colors"
+											>
+												Custom
+											</button>
+											<button
+												type="button"
+												onClick={() => {
+													setSortOption("name");
+													setIsSortMenuOpen(false);
+												}}
+												className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 transition-colors"
+											>
+												Name (A-Z)
+											</button>
+											<button
+												type="button"
+												onClick={() => {
+													setSortOption("sat-asc");
+													setIsSortMenuOpen(false);
+												}}
+												className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 transition-colors"
+											>
+												SAT (L-H)
+											</button>
+											<button
+												type="button"
+												onClick={() => {
+													setSortOption("colors-asc");
+													setIsSortMenuOpen(false);
+												}}
+												className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 transition-colors"
+											>
+												SIZE (S-L)
+											</button>
+										</>
+									) : (
+										<>
+											<button
+												type="button"
+												onClick={() => {
+													setLibrarySortOption(
+														"custom"
+													);
+													setIsSortMenuOpen(false);
+												}}
+												className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 transition-colors"
+											>
+												Custom
+											</button>
+											<button
+												type="button"
+												onClick={() => {
+													setLibrarySortOption(
+														"name"
+													);
+													setIsSortMenuOpen(false);
+												}}
+												className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 transition-colors"
+											>
+												Name (A-Z)
+											</button>
+											<button
+												type="button"
+												onClick={() => {
+													setLibrarySortOption(
+														"sat-asc"
+													);
+													setIsSortMenuOpen(false);
+												}}
+												className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 transition-colors"
+											>
+												SAT (L-H)
+											</button>
+											<button
+												type="button"
+												onClick={() => {
+													setLibrarySortOption(
+														"colors-asc"
+													);
+													setIsSortMenuOpen(false);
+												}}
+												className="block w-full text-left px-3 py-1.5 text-[10px] text-gray-300 font-mono uppercase hover:bg-white/10 transition-colors"
+											>
+												SIZE (S-L)
+											</button>
+										</>
+									)}
+								</PopoverMenu>
 
 								<div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
 									<svg
@@ -946,8 +915,8 @@ export const PaletteLibrary = ({
 						</div>
 
 						{/* Density Slider */}
-						<div className="flex items-center gap-2 pb-2">
-							<span className="text-[10px] text-gray-500 font-mono uppercase">
+						<div className="flex items-center gap-2">
+							<span className="text-[10px] text-gray-500 font-mono uppercase hidden sm:inline">
 								View
 							</span>
 							<label htmlFor="view-density" className="sr-only">
@@ -961,20 +930,28 @@ export const PaletteLibrary = ({
 								step="1"
 								value={density}
 								onChange={(e) =>
-									setDensity(parseInt(e.target.value))
+									setDensity(
+										Number.parseInt(e.target.value, 10)
+									)
 								}
 								onMouseUp={(e) =>
 									commitDensityChange(
-										parseInt(e.currentTarget.value)
+										Number.parseInt(
+											e.currentTarget.value,
+											10
+										)
 									)
 								}
 								onTouchEnd={(e) =>
 									commitDensityChange(
-										parseInt(e.currentTarget.value)
+										Number.parseInt(
+											e.currentTarget.value,
+											10
+										)
 									)
 								}
 								aria-label="View density"
-								className="w-20 accent-accent-cyan h-1 bg-white/20 rounded-full appearance-none cursor-pointer"
+								className="w-16 sm:w-20 accent-accent-cyan h-1 bg-white/20 rounded-full appearance-none cursor-pointer"
 							/>
 						</div>
 					</div>
@@ -984,7 +961,7 @@ export const PaletteLibrary = ({
 			<div
 				ref={scrollContainerRef}
 				onScroll={handleScroll}
-				className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar pr-2"
+				className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar scrollbar-gutter-stable pr-2"
 			>
 				<AnimatePresence mode="wait">
 					{activeSubTab === "favorites" ? (
@@ -1088,9 +1065,9 @@ export const PaletteLibrary = ({
 													disabled={!isValid}
 													onClick={handleCreate}
 													className={`text-xs px-3 py-1 rounded transition-colors ${
-														!isValid
-															? "bg-accent-cyan/5 text-accent-cyan/50 cursor-default"
-															: "bg-accent-cyan/20 text-accent-cyan hover:bg-accent-cyan/30"
+														isValid
+															? "bg-accent-cyan/20 text-accent-cyan hover:bg-accent-cyan/30"
+															: "bg-accent-cyan/5 text-accent-cyan/50 cursor-default"
 													}`}
 												>
 													Create
@@ -1102,13 +1079,7 @@ export const PaletteLibrary = ({
 
 							{/* --- Global (Unassigned) --- */}
 							<div
-								className={`flex flex-col gap-3 transition-all duration-300 ${
-									isGlobalAnchored
-										? "-mx-4 px-4 pt-4 pb-4 border-b sticky top-0 z-20 bg-bg-void border-glass-stroke shadow-2xl rounded-none"
-										: isEditingLibrary
-										? "p-4 bg-accent-cyan/5 border border-accent-cyan/30 border-dashed rounded-xl relative overflow-hidden mx-0"
-										: "-mx-4 px-4 pt-4 pb-4 border-b border-transparent rounded-none"
-								}`}
+								className={globalSectionClassName}
 								data-organize-dropzone={
 									isPointerOrganizeEnabled ? "1" : undefined
 								}
@@ -1147,15 +1118,15 @@ export const PaletteLibrary = ({
 														!isGlobalAnchored
 													)
 												}
-												disabled={!isAtScrollTop}
+												disabled={!canAnchorGlobal}
 												className={`p-1.5 rounded-full transition-colors ${
 													isGlobalAnchored
 														? "text-accent-cyan bg-accent-cyan/10"
 														: "text-gray-500 hover:text-white"
 												} ${
-													!isAtScrollTop
-														? "opacity-20 cursor-default"
-														: ""
+													canAnchorGlobal
+														? ""
+														: "opacity-20 cursor-default"
 												}`}
 												title={
 													isGlobalAnchored
@@ -1562,7 +1533,8 @@ export const PaletteLibrary = ({
 																				</button>
 																				<button
 																					disabled={
-																						!isValid
+																						isValid ===
+																						false
 																					}
 																					onClick={() => {
 																						if (
@@ -1579,17 +1551,21 @@ export const PaletteLibrary = ({
 																						}
 																					}}
 																					className={`p-1.5 rounded-full text-white transition-colors backdrop-blur-sm ${
-																						!isValid
-																							? "bg-gray-500 opacity-50"
-																							: "bg-green-500/80 hover:bg-green-500"
+																						isValid
+																							? "bg-green-500/80 hover:bg-green-500"
+																							: "bg-gray-500 opacity-50"
 																					}`}
-																					title={
-																						!isValid
-																							? isDuplicateName
-																								? "Group Name Must Be Unique"
-																								: "Name Cannot Be Empty"
-																							: "Save"
-																					}
+																					title={(() => {
+																						if (
+																							isValid
+																						)
+																							return "Save";
+																						if (
+																							isDuplicateName
+																						)
+																							return "Group Name Must Be Unique";
+																						return "Name Cannot Be Empty";
+																					})()}
 																				>
 																					<Check
 																						size={
@@ -1912,7 +1888,6 @@ export const PaletteLibrary = ({
 																							<strong className="text-white">
 																								Global
 																							</strong>
-
 																							.
 																						</span>
 																					),
@@ -2222,23 +2197,25 @@ export const PaletteLibrary = ({
 											const d =
 												getPaletteColorCount(x) -
 												getPaletteColorCount(y);
-											return d !== 0 ? d : byName(x, y);
+											if (d === 0) return byName(x, y);
+											return d;
 										};
 
 										const bySat = (x: any, y: any) => {
 											const d =
 												getPaletteAvgSaturation(x) -
 												getPaletteAvgSaturation(y);
-											return d !== 0 ? d : byName(x, y);
+											if (d === 0) return byName(x, y);
+											return d;
 										};
 
-										const compare =
-											librarySortOption === "name"
-												? byName
-												: librarySortOption ===
-												  "sat-asc"
-												? bySat
-												: bySize;
+										let compare = bySize;
+										if (librarySortOption === "name")
+											compare = byName;
+										else if (
+											librarySortOption === "sat-asc"
+										)
+											compare = bySat;
 
 										return [...basePalettes].sort(compare);
 									})();
@@ -2250,9 +2227,7 @@ export const PaletteLibrary = ({
 											basePresetLibraryIds,
 											presetCustom?.libraryOrder
 										);
-										const idx = order.findIndex(
-											(id) => id === libId
-										);
+										const idx = order.indexOf(libId);
 										const nextIdx = idx + direction;
 										if (
 											idx === -1 ||
@@ -2274,9 +2249,7 @@ export const PaletteLibrary = ({
 											basePresetLibraryIds,
 											presetCustom?.libraryOrder
 										);
-										const idx = order.findIndex(
-											(id) => id === libId
-										);
+										const idx = order.indexOf(libId);
 										if (idx <= 0) return;
 										const next = [...order];
 										const [moved] = next.splice(idx, 1);
@@ -2291,9 +2264,7 @@ export const PaletteLibrary = ({
 											basePresetLibraryIds,
 											presetCustom?.libraryOrder
 										);
-										const idx = order.findIndex(
-											(id) => id === libId
-										);
+										const idx = order.indexOf(libId);
 										if (
 											idx === -1 ||
 											idx >= order.length - 1
@@ -2310,8 +2281,7 @@ export const PaletteLibrary = ({
 									const togglePresetLibraryHidden = () => {
 										updatePalettePresetCustom({
 											hiddenLibraries: {
-												...(presetCustom?.hiddenLibraries ||
-													{}),
+												...presetCustom?.hiddenLibraries,
 												[libId]: !isLibHidden,
 											},
 										});
@@ -2325,8 +2295,7 @@ export const PaletteLibrary = ({
 											paletteHiddenKey(paletteName);
 										updatePalettePresetCustom({
 											hiddenItems: {
-												...(presetCustom?.hiddenItems ||
-													{}),
+												...presetCustom?.hiddenItems,
 												[key]: !isHidden,
 											},
 										});
@@ -2678,14 +2647,14 @@ export const PaletteLibrary = ({
 
 			{/* Move Palette Modal */}
 			{paletteToMove && (
-				<div
-					className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
-					onClick={() => setPaletteToMove(null)}
-				>
-					<div
-						className="bg-bg-raised border border-glass-stroke rounded-xl shadow-2xl p-4 w-full max-w-xs space-y-4"
-						onClick={(e) => e.stopPropagation()}
-					>
+				<div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+					<button
+						type="button"
+						aria-label="Close move palette"
+						onClick={() => setPaletteToMove(null)}
+						className="absolute inset-0 cursor-default"
+					/>
+					<div className="relative bg-bg-raised border border-glass-stroke rounded-xl shadow-2xl p-4 w-full max-w-xs space-y-4">
 						<div className="flex items-center justify-between border-b border-glass-stroke pb-2">
 							<h4 className="text-sm font-brand text-white">
 								Move Palette
@@ -2830,6 +2799,11 @@ const PaletteCard = ({
 		copy(text, text);
 	};
 
+	const handleLoad = () => {
+		if (isOrganizing) return;
+		onLoad();
+	};
+
 	return (
 		<div
 			className={`group relative h-14 rounded-lg overflow-hidden border shadow-sm transition-all hover:shadow-lg bg-bg-surface ${
@@ -2839,15 +2813,24 @@ const PaletteCard = ({
 					? "cursor-grab active:cursor-grabbing"
 					: "cursor-pointer"
 			} ${isHidden ? "opacity-50" : ""}`}
-			onClick={onLoad}
 		>
+			<button
+				type="button"
+				onClick={handleLoad}
+				disabled={isOrganizing}
+				className="absolute inset-0 z-[1] bg-transparent"
+				aria-label={`Load palette ${name}`}
+			/>
 			{/* Background Color Bars */}
 			<div className="absolute inset-0 flex">
 				{colors.map((color, idx) => {
 					const isDark = colord(color).isDark();
+					const priorOccurrences = colors
+						.slice(0, idx)
+						.filter((c) => c === color).length;
 					return (
 						<div
-							key={idx}
+							key={`${color}-${priorOccurrences}`}
 							className="flex-1 h-full relative overflow-hidden"
 						>
 							<svg className="absolute inset-0 w-full h-full">
