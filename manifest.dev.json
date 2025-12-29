@@ -1,0 +1,13 @@
+{
+	"name": "Soloist OS (Dev)",
+	"id": "123456789",
+	"api": "1.0.0",
+	"main": "dist/code.js",
+	"ui": "http://localhost:5173",
+	"editorType": ["figma", "figjam"],
+	"documentAccess": "dynamic-page",
+	"networkAccess": {
+		"allowedDomains": ["*"],
+		"reasoning": "Dev manifest: load UI from local Vite dev server while iterating on the plugin."
+	}
+}
