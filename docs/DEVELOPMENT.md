@@ -54,3 +54,22 @@ If changes in the React code (`ui-src`) are not appearing in Figma:
 -   **Backend (`plugin/code.tsx`)**: Bundled via `esbuild` into `dist/code.js`.
 -   **Frontend (`ui-src/`)**: Built via `Vite` into `ui-src/dist/index.html`.
 -   **Note**: `manifest.json` points to `ui-src/dist/index.html`. Any change in build paths must be reflected in the manifest you imported into Figma.
+
+## 🧾 Contracts & Snapshots (drift killer)
+
+This repo treats exported artifacts in `design/contracts/` as the *mechanical source of truth* between Figma and code.
+
+- Variables snapshots export to: `design/contracts/variables/`
+- (Next) primitive contracts live in: `design/contracts/primitives/`
+
+Workflow:
+
+1. Seed / validate the starter kit (plugin UI → Connect).
+2. Export a variables snapshot.
+3. Commit the snapshot.
+4. Implement primitives against exported contracts.
+5. Re-export and diff to detect drift.
+
+## TypeScript note (plugin)
+
+`tsconfig.json` uses `lib: ["es2019"]` so modern built-ins like `Array#includes` are available to TypeScript when authoring the plugin.

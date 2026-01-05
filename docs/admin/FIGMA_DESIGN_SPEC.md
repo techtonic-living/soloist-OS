@@ -1,5 +1,10 @@
-# Soloist OS Layout Specification
-> Extracted from Figma Design File
+# Soloist OS Layout Specification (Legacy)
+
+> **Deprecated**: This document is a historical extraction from an older Figma layout and is **not representative of current goals and requirements**.
+>
+> **Current spec**: Use `docs/admin/LAYOUT_SPEC_V2.md` + `docs/DESIGN_SYSTEM.md` as the authoritative references.
+>
+> Keep this file only for archaeology when restoring older work.
 
 ## Overview
 
@@ -10,15 +15,15 @@ This specification documents the **Left Rail Slide Layout** and **Bottom Multi-P
 ## Design Tokens
 
 ### Colors
-| Token | Value | Usage |
-|-------|-------|-------|
+| Token           | Value     | Usage                                 |
+| --------------- | --------- | ------------------------------------- |
 | `bg-on-surface` | `#2C2C2C` | Primary background color for surfaces |
-| `grid-border` | `#393737` | Border color for grid elements |
-| `Default/White` | `#FFFFFF` | Text and accent color |
+| `grid-border`   | `#393737` | Border color for grid elements        |
+| `Default/White` | `#FFFFFF` | Text and accent color                 |
 
 ### Effects
-| Token | Properties |
-|-------|------------|
+| Token        | Properties                                                                                                       |
+| ------------ | ---------------------------------------------------------------------------------------------------------------- |
 | `on-surface` | Glass effect (radius: 4px), Background blur (radius: 4px), Drop shadow (#E9D7D740, offset: 1px 1px, radius: 1px) |
 
 ---
@@ -47,13 +52,13 @@ The viewport is organized into a **3×3 grid** with the following structure:
 
 ### Grid Dimensions
 
-| Region | Width (Expanded) | Width (Collapsed) | Height |
-|--------|-----------------|-------------------|--------|
-| **Header Row** | Full width | Full width | **150px** (fixed) |
-| **Left Column** | 500px | 150px | Flexible |
-| **Main Column** | Flexible | Flexible | Flexible |
-| **Right Column** | 1332px | 83px (chevron only) | Flexible |
-| **Footer Row** | Full width | Full width | **150px** (fixed) |
+| Region           | Width (Expanded) | Width (Collapsed)   | Height            |
+| ---------------- | ---------------- | ------------------- | ----------------- |
+| **Header Row**   | Full width       | Full width          | **150px** (fixed) |
+| **Left Column**  | 500px            | 150px               | Flexible          |
+| **Main Column**  | Flexible         | Flexible            | Flexible          |
+| **Right Column** | 1332px           | 83px (chevron only) | Flexible          |
+| **Footer Row**   | Full width       | Full width          | **150px** (fixed) |
 
 ---
 
@@ -71,38 +76,38 @@ The viewport is organized into a **3×3 grid** with the following structure:
 - **Total Width**: 500px
 - **Height**: 150px
 
-| Component | Position | Dimensions | Description |
-|-----------|----------|------------|-------------|
-| `header-left-collapsed` | 0, 0 | 150×150px | Logomark container |
-| `logomark` | 32.5, 32.5 | 85×85px | Brand logo icon |
-| `header-left-slideout` | 150, 0 | 350×150px | Slideout wordmark area |
-| `workmark` | 150, 51 | 322×48px | Brand wordmark text |
+| Component               | Position   | Dimensions | Description            |
+| ----------------------- | ---------- | ---------- | ---------------------- |
+| `header-left-collapsed` | 0, 0       | 150×150px  | Logomark container     |
+| `logomark`              | 32.5, 32.5 | 85×85px    | Brand logo icon        |
+| `header-left-slideout`  | 150, 0     | 350×150px  | Slideout wordmark area |
+| `workmark`              | 150, 51    | 322×48px   | Brand wordmark text    |
 
 ### Header-Main Parent Container
 - **Width**: Flexible (2165px+ in examples)
 - **Height**: 150px
 
-| Component | Position | Dimensions | Description |
-|-----------|----------|------------|-------------|
-| `project-selector-container` | 0, 0 | 322×150px | Project dropdown |
-| `project-selector-placeholder` | 45, 45 | 266×70px | Selector button |
-| `navigator-container` | 322, 0 | remaining | Breadcrumb navigation |
-| `navigator-button-home` | 50, 48.5 | 172×53px | Home button |
-| `navigator-button-home-icon` | 0, 0 | 46×46px | Home icon |
-| `navigator-button-home-label` | 76, 0 | 96×53px | "Home" label |
-| `navigator-divider` | 258, 56.2 | 16.4×37.6px | Separator |
-| `navigator-breadcrumbs` | 310, 48.5 | 369×53px | Breadcrumb trail |
+| Component                      | Position  | Dimensions  | Description           |
+| ------------------------------ | --------- | ----------- | --------------------- |
+| `project-selector-container`   | 0, 0      | 322×150px   | Project dropdown      |
+| `project-selector-placeholder` | 45, 45    | 266×70px    | Selector button       |
+| `navigator-container`          | 322, 0    | remaining   | Breadcrumb navigation |
+| `navigator-button-home`        | 50, 48.5  | 172×53px    | Home button           |
+| `navigator-button-home-icon`   | 0, 0      | 46×46px     | Home icon             |
+| `navigator-button-home-label`  | 76, 0     | 96×53px     | "Home" label          |
+| `navigator-divider`            | 258, 56.2 | 16.4×37.6px | Separator             |
+| `navigator-breadcrumbs`        | 310, 48.5 | 369×53px    | Breadcrumb trail      |
 
 ### Header-Right Container
 - **Width**: 1332px
 - **Height**: 150px
 
-| Component | Position | Dimensions | Description |
-|-----------|----------|------------|-------------|
-| `ui-control-density-slider` | 40, 52.5 | 264×45px | Density control |
-| `ui-control-zoom-slider` | 338, 52.5 | 264×45px | Zoom control |
-| `searchbar` | 638, 40 | 600×70px | Global search |
-| `notifications-badge` | 1282, 67.5 | 15×15px | Notification indicator |
+| Component                   | Position   | Dimensions | Description            |
+| --------------------------- | ---------- | ---------- | ---------------------- |
+| `ui-control-density-slider` | 40, 52.5   | 264×45px   | Density control        |
+| `ui-control-zoom-slider`    | 338, 52.5  | 264×45px   | Zoom control           |
+| `searchbar`                 | 638, 40    | 600×70px   | Global search          |
+| `notifications-badge`       | 1282, 67.5 | 15×15px    | Notification indicator |
 
 ---
 
@@ -114,7 +119,7 @@ The viewport is organized into a **3×3 grid** with the following structure:
 - **Width**: 150px
 - **Contains**: Icon-only navigation
 
-#### Expanded State  
+#### Expanded State
 - **Width**: 500px
 - **Animation**: Slides out from collapsed (350px slide distance)
 
@@ -129,18 +134,18 @@ The viewport is organized into a **3×3 grid** with the following structure:
 ```
 
 ### Left Rail - Collapsed Container
-| Component | Dimensions | Description |
-|-----------|------------|-------------|
-| `left-rail-collapsed` | 150×(viewport height - 300px) | Icon column |
-| `nav-item-icon` | 46×46px each | Tool icons |
-| Icon spacing | 100px vertical | Between icons |
+| Component             | Dimensions                    | Description   |
+| --------------------- | ----------------------------- | ------------- |
+| `left-rail-collapsed` | 150×(viewport height - 300px) | Icon column   |
+| `nav-item-icon`       | 46×46px each                  | Tool icons    |
+| Icon spacing          | 100px vertical                | Between icons |
 
-### Left Rail - Slideout Container  
-| Component | Dimensions | Description |
-|-----------|------------|-------------|
-| `left-rail-slideout` | 350×(viewport height - 300px) | Labels area |
-| `nav-item-label` | 180×53px | Tool name text |
-| Label spacing | 100px vertical | Between labels |
+### Left Rail - Slideout Container
+| Component            | Dimensions                    | Description    |
+| -------------------- | ----------------------------- | -------------- |
+| `left-rail-slideout` | 350×(viewport height - 300px) | Labels area    |
+| `nav-item-label`     | 180×53px                      | Tool name text |
+| Label spacing        | 100px vertical                | Between labels |
 
 ### Slider Chevron Button
 - **Position**: Centered vertically on right edge of left rail
@@ -175,45 +180,45 @@ The viewport is organized into a **3×3 grid** with the following structure:
 - **Width**: 500px (150px icon area + 350px slideout)
 - **Height**: 150px
 
-| Component | Position | Dimensions | Description |
-|-----------|----------|------------|-------------|
-| `footer-left-collapsed-icon` | 0, 0 | 150×150px | Settings/action icon |
-| `footer-left-slideout` | 150, 0 | 350×150px | Label area |
-| `slideout-label` | 190, 48.5 | ~200×53px | Action label text |
-| `slideout-chevron` | 300, 69 | 24×12px | Expand indicator |
+| Component                    | Position  | Dimensions | Description          |
+| ---------------------------- | --------- | ---------- | -------------------- |
+| `footer-left-collapsed-icon` | 0, 0      | 150×150px  | Settings/action icon |
+| `footer-left-slideout`       | 150, 0    | 350×150px  | Label area           |
+| `slideout-label`             | 190, 48.5 | ~200×53px  | Action label text    |
+| `slideout-chevron`           | 300, 69   | 24×12px    | Expand indicator     |
 
 ### Footer-Left (Expanded) - Slideup Panel
 - **Width**: 348px
 - **Item Height**: 100px
 - **Maximum Items**: 4+ visible
 
-| Component | Dimensions | Description |
-|-----------|------------|-------------|
-| `slideup-item` | 348×100px | Each action row |
-| `item-label-container` | 237×100px | Text area |
-| `item-chevron-container` | 106×100px | Chevron/action |
-| `item-label` | ~180×23px | Action text |
+| Component                | Dimensions | Description     |
+| ------------------------ | ---------- | --------------- |
+| `slideup-item`           | 348×100px  | Each action row |
+| `item-label-container`   | 237×100px  | Text area       |
+| `item-chevron-container` | 106×100px  | Chevron/action  |
+| `item-label`             | ~180×23px  | Action text     |
 
 ### Footer-Main (Collapsed)
 - **Width**: Flexible (2664px in examples)
 - **Height**: 150px
 
-| Component | Position | Dimensions | Description |
-|-----------|----------|------------|-------------|
-| `placeholder-label` | 56, 48.5 | 264×53px | Status label |
-| `placeholder-notation` | 350, 39 | ~2200×72px | Usage/notation area |
-| `chevron-container` | right edge | 83×150px | Expand trigger |
-| `chevron-icon` | 29, 69 | 24×12px | Expand arrow |
+| Component              | Position   | Dimensions | Description         |
+| ---------------------- | ---------- | ---------- | ------------------- |
+| `placeholder-label`    | 56, 48.5   | 264×53px   | Status label        |
+| `placeholder-notation` | 350, 39    | ~2200×72px | Usage/notation area |
+| `chevron-container`    | right edge | 83×150px   | Expand trigger      |
+| `chevron-icon`         | 29, 69     | 24×12px    | Expand arrow        |
 
 ### Footer-Right (Collapsed)
 - **Width**: 1332px
 - **Height**: 150px
 
-| Component | Position | Dimensions | Description |
-|-----------|----------|------------|-------------|
-| `placeholder-label` | 30, 48.5 | 288×53px | Context label |
-| `placeholder-notation` | 348, 27 | 864×96px | Details area |
-| `chevron-container` | right edge | 83×150px | Expand trigger |
+| Component              | Position   | Dimensions | Description    |
+| ---------------------- | ---------- | ---------- | -------------- |
+| `placeholder-label`    | 30, 48.5   | 288×53px   | Context label  |
+| `placeholder-notation` | 348, 27    | 864×96px   | Details area   |
+| `chevron-container`    | right edge | 83×150px   | Expand trigger |
 
 ---
 
@@ -319,21 +324,21 @@ master-layout-viewport-wrapper-flex-column
 
 ## Key Measurements Summary
 
-| Element | Measurement |
-|---------|-------------|
-| Header height | 150px |
-| Footer height | 150px |
-| Left rail collapsed width | 150px |
-| Left rail expanded width | 500px |
-| Right panel width | 1332px |
-| Slide distance (left rail) | 350px |
-| Chevron button size | 52.5×52.5px |
-| Nav item icon size | 46×46px |
-| Vertical spacing (nav items) | 100px |
-| Breadcrumb item height | 53px |
-| UI control slider size | 264×45px |
-| Searchbar size | 600×70px |
-| Footer slideup item height | 100px |
+| Element                      | Measurement |
+| ---------------------------- | ----------- |
+| Header height                | 150px       |
+| Footer height                | 150px       |
+| Left rail collapsed width    | 150px       |
+| Left rail expanded width     | 500px       |
+| Right panel width            | 1332px      |
+| Slide distance (left rail)   | 350px       |
+| Chevron button size          | 52.5×52.5px |
+| Nav item icon size           | 46×46px     |
+| Vertical spacing (nav items) | 100px       |
+| Breadcrumb item height       | 53px        |
+| UI control slider size       | 264×45px    |
+| Searchbar size               | 600×70px    |
+| Footer slideup item height   | 100px       |
 
 ---
 

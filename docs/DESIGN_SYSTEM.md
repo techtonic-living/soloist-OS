@@ -14,8 +14,20 @@ We use a specific font stack to differentiate content types:
 | ----------- | -------------- | -------------- | -------------------------------------------- |
 | **Brand**   | Hubballi       | `font-brand`   | Headings, Logos, "Cinematic" labeling        |
 | **UI**      | Inter          | `font-sans`    | General UI text, labels, readable content    |
-| **Display** | Satoshi        | `font-display` | Large key numbers, stats, feature highlights |
+| **Display** | Satoshi (web) / Acier BAT (Figma) | `font-display` | Large key numbers, stats, feature highlights |
 | **Code**    | JetBrains Mono | `font-mono`    | Code snippets, hex values, technical data    |
+
+#### Figma typography governance (important)
+
+In Figma, **Variables and Text Styles have separate responsibilities**:
+
+- Typography *Variables* store **font family only** (`font/ui`, `font/mono`, `font/brand`, `font/display`).
+- **Text Styles** govern size + line-height.
+
+Text style naming is intentionally mechanical and sortable:
+
+- `ui/01..12`, `mono/01..12`
+- `brand/01..06`, `display/01..06`
 
 ### Color Palette (Semantic)
 
@@ -38,6 +50,27 @@ Avoid hardcoding hex values. Use semantic Tailwind classes defined in `tailwind.
 -   `text-primary` / `bg-primary`: Core action color (Blue #3D8BFF).
 -   `text-accent-cyan`: Tech/Data emphasis (Cyan #3FE3F2).
 -   `text-accent-violet`: Creative/Magic emphasis (Violet #9466FF).
+
+#### Figma tool colors
+
+In Figma Variables, `color/tool/*` tokens are **aliases** to the accent tokens (`color/accent/*`).
+This avoids duplicated hex values and keeps “tool identity” as a semantic alias layer.
+
+## 0. Contracts-first loop (drift killer)
+
+We treat exported artifacts under `design/contracts/` as the bridge between Figma and code.
+
+- Variables snapshots: `design/contracts/variables/`
+- Primitive contracts (next): `design/contracts/primitives/`
+
+See `design/contracts/README.md` for the workflow.
+
+### Authoritative token truths
+
+From the current ground-truth snapshot:
+
+- `stroke/hairline = 0.5`, `stroke/thin = 1`, `stroke/medium = 1.5`, `stroke/bold = 2`
+- `color/tool/*` are `VARIABLE_ALIAS` → `color/accent/*`
 
 ## 2. UI Patterns & Effects
 

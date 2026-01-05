@@ -67,6 +67,11 @@ export const ExploreView = (props: ExploreViewProps) => {
 
 	const toast = useToast();
 
+	const favoriteColors =
+		settings.library?.colors.map((c: any) =>
+			typeof c === "string" ? c : c.value
+		) || [];
+
 	// Derived colors for ColorCreator
 	const secondaryColor = secondaryRamp[5]?.hex || "#000000";
 	const tertiaryColor = tertiaryRamp[5]?.hex || "#000000";
@@ -607,6 +612,10 @@ export const ExploreView = (props: ExploreViewProps) => {
 								setHarmonyMode={setHarmonyMode}
 								activeColorSlot={activeColorSlot}
 								setActiveColorSlot={setActiveColorSlot}
+								favoriteColors={favoriteColors}
+								onToggleFavoriteColor={(hex: string) =>
+									toggleFavoriteColor(hex)
+								}
 							/>
 						</motion.div>
 					)}
@@ -631,11 +640,7 @@ export const ExploreView = (props: ExploreViewProps) => {
 									inspectedRemixIndex ?? undefined
 								}
 								onInspectColor={onInspectRemixColor}
-								favoriteColors={
-									settings.library?.colors.map((c: any) =>
-										typeof c === "string" ? c : c.value
-									) || []
-								}
+								favoriteColors={favoriteColors}
 								onToggleFavoriteColor={(color: string) =>
 									toggleFavoriteColor(color)
 								}

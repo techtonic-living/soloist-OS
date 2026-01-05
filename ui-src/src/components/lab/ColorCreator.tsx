@@ -9,6 +9,7 @@ import {
 	RotateCw,
 	Disc,
 	Orbit,
+	Heart,
 	ImagePlus,
 	Search,
 	Droplets,
@@ -35,6 +36,8 @@ interface ColorCreatorProps {
 	setSecondaryColor: (color: string) => void;
 	tertiaryColor: string;
 	setTertiaryColor: (color: string) => void;
+	favoriteColors?: string[];
+	onToggleFavoriteColor?: (hex: string) => Promise<unknown> | void;
 	harmonyMode?: "complementary" | "analogous" | "triadic" | "manual";
 	setHarmonyMode?: (
 		mode: "complementary" | "analogous" | "triadic" | "manual"
@@ -61,6 +64,8 @@ export const ColorCreator = ({
 	tertiaryColor,
 	setSecondaryColor,
 	setTertiaryColor,
+	favoriteColors = [],
+	onToggleFavoriteColor,
 	harmonyMode = "complementary",
 	setHarmonyMode = () => {},
 	activeColorSlot = "primary",
@@ -107,6 +112,7 @@ export const ColorCreator = ({
 
 	const [lastUserImage, setLastUserImage] = useState<string | null>(null);
 	const [hoverHex, setHoverHex] = useState<string | null>(null);
+	const [isFavoritingHex, setIsFavoritingHex] = useState<string | null>(null);
 
 	// Dynamic Control Bar State
 	const [speedVal, setSpeedVal] = useState(0);
@@ -370,6 +376,37 @@ export const ColorCreator = ({
 
 	const color = colord(activeColor);
 	const hsla = color.toHsl();
+
+	const favoriteHexes = useMemo(() => {
+		return new Set(favoriteColors.map((c) => c.toUpperCase()));
+	}, [favoriteColors]);
+
+	const handleToggleFavorite = async (hex: string) => {
+		if (!onToggleFavoriteColor) return;
+		const normalized = hex.toUpperCase();
+		try {
+			setIsFavoritingHex(normalized);
+			await onToggleFavoriteColor(normalized);
+			toast.transient(
+				<span>
+					{favoriteHexes.has(normalized)
+						? "Removed from favorites"
+						: "Added to favorites"}{" "}
+					<span className="text-accent-cyan">{normalized}</span>
+				</span>
+			);
+		} catch (e) {
+			console.error("Failed to toggle favorite color", e);
+			toast.standard(
+				<span>
+					Couldn’t favorite{" "}
+					<span className="text-accent-cyan">{normalized}</span>
+				</span>
+			);
+		} finally {
+			setIsFavoritingHex(null);
+		}
+	};
 
 	const commitHex = (hex: string, options?: { skipRecording?: boolean }) => {
 		if (isSamplerActive && !options?.skipRecording) {
@@ -672,42 +709,86 @@ export const ColorCreator = ({
 					].map((slot) => {
 						const isActive = activeColorSlot === slot.id;
 						const isManual = harmonyMode === "manual";
+						const slotHex = slot.color.toUpperCase();
+						const isFavorite = favoriteHexes.has(slotHex);
 						return (
-							<button
+							<div
 								key={slot.id}
-								onClick={() =>
-									isManual &&
-									setActiveColorSlot?.(slot.id as any)
-								}
-								className={`group relative p-1 rounded-full transition-all duration-300 ${
-									isManual
-										? "cursor-pointer"
-										: "cursor-default"
-								} ${
-									isActive
-										? "bg-white/10 shadow-sm ring-1 ring-white/20"
-										: ""
-								}`}
+								className="flex flex-col items-center gap-1"
 							>
-								<div
-									className={`w-6 h-6 rounded-full border border-white/20 shadow-sm transition-transform duration-300 flex items-center justify-center ${
+								<button
+									onClick={() =>
+										isManual &&
+										setActiveColorSlot?.(slot.id as any)
+									}
+									className={`group relative p-1 rounded-full transition-all duration-300 ${
+										isManual
+											? "cursor-pointer"
+											: "cursor-default"
+									} ${
 										isActive
-											? "scale-110 shadow-neon-glow"
-											: "group-hover:scale-110"
+											? "bg-white/10 shadow-sm ring-1 ring-white/20"
+											: ""
 									}`}
-									style={{ backgroundColor: slot.color }}
 								>
-									<span className="text-[10px] font-black text-white mix-blend-difference opacity-60">
-										{slot.num}
-									</span>
-								</div>
-								{isActive && (
-									<motion.div
-										layoutId="active-slot-glow"
-										className="absolute -inset-0.5 rounded-full border border-accent-cyan/40 pointer-events-none"
-									/>
+									<div
+										className={`w-6 h-6 rounded-full border border-white/20 shadow-sm transition-transform duration-300 flex items-center justify-center ${
+											isActive
+												? "scale-110 shadow-neon-glow"
+												: "group-hover:scale-110"
+										}`}
+										style={{ backgroundColor: slot.color }}
+									>
+										<span className="text-[10px] font-black text-white mix-blend-difference opacity-60">
+											{slot.num}
+										</span>
+									</div>
+									{isActive && (
+										<motion.div
+											layoutId="active-slot-glow"
+											className="absolute -inset-0.5 rounded-full border border-accent-cyan/40 pointer-events-none"
+										/>
+									)}
+								</button>
+
+								{onToggleFavoriteColor && (
+									<button
+										onClick={() =>
+											handleToggleFavorite(slotHex)
+										}
+										disabled={isFavoritingHex === slotHex}
+										className={`p-1 rounded-full transition-colors ${
+											isFavorite
+												? "text-accent-cyan"
+												: "text-gray-500 hover:text-white"
+										} ${
+											isFavoritingHex === slotHex
+												? "opacity-50 cursor-wait"
+												: ""
+										}`}
+										title={
+											isFavorite
+												? `Unfavorite ${slotHex}`
+												: `Favorite ${slotHex}`
+										}
+										aria-label={
+											isFavorite
+												? `Unfavorite ${slotHex}`
+												: `Favorite ${slotHex}`
+										}
+									>
+										<Heart
+											size={12}
+											fill={
+												isFavorite
+													? "currentColor"
+													: "none"
+											}
+											strokeWidth={2.5}
+										/>
+									</button>
 								)}
-							</button>
+							</div>
 						);
 					})}
 				</div>
@@ -817,6 +898,54 @@ export const ColorCreator = ({
 			</div>
 
 			<div className="w-px h-4 bg-white/10 mx-1" />
+			{onToggleFavoriteColor && (
+				<>
+					<button
+						onClick={() =>
+							handleToggleFavorite(hoverHex || activeColor)
+						}
+						disabled={
+							isFavoritingHex ===
+							(hoverHex || activeColor).toUpperCase()
+						}
+						className={`p-2 transition-colors ${
+							favoriteHexes.has(
+								(hoverHex || activeColor).toUpperCase()
+							)
+								? "text-accent-cyan"
+								: "text-gray-400 hover:text-white"
+						} ${
+							isFavoritingHex ===
+							(hoverHex || activeColor).toUpperCase()
+								? "opacity-50 cursor-wait"
+								: ""
+						}`}
+						title={
+							favoriteHexes.has(
+								(hoverHex || activeColor).toUpperCase()
+							)
+								? `Unfavorite ${(
+										hoverHex || activeColor
+								  ).toUpperCase()}`
+								: `Favorite ${(
+										hoverHex || activeColor
+								  ).toUpperCase()}`
+						}
+					>
+						<Heart
+							size={16}
+							fill={
+								favoriteHexes.has(
+									(hoverHex || activeColor).toUpperCase()
+								)
+									? "currentColor"
+									: "none"
+							}
+						/>
+					</button>
+					<div className="w-px h-4 bg-white/10 mx-1" />
+				</>
+			)}
 			<button
 				onClick={shuffleColor}
 				className="p-2 text-gray-400 hover:text-white transition-colors"

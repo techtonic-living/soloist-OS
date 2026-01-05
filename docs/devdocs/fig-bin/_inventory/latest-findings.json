@@ -1,0 +1,247 @@
+{
+  "generatedAt": "2026-01-01T13:52:45.451Z",
+  "newestPerFileName": true,
+  "rows": [
+    {
+      "fileName": "00_Global Design System",
+      "exportedAt": "2026-01-01T13:10:51.048Z",
+      "snapshotPath": "docs/devdocs/fig-bin/00_Global_Design_System/variables-snapshot_00_Global_Design_System_no-fileKey_2026-01-01T13-10-51-048Z.json",
+      "collections": 6,
+      "variables": 167,
+      "hiddenFromPublishingTotal": 0,
+      "hiddenFromPublishingByCollection": [],
+      "mode1Modes": [
+        {
+          "collectionId": "VariableCollectionId:12:143",
+          "collectionName": "Variable collection",
+          "modeId": "12:0",
+          "modeName": "Mode 1"
+        }
+      ],
+      "aliasMissingLocalTargets": 0,
+      "aliasMissingLocalSamples": []
+    },
+    {
+      "fileName": "Flock Design Library",
+      "exportedAt": "2026-01-01T13:24:19.819Z",
+      "snapshotPath": "docs/devdocs/fig-bin/Flock_Design_Library/variables-snapshot_Flock_Design_Library_no-fileKey_2026-01-01T13-24-19-819Z.json",
+      "collections": 6,
+      "variables": 190,
+      "hiddenFromPublishingTotal": 0,
+      "hiddenFromPublishingByCollection": [],
+      "mode1Modes": [
+        {
+          "collectionId": "VariableCollectionId:23417:2461",
+          "collectionName": "Soloist Primitives",
+          "modeId": "23417:0",
+          "modeName": "Mode 1"
+        }
+      ],
+      "aliasMissingLocalTargets": 0,
+      "aliasMissingLocalSamples": []
+    },
+    {
+      "fileName": "Global Library",
+      "exportedAt": "2026-01-01T13:13:43.424Z",
+      "snapshotPath": "docs/devdocs/fig-bin/Global_Library/variables-snapshot_Global_Library_no-fileKey_2026-01-01T13-13-43-424Z.json",
+      "collections": 3,
+      "variables": 171,
+      "hiddenFromPublishingTotal": 0,
+      "hiddenFromPublishingByCollection": [],
+      "mode1Modes": [
+        {
+          "collectionId": "VariableCollectionId:2:326",
+          "collectionName": "Primitives",
+          "modeId": "2:2",
+          "modeName": "Mode 1"
+        }
+      ],
+      "aliasMissingLocalTargets": 0,
+      "aliasMissingLocalSamples": []
+    },
+    {
+      "fileName": "GS - Primitives",
+      "exportedAt": "2026-01-01T13:18:38.857Z",
+      "snapshotPath": "docs/devdocs/fig-bin/GS_-_Primitives/variables-snapshot_GS_-_Primitives_no-fileKey_2026-01-01T13-18-38-857Z.json",
+      "collections": 6,
+      "variables": 567,
+      "hiddenFromPublishingTotal": 1,
+      "hiddenFromPublishingByCollection": [
+        {
+          "collectionId": "VariableCollectionId:17:2094",
+          "collectionName": "Scales",
+          "hiddenCount": 1
+        }
+      ],
+      "mode1Modes": [
+        {
+          "collectionId": "VariableCollectionId:19:850",
+          "collectionName": "Foundations",
+          "modeId": "19:0",
+          "modeName": "Mode 1"
+        }
+      ],
+      "aliasMissingLocalTargets": 0,
+      "aliasMissingLocalSamples": []
+    },
+    {
+      "fileName": "sandman",
+      "exportedAt": "2026-01-01T09:50:48.762Z",
+      "snapshotPath": "docs/devdocs/fig-bin/sandman/variables-snapshot_sandman_no-fileKey_2026-01-01T09-50-48-762Z.json",
+      "collections": 5,
+      "variables": 483,
+      "hiddenFromPublishingTotal": 26,
+      "hiddenFromPublishingByCollection": [
+        {
+          "collectionId": "VariableCollectionId:1:2955",
+          "collectionName": "System",
+          "hiddenCount": 26
+        }
+      ],
+      "mode1Modes": [
+        {
+          "collectionId": "VariableCollectionId:1:2954",
+          "collectionName": "User",
+          "modeId": "1:1",
+          "modeName": "Mode 1"
+        },
+        {
+          "collectionId": "VariableCollectionId:1:2955",
+          "collectionName": "System",
+          "modeId": "1:2",
+          "modeName": "Mode 1"
+        },
+        {
+          "collectionId": "VariableCollectionId:5:105",
+          "collectionName": "Interface",
+          "modeId": "5:1",
+          "modeName": "Mode 1"
+        }
+      ],
+      "aliasMissingLocalTargets": 0,
+      "aliasMissingLocalSamples": []
+    },
+    {
+      "fileName": "Smart Swatch",
+      "exportedAt": "2026-01-01T12:16:02.239Z",
+      "snapshotPath": "docs/devdocs/fig-bin/Smart_Swatch/variables-snapshot_Smart_Swatch_no-fileKey_2026-01-01T12-16-02-239Z.json",
+      "collections": 5,
+      "variables": 483,
+      "hiddenFromPublishingTotal": 26,
+      "hiddenFromPublishingByCollection": [
+        {
+          "collectionId": "VariableCollectionId:1:2955",
+          "collectionName": "System",
+          "hiddenCount": 26
+        }
+      ],
+      "mode1Modes": [
+        {
+          "collectionId": "VariableCollectionId:1:2954",
+          "collectionName": "User",
+          "modeId": "1:1",
+          "modeName": "Mode 1"
+        },
+        {
+          "collectionId": "VariableCollectionId:1:2955",
+          "collectionName": "System",
+          "modeId": "1:2",
+          "modeName": "Mode 1"
+        },
+        {
+          "collectionId": "VariableCollectionId:5:105",
+          "collectionName": "Interface",
+          "modeId": "5:1",
+          "modeName": "Mode 1"
+        }
+      ],
+      "aliasMissingLocalTargets": 0,
+      "aliasMissingLocalSamples": []
+    },
+    {
+      "fileName": "Soloist OS Plugin",
+      "exportedAt": "2026-01-01T12:08:56.670Z",
+      "snapshotPath": "docs/devdocs/fig-bin/Soloist_OS_Plugin/variables-snapshot_Soloist_OS_Plugin_no-fileKey_2026-01-01T12-08-56-670Z.json",
+      "collections": 5,
+      "variables": 716,
+      "hiddenFromPublishingTotal": 229,
+      "hiddenFromPublishingByCollection": [
+        {
+          "collectionId": "VariableCollectionId:20:79",
+          "collectionName": "Global",
+          "hiddenCount": 184
+        },
+        {
+          "collectionId": "VariableCollectionId:20:81",
+          "collectionName": "Size",
+          "hiddenCount": 33
+        },
+        {
+          "collectionId": "VariableCollectionId:20:107",
+          "collectionName": "Density",
+          "hiddenCount": 12
+        }
+      ],
+      "mode1Modes": [
+        {
+          "collectionId": "VariableCollectionId:20:79",
+          "collectionName": "Global",
+          "modeId": "20:1",
+          "modeName": "Mode 1"
+        }
+      ],
+      "aliasMissingLocalTargets": 6,
+      "aliasMissingLocalSamples": [
+        {
+          "name": "Color/Semantic/Groups/tool-group-document",
+          "modeId": "20:1",
+          "targetId": "VariableID:20:138"
+        },
+        {
+          "name": "Semantic/Wrappers/box-shadow-drop",
+          "modeId": "20:0",
+          "targetId": "VariableID:2001:3789"
+        },
+        {
+          "name": "Semantic/Wrappers/box-shadow-drop",
+          "modeId": "20:2",
+          "targetId": "VariableID:2001:3789"
+        },
+        {
+          "name": "Color/Aliases/Neutrals/transparent",
+          "modeId": "20:1",
+          "targetId": "VariableID:2232:663"
+        },
+        {
+          "name": "Semantic/Wrappers/box-shadow-glow",
+          "modeId": "20:6",
+          "targetId": "VariableID:2001:3789"
+        },
+        {
+          "name": "Semantic/Wrappers/box-shadow-glow",
+          "modeId": "20:7",
+          "targetId": "VariableID:2001:3789"
+        }
+      ]
+    },
+    {
+      "fileName": "unBind Library",
+      "exportedAt": "2026-01-01T13:31:04.672Z",
+      "snapshotPath": "docs/devdocs/fig-bin/unBind_Library/variables-snapshot_unBind_Library_no-fileKey_2026-01-01T13-31-04-672Z.json",
+      "collections": 1,
+      "variables": 182,
+      "hiddenFromPublishingTotal": 0,
+      "hiddenFromPublishingByCollection": [],
+      "mode1Modes": [
+        {
+          "collectionId": "VariableCollectionId:11:367",
+          "collectionName": "System",
+          "modeId": "11:3",
+          "modeName": "Mode 1"
+        }
+      ],
+      "aliasMissingLocalTargets": 0,
+      "aliasMissingLocalSamples": []
+    }
+  ]
+}

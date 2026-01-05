@@ -1,0 +1,3767 @@
+{
+  "schemaVersion": "soloist-os.variables.snapshot.v1",
+  "meta": {
+    "exportedAt": "2026-01-01T13:13:43.424Z",
+    "fileName": "Global Library",
+    "fileKey": null
+  },
+  "issues": [],
+  "counts": {
+    "collections": 3,
+    "variables": 171,
+    "variablesByCollectionId": {
+      "VariableCollectionId:2:326": 153,
+      "VariableCollectionId:2:358": 2,
+      "VariableCollectionId:2:364": 16
+    }
+  },
+  "collections": [
+    {
+      "id": "VariableCollectionId:2:326",
+      "name": "Primitives",
+      "defaultModeId": "2:2",
+      "modes": [
+        {
+          "modeId": "2:2",
+          "name": "Mode 1"
+        }
+      ]
+    },
+    {
+      "id": "VariableCollectionId:2:358",
+      "name": "Responsive",
+      "defaultModeId": "2:4",
+      "modes": [
+        {
+          "modeId": "2:4",
+          "name": "Mobile"
+        },
+        {
+          "modeId": "2:5",
+          "name": "Tablet"
+        },
+        {
+          "modeId": "2:6",
+          "name": "Desktop"
+        }
+      ]
+    },
+    {
+      "id": "VariableCollectionId:2:364",
+      "name": "Scaling",
+      "defaultModeId": "2:7",
+      "modes": [
+        {
+          "modeId": "2:7",
+          "name": "1.0"
+        },
+        {
+          "modeId": "2:8",
+          "name": "1.1"
+        },
+        {
+          "modeId": "2:9",
+          "name": "1.25"
+        }
+      ]
+    }
+  ],
+  "variables": [
+    {
+      "id": "VariableID:2:327",
+      "key": "266ba591aae8fe516c4089ae976131ad5418ff55",
+      "name": "colors/basic/white",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 1,
+          "b": 1,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:328",
+      "key": "d4fdc88a2b52bd6d9920ff70c9a2a29a047cdb23",
+      "name": "colors/basic/black",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0,
+          "g": 0,
+          "b": 0,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:329",
+      "key": "3999a62e7b586021e57563eba7faa1f0303d4f10",
+      "name": "colors/basic/transparent",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0,
+          "g": 0,
+          "b": 0,
+          "a": 0
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:330",
+      "key": "4ce33d3f65b716afb64675dd006c10c0fb78b879",
+      "name": "colors/basic/silver",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.7529411911964417,
+          "g": 0.7529411911964417,
+          "b": 0.7529411911964417,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:331",
+      "key": "afe348de664b931d8518754ccb75adb62ff6800b",
+      "name": "colors/basic/gray",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.501960813999176,
+          "g": 0.501960813999176,
+          "b": 0.501960813999176,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:332",
+      "key": "c21da65fd89d370a3e990d85811dbef7d2411d76",
+      "name": "colors/basic/maroon",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.5333333611488342,
+          "g": 0,
+          "b": 0,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:333",
+      "key": "fa1518bc123a015b275718583c7f5e736c93d8f6",
+      "name": "colors/basic/red",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0,
+          "b": 0,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:334",
+      "key": "54a463ee85e28746383ebbd36293fddfa01108c3",
+      "name": "colors/basic/purple",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.501960813999176,
+          "g": 0,
+          "b": 0.501960813999176,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:335",
+      "key": "b825e19e8452129f2bec5aac54df98e68e6f8624",
+      "name": "colors/basic/fuchsia",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0,
+          "b": 1,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:336",
+      "key": "83b5ab1a25b0d8e43869b4626c25edb352396474",
+      "name": "colors/basic/green",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0,
+          "g": 0.501960813999176,
+          "b": 0,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:337",
+      "key": "f673bdcd03be756739184825a9f357673caf542d",
+      "name": "colors/basic/lime",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0,
+          "g": 1,
+          "b": 0,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:338",
+      "key": "dddecb5157ddd4a1fc0cdc4e1c428d3b544cda49",
+      "name": "colors/basic/olive",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.501960813999176,
+          "g": 0.501960813999176,
+          "b": 0,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:339",
+      "key": "64312d2ce340e0b1bbedf7025a1ec9c6f641e879",
+      "name": "colors/basic/yellow",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 1,
+          "b": 0,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:340",
+      "key": "7c0e6badb953ee17c29aa280e68b4947d5a8de41",
+      "name": "colors/basic/navy",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0,
+          "g": 0,
+          "b": 0.501960813999176,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:341",
+      "key": "7cdd2c73da9fabea857638f8cfb9e58adaaf4729",
+      "name": "colors/basic/blue",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0,
+          "g": 0,
+          "b": 1,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:342",
+      "key": "c5e99cd760d36fe3b8cd83dda2c1f5e41f7114cf",
+      "name": "colors/basic/aqua",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0,
+          "g": 1,
+          "b": 1,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:343",
+      "key": "a11d101c11defefefad8dcc98bb4740319773276",
+      "name": "colors/basic/teal",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0,
+          "g": 0.501960813999176,
+          "b": 0.501960813999176,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:344",
+      "key": "b5496eb2acb261fd6c1d459fa145ad09c5c07521",
+      "name": "colors/extended/aliceblue",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.9411764740943909,
+          "g": 0.9725490212440491,
+          "b": 1,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:345",
+      "key": "52b8b04331eb8d741d3b7aff14e8f0c9b6251e92",
+      "name": "colors/extended/antiquewhite",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.9803921580314636,
+          "g": 0.9215686321258545,
+          "b": 0.843137264251709,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:352",
+      "key": "6b2ce5f55ac813d8b4427030b98a5e03fe7640d4",
+      "name": "typography/fontfamily",
+      "description": "",
+      "resolvedType": "STRING",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": "JetBrains Mono"
+      }
+    },
+    {
+      "id": "VariableID:2:355",
+      "key": "8dec56b2c11716a22dff5568217ea429a1171e3f",
+      "name": "radius/sm",
+      "description": "",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": 2
+      }
+    },
+    {
+      "id": "VariableID:2:356",
+      "key": "dfe642e0b03c9c1b3744063347806751e8fd2737",
+      "name": "radius/md",
+      "description": "",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": 4
+      }
+    },
+    {
+      "id": "VariableID:2:357",
+      "key": "42d6bd339ec0a80071f7be496f6d0bf33d6e08eb",
+      "name": "radius/lg",
+      "description": "",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": 16
+      }
+    },
+    {
+      "id": "VariableID:2:361",
+      "key": "82c15ec6209b13f82bcbd22e5cd5619b2e5b2228",
+      "name": "viewport/min-width",
+      "description": "",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:358",
+      "collectionName": "Responsive",
+      "scopes": [
+        "TEXT_CONTENT",
+        "WIDTH_HEIGHT",
+        "FONT_VARIATIONS"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:4": 0,
+        "2:5": 768,
+        "2:6": 1024
+      }
+    },
+    {
+      "id": "VariableID:2:363",
+      "key": "3029b0541928ada0e7fc5f6c842381d014d93fa7",
+      "name": "font/scale-multiplier",
+      "description": "",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:358",
+      "collectionName": "Responsive",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:4": 1,
+        "2:5": 1.100000023841858,
+        "2:6": 1.25
+      }
+    },
+    {
+      "id": "VariableID:2:365",
+      "key": "3d96d0f568e2840827e1ae3c3bf376f6d397f0dc",
+      "name": "text/display-3xl",
+      "description": "Hero headlines, splash pages",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:364",
+      "collectionName": "Scaling",
+      "scopes": [
+        "TEXT_CONTENT",
+        "FONT_SIZE"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:7": 96,
+        "2:8": 106,
+        "2:9": 120
+      }
+    },
+    {
+      "id": "VariableID:2:366",
+      "key": "5fb6a9b32529c2d65ebc3786fd1b2815aa9f0a5b",
+      "name": "text/display-2xl",
+      "description": "Prominent titles",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:364",
+      "collectionName": "Scaling",
+      "scopes": [
+        "TEXT_CONTENT",
+        "FONT_SIZE"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:7": 72,
+        "2:8": 79,
+        "2:9": 90
+      }
+    },
+    {
+      "id": "VariableID:2:367",
+      "key": "ab4f9287f0631d25de1f3721e1f9ff3c52f1644a",
+      "name": "text/display-xl",
+      "description": "Page intros",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:364",
+      "collectionName": "Scaling",
+      "scopes": [
+        "TEXT_CONTENT",
+        "FONT_SIZE"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:7": 60,
+        "2:8": 66,
+        "2:9": 75
+      }
+    },
+    {
+      "id": "VariableID:2:368",
+      "key": "7306ba8981a1eb5da1cdab90858ca348c08c5543",
+      "name": "text/display-lg",
+      "description": "Section intros, standout copy",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:364",
+      "collectionName": "Scaling",
+      "scopes": [
+        "TEXT_CONTENT",
+        "FONT_SIZE"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:7": 48,
+        "2:8": 53,
+        "2:9": 60
+      }
+    },
+    {
+      "id": "VariableID:2:369",
+      "key": "a1945a10268dfe0a31d538dfc9b9f08ee3fc61bb",
+      "name": "text/heading-3xl",
+      "description": "H1",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:364",
+      "collectionName": "Scaling",
+      "scopes": [
+        "TEXT_CONTENT",
+        "FONT_SIZE"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:7": 40,
+        "2:8": 44,
+        "2:9": 50
+      }
+    },
+    {
+      "id": "VariableID:2:370",
+      "key": "7e62b4db97392230ffee3bf9196a2bfe32f29bea",
+      "name": "text/heading-2xl",
+      "description": "H2",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:364",
+      "collectionName": "Scaling",
+      "scopes": [
+        "TEXT_CONTENT",
+        "FONT_SIZE"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:7": 32,
+        "2:8": 35,
+        "2:9": 40
+      }
+    },
+    {
+      "id": "VariableID:2:371",
+      "key": "0f16c8f6b018e5038396d5374c9a45632040c08c",
+      "name": "text/heading-xl",
+      "description": "H3",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:364",
+      "collectionName": "Scaling",
+      "scopes": [
+        "TEXT_CONTENT",
+        "FONT_SIZE"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:7": 28,
+        "2:8": 31,
+        "2:9": 35
+      }
+    },
+    {
+      "id": "VariableID:2:372",
+      "key": "bc0a4f38198268d50def124ae464c30a443f0b9f",
+      "name": "text/heading-lg",
+      "description": "H4",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:364",
+      "collectionName": "Scaling",
+      "scopes": [
+        "TEXT_CONTENT",
+        "FONT_SIZE"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:7": 24,
+        "2:8": 26,
+        "2:9": 30
+      }
+    },
+    {
+      "id": "VariableID:2:373",
+      "key": "acf20a42aa13c27d21f5e9d555c63e409990c8b1",
+      "name": "text/heading-md",
+      "description": "H5",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:364",
+      "collectionName": "Scaling",
+      "scopes": [
+        "TEXT_CONTENT",
+        "FONT_SIZE"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:7": 20,
+        "2:8": 22,
+        "2:9": 25
+      }
+    },
+    {
+      "id": "VariableID:2:374",
+      "key": "01f7a44358f2408e88d28a368d0851fd47c788b6",
+      "name": "text/heading-sm",
+      "description": "H6",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:364",
+      "collectionName": "Scaling",
+      "scopes": [
+        "TEXT_CONTENT",
+        "FONT_SIZE"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:7": 18,
+        "2:8": 20,
+        "2:9": 22
+      }
+    },
+    {
+      "id": "VariableID:2:375",
+      "key": "0fe948d4a003ef5107c59b87ddafc3d6cfe3550f",
+      "name": "text/body-lg",
+      "description": "Featured text, large paragraphs",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:364",
+      "collectionName": "Scaling",
+      "scopes": [
+        "TEXT_CONTENT",
+        "FONT_SIZE"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:7": 18,
+        "2:8": 20,
+        "2:9": 22
+      }
+    },
+    {
+      "id": "VariableID:2:376",
+      "key": "20e701beec586dc1f053243552617fb512e7c348",
+      "name": "text/body-md",
+      "description": "Default body text",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:364",
+      "collectionName": "Scaling",
+      "scopes": [
+        "TEXT_CONTENT",
+        "FONT_SIZE"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:7": 16,
+        "2:8": 17.600000381469727,
+        "2:9": 20
+      }
+    },
+    {
+      "id": "VariableID:2:377",
+      "key": "8ff1d9c246c5433b307546d54880065ea4c640f7",
+      "name": "text/body-sm",
+      "description": "Secondary, metadata",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:364",
+      "collectionName": "Scaling",
+      "scopes": [
+        "TEXT_CONTENT",
+        "FONT_SIZE"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:7": 14,
+        "2:8": 15.399999618530273,
+        "2:9": 17.5
+      }
+    },
+    {
+      "id": "VariableID:2:378",
+      "key": "f9fbd9f154e0c250f3e6f07e048afa89ed0afe11",
+      "name": "text/label-md",
+      "description": "Inputs, navigation text",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:364",
+      "collectionName": "Scaling",
+      "scopes": [
+        "TEXT_CONTENT",
+        "FONT_SIZE"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:7": 14,
+        "2:8": 15.399999618530273,
+        "2:9": 17.5
+      }
+    },
+    {
+      "id": "VariableID:2:379",
+      "key": "96d459417344ba2f9f416bc99fff441edbc14438",
+      "name": "text/label-lg",
+      "description": "Buttons, key UI text",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:364",
+      "collectionName": "Scaling",
+      "scopes": [
+        "TEXT_CONTENT",
+        "FONT_SIZE"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:7": 16,
+        "2:8": 17.600000381469727,
+        "2:9": 20
+      }
+    },
+    {
+      "id": "VariableID:2:380",
+      "key": "cf19d8dc2bcd2cdbb93e08609dbee4f5ec36a0d8",
+      "name": "text/label-sm",
+      "description": "Tags, chips, helper text",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:364",
+      "collectionName": "Scaling",
+      "scopes": [
+        "TEXT_CONTENT",
+        "FONT_SIZE"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:7": 12,
+        "2:8": 13.199999809265137,
+        "2:9": 15
+      }
+    },
+    {
+      "id": "VariableID:2:637",
+      "key": "0158b362767a16f0199025aecf04c0e7aab31a0f",
+      "name": "dimensions/tile-lg",
+      "description": "",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": 64
+      }
+    },
+    {
+      "id": "VariableID:2:1492",
+      "key": "42d588c50341a036e8be2a27979ffd269eb70b34",
+      "name": "dimensions/icon-md",
+      "description": "",
+      "resolvedType": "FLOAT",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": 24
+      }
+    },
+    {
+      "id": "VariableID:2:1925",
+      "key": "68c22e2c47d0e1658ae257e2397acdc59ca714e3",
+      "name": "colors/extended/olivedrab",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.41960784792900085,
+          "g": 0.5568627715110779,
+          "b": 0.13725490868091583,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1926",
+      "key": "a07ad7646248e5f2c2ec6871b1689e95e4f7a28b",
+      "name": "colors/extended/oldlace",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.9921568632125854,
+          "g": 0.9607843160629272,
+          "b": 0.9019607901573181,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1927",
+      "key": "d48f9bac1098710915c770f1f1011c6f46347384",
+      "name": "colors/extended/navajowhite",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.8705882430076599,
+          "b": 0.6784313917160034,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1928",
+      "key": "c3ff7a1eb2bda373a00e2ea046cfc8a994c43d87",
+      "name": "colors/extended/burlywood",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.8705882430076599,
+          "g": 0.7215686440467834,
+          "b": 0.529411792755127,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1929",
+      "key": "e38b20e4966f1705bb14afffe4ba5206995b0f89",
+      "name": "colors/extended/mistyrose",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.8941176533699036,
+          "b": 0.8823529481887817,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1930",
+      "key": "80878f8e1cc8f7bc481d867c7111f73a3c8ec9d7",
+      "name": "colors/extended/mediumturquoise",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.2823529541492462,
+          "g": 0.8196078538894653,
+          "b": 0.800000011920929,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1931",
+      "key": "d72f01f5527915e4f8e657f0db281c644c9066aa",
+      "name": "colors/extended/mediumspringgreen",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0,
+          "g": 0.9803921580314636,
+          "b": 0.6039215922355652,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1932",
+      "key": "4647ae577dea2f5ff0b6286a1a2c89c34dd6cc50",
+      "name": "colors/extended/midnightblue",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.09803921729326248,
+          "g": 0.09803921729326248,
+          "b": 0.43921568989753723,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1933",
+      "key": "cc7dfaf460e166d70279e29e2391dcae2f0f5832",
+      "name": "colors/extended/mediumslateblue",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.48235294222831726,
+          "g": 0.40784314274787903,
+          "b": 0.9333333373069763,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1934",
+      "key": "7f948d025c04e3d642c38522ffa1ed0991e7519a",
+      "name": "colors/extended/orangered",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.2705882489681244,
+          "b": 0,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1935",
+      "key": "4cec231dcf11133891932df32cf1e453e7924ec5",
+      "name": "colors/extended/mediumseagreen",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.23529411852359772,
+          "g": 0.7019608020782471,
+          "b": 0.4431372582912445,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1936",
+      "key": "1ad890363896b29c7571fe487ce47a743456712d",
+      "name": "colors/extended/mediumpurple",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.5764706134796143,
+          "g": 0.43921568989753723,
+          "b": 0.8588235378265381,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1937",
+      "key": "b365bd86b57311ee216fbb82d3d806086e34ea44",
+      "name": "colors/extended/paleturquoise",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.686274528503418,
+          "g": 0.9333333373069763,
+          "b": 0.9333333373069763,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1938",
+      "key": "19b07b5d2f80be9e402977db8a31bb3647383013",
+      "name": "colors/extended/mediumvioletred",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.7803921699523926,
+          "g": 0.08235294371843338,
+          "b": 0.5215686559677124,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1939",
+      "key": "5b16e237427b6c91957a36b145991ae25c58ddae",
+      "name": "colors/extended/brown",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.6470588445663452,
+          "g": 0.16470588743686676,
+          "b": 0.16470588743686676,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1940",
+      "key": "4003776b67689aacc1e41979b7d26058a58dfee4",
+      "name": "colors/extended/mediumblue",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0,
+          "g": 0,
+          "b": 0.8039215803146362,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1941",
+      "key": "5b812c93701ecd3ee0bb615fd66e26b04a3d4f4b",
+      "name": "colors/extended/mediumaquamarine",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.4000000059604645,
+          "g": 0.8039215803146362,
+          "b": 0.6666666865348816,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1942",
+      "key": "380728182d7b200f03983422e690c888710677b2",
+      "name": "colors/extended/limegreen",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.19607843458652496,
+          "g": 0.8039215803146362,
+          "b": 0.19607843458652496,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1943",
+      "key": "5b65fb7ee6d3bd43334c8d58d057035ebfd32b45",
+      "name": "colors/extended/lightyellow",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 1,
+          "b": 0.8784313797950745,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1944",
+      "key": "50c668a18642b4315a8ad5a6d70a0fd1c51e8111",
+      "name": "colors/extended/lightslategrey",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.46666666865348816,
+          "g": 0.5333333611488342,
+          "b": 0.6000000238418579,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1945",
+      "key": "d8f8d3a6e0eab9565a0264a8ef8f1febcbe36e69",
+      "name": "colors/extended/lightskyblue",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.529411792755127,
+          "g": 0.8078431487083435,
+          "b": 0.9803921580314636,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1946",
+      "key": "769256e6c6b11a9df1e2c6f474af57eb22f84127",
+      "name": "colors/extended/palegreen",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.5960784554481506,
+          "g": 0.9843137264251709,
+          "b": 0.5960784554481506,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1947",
+      "key": "1e24df328c4f1ac6e4b7f90f49026c6153163a83",
+      "name": "colors/extended/blueviolet",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.5411764979362488,
+          "g": 0.16862745583057404,
+          "b": 0.886274516582489,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1948",
+      "key": "fe7cf8cda3d10fa3e0fd5be650f65772f8ba94b2",
+      "name": "colors/extended/lightseagreen",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.125490203499794,
+          "g": 0.6980392336845398,
+          "b": 0.6666666865348816,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1949",
+      "key": "66a643c543bf158388f17282729d7c74a2c2d305",
+      "name": "colors/extended/lightsalmon",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.6274510025978088,
+          "b": 0.47843137383461,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1950",
+      "key": "1650e5e1819bff07ebfdfac9c2f8be6bf5252542",
+      "name": "colors/extended/lightgray",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.8274509906768799,
+          "g": 0.8274509906768799,
+          "b": 0.8274509906768799,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1951",
+      "key": "bf9ce83e24294b2b3180ba42cc57edb49297b59f",
+      "name": "colors/extended/lightgoldenrodyellow",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.9803921580314636,
+          "g": 0.9803921580314636,
+          "b": 0.8235294222831726,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1952",
+      "key": "1ad03b4720057c3f7f6a79ad185f0cef0c958ac5",
+      "name": "colors/extended/lightblue",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.6784313917160034,
+          "g": 0.8470588326454163,
+          "b": 0.9019607901573181,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1953",
+      "key": "e80a81ba43d85853562d434e3a0d8252b81308f7",
+      "name": "colors/extended/lightslategray",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.46666666865348816,
+          "g": 0.5333333611488342,
+          "b": 0.6000000238418579,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1954",
+      "key": "f690e7640d9842673c27b6eb88bcaa7981ba48ca",
+      "name": "colors/extended/lawngreen",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.48627451062202454,
+          "g": 0.9882352948188782,
+          "b": 0,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1955",
+      "key": "046dd9f70ceca01b30dd2df8a6a2f3538dab0774",
+      "name": "colors/extended/lightpink",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.7137255072593689,
+          "b": 0.7568627595901489,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1956",
+      "key": "8e4face21e21632cae191ba95bc6cec524dce5f3",
+      "name": "colors/extended/palevioletred",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.8588235378265381,
+          "g": 0.43921568989753723,
+          "b": 0.5764706134796143,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1957",
+      "key": "a63b768399c4a2156143c83af27d55de45eb9ec3",
+      "name": "colors/extended/lavender",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.9019607901573181,
+          "g": 0.9019607901573181,
+          "b": 0.9803921580314636,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1958",
+      "key": "9d0426207743f3a50f76c8e4383c1892b44cfd10",
+      "name": "colors/extended/khaki",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.9411764740943909,
+          "g": 0.9019607901573181,
+          "b": 0.5490196347236633,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1959",
+      "key": "a9a89eceffab4ad7b994c5f3a75dca7e3d41bb8f",
+      "name": "colors/extended/blanchedalmond",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.9215686321258545,
+          "b": 0.8039215803146362,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1960",
+      "key": "5915b155fc70d3cec5f2e38b53a611a6e4844158",
+      "name": "colors/extended/ivory",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 1,
+          "b": 0.9411764740943909,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1961",
+      "key": "1e9174b24aa4fb1dd55590e7ab829df77064d6f0",
+      "name": "colors/extended/palegoldenrod",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.9333333373069763,
+          "g": 0.9098039269447327,
+          "b": 0.6666666865348816,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1962",
+      "key": "18be94b8606f2fea0116a7208315179fd3032f3a",
+      "name": "colors/extended/hotpink",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.4117647111415863,
+          "b": 0.7058823704719543,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1963",
+      "key": "68e5f0d3bb1bf76aad3ede1c6ab179cb94ee10c0",
+      "name": "colors/extended/coral",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.49803921580314636,
+          "b": 0.3137255012989044,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1964",
+      "key": "0f8977c516234b4a600bcc21030e40354649891f",
+      "name": "colors/extended/bisque",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.8941176533699036,
+          "b": 0.7686274647712708,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1965",
+      "key": "a56c45a4c42fbb512082b05f0ddcef722daa4bf5",
+      "name": "colors/extended/ghostwhite",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.9725490212440491,
+          "g": 0.9725490212440491,
+          "b": 1,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1966",
+      "key": "1709fedb427e986b7856f983f7cee588c8b414ca",
+      "name": "colors/extended/springgreen",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0,
+          "g": 1,
+          "b": 0.49803921580314636,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1967",
+      "key": "f361db6fc24b62784e7abec5472a923d90ca1642",
+      "name": "colors/extended/honeydew",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.9411764740943909,
+          "g": 1,
+          "b": 0.9411764740943909,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1968",
+      "key": "0c9fd5492d1deb5b4bda4b9aae9363d0463a7979",
+      "name": "colors/extended/gainsboro",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.8627451062202454,
+          "g": 0.8627451062202454,
+          "b": 0.8627451062202454,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1969",
+      "key": "1488594dcff4d982dfb98dc96070f8b5b47a704d",
+      "name": "colors/extended/darkseagreen",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.5607843399047852,
+          "g": 0.7372549176216125,
+          "b": 0.5607843399047852,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1970",
+      "key": "4959ffea7ee09980d3606eb3f047dc420316f2dd",
+      "name": "colors/extended/floralwhite",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.9803921580314636,
+          "b": 0.9411764740943909,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1971",
+      "key": "c7b9a89613193ab483c0bfd213e4a0ed909556c3",
+      "name": "colors/extended/dimgrey",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.4117647111415863,
+          "g": 0.4117647111415863,
+          "b": 0.4117647111415863,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1972",
+      "key": "4810a97dc8ffee30b722394a8a137b1115db4e07",
+      "name": "colors/extended/magenta",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0,
+          "b": 1,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1973",
+      "key": "ee3c03cc0faa44469f9b2836ff7ca50f9473ae68",
+      "name": "colors/extended/plum",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.8666666746139526,
+          "g": 0.6274510025978088,
+          "b": 0.8666666746139526,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1974",
+      "key": "dff8efed6cade822ba22cbee90af49b6df33c6f8",
+      "name": "colors/extended/deepskyblue",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0,
+          "g": 0.7490196228027344,
+          "b": 1,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1975",
+      "key": "66698291a258b0d3ad6f920f1f0061e144167a5a",
+      "name": "colors/extended/orange",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.6470588445663452,
+          "b": 0,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1976",
+      "key": "9cf96e1c23d9522184a950c2cd5f6e1be6a2b361",
+      "name": "colors/extended/turquoise",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.250980406999588,
+          "g": 0.8784313797950745,
+          "b": 0.8156862854957581,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1977",
+      "key": "f30ced04bf922c609888d67cd100896bfb672ffc",
+      "name": "colors/extended/lightcyan",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.8784313797950745,
+          "g": 1,
+          "b": 1,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1978",
+      "key": "0cb6efcfcefbbaa9e7517ddd2a58afdfa21c9b3e",
+      "name": "colors/extended/darkviolet",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.5803921818733215,
+          "g": 0,
+          "b": 0.8274509906768799,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1979",
+      "key": "a70e2d4942f379631280aa0010891f4ed69cbad2",
+      "name": "colors/extended/darkgrey",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.6627451181411743,
+          "g": 0.6627451181411743,
+          "b": 0.6627451181411743,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1980",
+      "key": "b16cd01ca2c424a780a96f1edead413732b4af20",
+      "name": "colors/extended/darkcyan",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0,
+          "g": 0.545098066329956,
+          "b": 0.545098066329956,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1981",
+      "key": "862ecabe9726535699bf2bbc7f448ac2e23dd29e",
+      "name": "colors/extended/goldenrod",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.8549019694328308,
+          "g": 0.6470588445663452,
+          "b": 0.125490203499794,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1982",
+      "key": "4a4b51c5688ff81350eba4993a2ad7a0d7e5ee17",
+      "name": "colors/extended/darkturquoise",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0,
+          "g": 0.8078431487083435,
+          "b": 0.8196078538894653,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1983",
+      "key": "c6ae7553aa7955c9830c588b3702d1550711119a",
+      "name": "colors/extended/lemonchiffon",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.9803921580314636,
+          "b": 0.8039215803146362,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1984",
+      "key": "cb67c80ef1703a2f03a14de0754126dad658ac16",
+      "name": "colors/extended/darkslateblue",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.2823529541492462,
+          "g": 0.239215686917305,
+          "b": 0.545098066329956,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1985",
+      "key": "206c4e56894cd7fb92b45b1efa9ca978253664be",
+      "name": "colors/extended/darkgray",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.6627451181411743,
+          "g": 0.6627451181411743,
+          "b": 0.6627451181411743,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1986",
+      "key": "15c93be9e06f68f14f8bf21fa0e62859e66cfb89",
+      "name": "colors/extended/darkorange",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.5490196347236633,
+          "b": 0,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1987",
+      "key": "e30e7a9feee5a0b92b105c74ec319df7c72e00a6",
+      "name": "colors/extended/firebrick",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.6980392336845398,
+          "g": 0.13333334028720856,
+          "b": 0.13333334028720856,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1988",
+      "key": "7e751f09c361be5b467b00c91289c7f2617b4263",
+      "name": "colors/extended/darkmagenta",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.545098066329956,
+          "g": 0,
+          "b": 0.545098066329956,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1989",
+      "key": "438b4963c7de58e8116be8cdaf9870b6c886fbb1",
+      "name": "colors/extended/skyblue",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.529411792755127,
+          "g": 0.8078431487083435,
+          "b": 0.9215686321258545,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1990",
+      "key": "930208f0721bbc4ce445e3e9033f42bbceba97e2",
+      "name": "colors/extended/lightgreen",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.5647059082984924,
+          "g": 0.9333333373069763,
+          "b": 0.5647059082984924,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1991",
+      "key": "d1ac1f8e1b0db875983f24d9035047e8b194fdc1",
+      "name": "colors/extended/darkkhaki",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.7411764860153198,
+          "g": 0.7176470756530762,
+          "b": 0.41960784792900085,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1992",
+      "key": "8ac1b33c55bc18e8d9268ddee03fa5ddb591496b",
+      "name": "colors/extended/darksalmon",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.9137254953384399,
+          "g": 0.5882353186607361,
+          "b": 0.47843137383461,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1993",
+      "key": "51e63975caaee562ae28a4a1f337232235c845b2",
+      "name": "colors/extended/darkblue",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0,
+          "g": 0,
+          "b": 0.545098066329956,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1994",
+      "key": "ae50fa2e422241cc80ee2cebd52c1702f8724803",
+      "name": "colors/extended/cornsilk",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.9725490212440491,
+          "b": 0.8627451062202454,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1995",
+      "key": "947e2480dae0ba91428089246fb99448603eac19",
+      "name": "colors/extended/moccasin",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.8941176533699036,
+          "b": 0.7098039388656616,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1996",
+      "key": "2d63a16f8dbec35ff80460a3ce5a8c7c3d8f83ce",
+      "name": "colors/extended/lavenderblush",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.9411764740943909,
+          "b": 0.9607843160629272,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1997",
+      "key": "392f1da260f1749325b4e97d9e00ac43622e35e0",
+      "name": "colors/extended/powderblue",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.6901960968971252,
+          "g": 0.8784313797950745,
+          "b": 0.9019607901573181,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1998",
+      "key": "2b7253e1c59637c254d3b17ce8094750c63f5811",
+      "name": "colors/extended/peachpuff",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.8549019694328308,
+          "b": 0.7254902124404907,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:1999",
+      "key": "6524a56323b6be1abb5dff61fdd137abeb50076f",
+      "name": "colors/extended/chocolate",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.8235294222831726,
+          "g": 0.4117647111415863,
+          "b": 0.11764705926179886,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2000",
+      "key": "acee648a6b135de55a1f8e3fd9d376cb165de73e",
+      "name": "colors/extended/peru",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.8039215803146362,
+          "g": 0.5215686559677124,
+          "b": 0.24705882370471954,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2001",
+      "key": "79855aad1eb08fac607fc87e3f90831fe77a543d",
+      "name": "colors/extended/crimson",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.8627451062202454,
+          "g": 0.0784313753247261,
+          "b": 0.23529411852359772,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2002",
+      "key": "a90e3c4fc763e0a6e37929a8b22da8dbc654365d",
+      "name": "colors/extended/violet",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.9333333373069763,
+          "g": 0.5098039507865906,
+          "b": 0.9333333373069763,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2003",
+      "key": "c753f38987ead06f1c88fb15ce63cf79b49ca44e",
+      "name": "colors/extended/orchid",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.8549019694328308,
+          "g": 0.43921568989753723,
+          "b": 0.8392156958580017,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2004",
+      "key": "3f810dca221c9a3184201ee2ffcda3524c782c6f",
+      "name": "colors/extended/linen",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.9803921580314636,
+          "g": 0.9411764740943909,
+          "b": 0.9019607901573181,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2005",
+      "key": "010705d52266baa249a7ad1410d9459db35fda9d",
+      "name": "colors/extended/gold",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.843137264251709,
+          "b": 0,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2006",
+      "key": "980adb40a7d746d890762c389698224f5d5a506f",
+      "name": "colors/extended/darkolivegreen",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.3333333432674408,
+          "g": 0.41960784792900085,
+          "b": 0.18431372940540314,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2007",
+      "key": "b7296e7a5902dce8daf409ae3330c4a016e5b28c",
+      "name": "colors/extended/tomato",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.38823530077934265,
+          "b": 0.27843138575553894,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2008",
+      "key": "0cb0051c4b709c320d6e9df8f2c589c0eb9110ba",
+      "name": "colors/extended/tan",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.8235294222831726,
+          "g": 0.7058823704719543,
+          "b": 0.5490196347236633,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2009",
+      "key": "17ad26ee8095d2b06492cccaf598afa2b1a66690",
+      "name": "colors/extended/chartreuse",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.49803921580314636,
+          "g": 1,
+          "b": 0,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2010",
+      "key": "49f15ccd511aeec77ac897e3e70b6709888f516e",
+      "name": "colors/extended/wheat",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.9607843160629272,
+          "g": 0.8705882430076599,
+          "b": 0.7019608020782471,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2011",
+      "key": "ddd280494228e13472209484c957dd5be10c40db",
+      "name": "colors/extended/cornflowerblue",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.3921568691730499,
+          "g": 0.5843137502670288,
+          "b": 0.929411768913269,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2012",
+      "key": "b0680255954ee5d7426034bdbad0805db8d46ebe",
+      "name": "colors/extended/steelblue",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.27450981736183167,
+          "g": 0.5098039507865906,
+          "b": 0.7058823704719543,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2013",
+      "key": "923e860036c5ad69574b30729213defbebf69da6",
+      "name": "colors/extended/slategrey",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.43921568989753723,
+          "g": 0.501960813999176,
+          "b": 0.5647059082984924,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2014",
+      "key": "949c426d8e36dc221d504aed2ca21029c9936886",
+      "name": "colors/extended/cyan",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0,
+          "g": 1,
+          "b": 1,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2015",
+      "key": "15314982973fc86017da2a1577d0403922f773ef",
+      "name": "colors/extended/sandybrown",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.95686274766922,
+          "g": 0.6431372761726379,
+          "b": 0.3764705955982208,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2016",
+      "key": "1d7b3cc76cdac0907db0ac57b56db72e3404e2b2",
+      "name": "colors/extended/seashell",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.9607843160629272,
+          "b": 0.9333333373069763,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2017",
+      "key": "655fe6e5ebe72ba557086ec9cc28f15967e20fdf",
+      "name": "colors/extended/dodgerblue",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.11764705926179886,
+          "g": 0.5647059082984924,
+          "b": 1,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2018",
+      "key": "79c516e48d1ef310e31e750d5b0265fa5f56a4a4",
+      "name": "colors/extended/salmon",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.9803921580314636,
+          "g": 0.501960813999176,
+          "b": 0.4470588266849518,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2019",
+      "key": "25854ad5207e57c25f1a4aabd921b9e14a9eb900",
+      "name": "colors/extended/forestgreen",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.13333334028720856,
+          "g": 0.545098066329956,
+          "b": 0.13333334028720856,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2020",
+      "key": "d8f1ee35ad65155fecd0c66ba6f98d8379a96338",
+      "name": "colors/extended/darkslategray",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.18431372940540314,
+          "g": 0.30980393290519714,
+          "b": 0.30980393290519714,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2021",
+      "key": "5b95569d6088da90f8811df8f097b1e540962fbe",
+      "name": "colors/extended/darkgreen",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0,
+          "g": 0.3921568691730499,
+          "b": 0,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2022",
+      "key": "1fe17d7db68dff035b7f50f99ec8d1bdf933f7cc",
+      "name": "colors/extended/lightgrey",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.8274509906768799,
+          "g": 0.8274509906768799,
+          "b": 0.8274509906768799,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2023",
+      "key": "3ea4834afb7db9441b2e473c48a3bfa689d1d3e8",
+      "name": "colors/extended/royalblue",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.2549019753932953,
+          "g": 0.4117647111415863,
+          "b": 0.8823529481887817,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2024",
+      "key": "e0dae08024315ebc11fc70376a1ec3cc461e57a4",
+      "name": "colors/extended/thistle",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.8470588326454163,
+          "g": 0.7490196228027344,
+          "b": 0.8470588326454163,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2025",
+      "key": "c910063d2eab07290ac77637100f6f21d92ec19b",
+      "name": "colors/extended/deeppink",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.0784313753247261,
+          "b": 0.5764706134796143,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2026",
+      "key": "b9685a942b3b144bf0d2e6793f5d7e468a32acfc",
+      "name": "colors/extended/saddlebrown",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.545098066329956,
+          "g": 0.2705882489681244,
+          "b": 0.07450980693101883,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2027",
+      "key": "bf48cbeebcec77a9df4855c8197dbe1cda97c27c",
+      "name": "colors/extended/dimgray",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.4117647111415863,
+          "g": 0.4117647111415863,
+          "b": 0.4117647111415863,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2028",
+      "key": "dfc66f62793f79c0c124fcf8e10cf60adf1be731",
+      "name": "colors/extended/indigo",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.29411765933036804,
+          "g": 0,
+          "b": 0.5098039507865906,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2029",
+      "key": "ee791b5e7002ae7530dc483a8cae0b306942c5d7",
+      "name": "colors/extended/azure",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.9411764740943909,
+          "g": 1,
+          "b": 1,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2030",
+      "key": "943a5002e432d0503779f489806e2674b08b7a06",
+      "name": "colors/extended/rosybrown",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.7372549176216125,
+          "g": 0.5607843399047852,
+          "b": 0.5607843399047852,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2031",
+      "key": "ae1be7f19b5fb11e991fbca93c0dd7b15be58636",
+      "name": "colors/extended/mintcream",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.9607843160629272,
+          "g": 1,
+          "b": 0.9803921580314636,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2032",
+      "key": "4cb32e7d125796d16c74872bbe224bea78986478",
+      "name": "colors/extended/beige",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.9607843160629272,
+          "g": 0.9607843160629272,
+          "b": 0.8627451062202454,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2033",
+      "key": "82e657eb6559c0b2656493a48d52025423362ae8",
+      "name": "colors/extended/slateblue",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.4156862795352936,
+          "g": 0.3529411852359772,
+          "b": 0.8039215803146362,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2034",
+      "key": "63eac6bab9a7810b99d4394be82e4f215247019e",
+      "name": "colors/extended/darkorchid",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.6000000238418579,
+          "g": 0.19607843458652496,
+          "b": 0.800000011920929,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2035",
+      "key": "4c28047be6d8c338dabec0f990679577821d16b1",
+      "name": "colors/extended/sienna",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.6274510025978088,
+          "g": 0.32156863808631897,
+          "b": 0.1764705926179886,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2036",
+      "key": "08e88faa6fd90abb1ed0458df9b3fc3bd147de3d",
+      "name": "colors/extended/yellowgreen",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.6039215922355652,
+          "g": 0.8039215803146362,
+          "b": 0.19607843458652496,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2037",
+      "key": "55019ef6be1c142c4d95a2bf2b9a118807bd7819",
+      "name": "colors/extended/darkred",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.545098066329956,
+          "g": 0,
+          "b": 0,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2038",
+      "key": "a661f28c00b9a34e50daccc8b63397392fa09642",
+      "name": "colors/extended/indianred",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.8039215803146362,
+          "g": 0.3607843220233917,
+          "b": 0.3607843220233917,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2039",
+      "key": "e2e9ddbdbfe831c73b78c73820eefa4285cc0358",
+      "name": "colors/extended/papayawhip",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.9372549057006836,
+          "b": 0.8352941274642944,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2040",
+      "key": "f0b25ba5cbf17034e04882b8c2cb7e6fe9efe51f",
+      "name": "colors/extended/snow",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.9803921580314636,
+          "b": 0.9803921580314636,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2041",
+      "key": "4b341c39e6d15dee3834c52d37c2448c343617ab",
+      "name": "colors/extended/darkslategrey",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.18431372940540314,
+          "g": 0.30980393290519714,
+          "b": 0.30980393290519714,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2043",
+      "key": "cce5b8fec0ae7c6ad2effc2d835a875d59b58d67",
+      "name": "colors/extended/mediumorchid",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.729411780834198,
+          "g": 0.3333333432674408,
+          "b": 0.8274509906768799,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2045",
+      "key": "826a323fb3aea550418a0ab02460d15bbe6dcc50",
+      "name": "colors/extended/aquamarine",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.49803921580314636,
+          "g": 1,
+          "b": 0.8313725590705872,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2046",
+      "key": "3f67db5a20cb299f3e87789464e733a450b2383a",
+      "name": "colors/extended/slategray",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.43921568989753723,
+          "g": 0.501960813999176,
+          "b": 0.5647059082984924,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2047",
+      "key": "4dae0b6c6525b9ef700853854056b698301fd121",
+      "name": "colors/extended/seagreen",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.18039216101169586,
+          "g": 0.545098066329956,
+          "b": 0.34117648005485535,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2048",
+      "key": "178e04343847f05ff76e148c485b44e2304736e9",
+      "name": "colors/extended/pink",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 1,
+          "g": 0.7529411911964417,
+          "b": 0.7960784435272217,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2049",
+      "key": "4f4c1b6ce5637a25035048af12220dda11e3eec2",
+      "name": "colors/extended/greenyellow",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.6784313917160034,
+          "g": 1,
+          "b": 0.18431372940540314,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2050",
+      "key": "cdbab714327ec2e33e813a51ccb98258f7288692",
+      "name": "colors/extended/cadetblue",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.37254902720451355,
+          "g": 0.6196078658103943,
+          "b": 0.6274510025978088,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2051",
+      "key": "acc9b5fe664a526e204a896df34e3da928a8fdf7",
+      "name": "colors/extended/lightcoral",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.9411764740943909,
+          "g": 0.501960813999176,
+          "b": 0.501960813999176,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2052",
+      "key": "47eccefb92bbcbb584eaf85e857def280e8bcbc3",
+      "name": "colors/extended/lightsteelblue",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.6901960968971252,
+          "g": 0.7686274647712708,
+          "b": 0.8705882430076599,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2053",
+      "key": "43c9b38488078f2bd9e9c5bf6fcf2715bb717f90",
+      "name": "colors/extended/darkgoldenrod",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.7215686440467834,
+          "g": 0.5254902243614197,
+          "b": 0.04313725605607033,
+          "a": 1
+        }
+      }
+    },
+    {
+      "id": "VariableID:2:2054",
+      "key": "541aaa6668d62119edb79fdca112e0e5bad137a7",
+      "name": "colors/extended/rebeccapurple",
+      "description": "",
+      "resolvedType": "COLOR",
+      "variableCollectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "hiddenFromPublishing": false,
+      "remote": false,
+      "valuesByMode": {
+        "2:2": {
+          "r": 0.4000000059604645,
+          "g": 0.20000000298023224,
+          "b": 0.6000000238418579,
+          "a": 1
+        }
+      }
+    }
+  ]
+}

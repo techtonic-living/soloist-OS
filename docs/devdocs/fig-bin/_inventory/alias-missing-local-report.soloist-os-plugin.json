@@ -1,0 +1,101 @@
+{
+  "schemaVersion": "soloist-os.harmonization.alias-missing-local-report.v1",
+  "generatedAt": "2026-01-01T14:07:42.531Z",
+  "fileName": "Soloist OS Plugin",
+  "snapshotPath": "docs/devdocs/fig-bin/Soloist_OS_Plugin/variables-snapshot_Soloist_OS_Plugin_no-fileKey_2026-01-01T12-08-56-670Z.json",
+  "exportedAt": "2026-01-01T12:08:56.670Z",
+  "totals": {
+    "totalMissingLocalAliasRefs": 6,
+    "uniqueMissingLocalTargetIds": 3,
+    "uniqueVariablesReferencingMissingTargets": 4
+  },
+  "targets": [
+    {
+      "targetId": "VariableID:2001:3789",
+      "refCount": 4,
+      "affectedVariables": [
+        {
+          "variableId": "VariableID:2001:3781",
+          "variableName": "Semantic/Wrappers/box-shadow-drop",
+          "variableCollectionId": "VariableCollectionId:20:74",
+          "variableCollectionName": "Theme",
+          "modes": [
+            "20:0",
+            "20:2"
+          ]
+        },
+        {
+          "variableId": "VariableID:2177:1206",
+          "variableName": "Semantic/Wrappers/box-shadow-glow",
+          "variableCollectionId": "VariableCollectionId:20:74",
+          "variableCollectionName": "Theme",
+          "modes": [
+            "20:6",
+            "20:7"
+          ]
+        }
+      ]
+    },
+    {
+      "targetId": "VariableID:20:138",
+      "refCount": 1,
+      "affectedVariables": [
+        {
+          "variableId": "VariableID:20:109",
+          "variableName": "Color/Semantic/Groups/tool-group-document",
+          "variableCollectionId": "VariableCollectionId:20:79",
+          "variableCollectionName": "Global",
+          "modes": [
+            "20:1"
+          ]
+        }
+      ]
+    },
+    {
+      "targetId": "VariableID:2232:663",
+      "refCount": 1,
+      "affectedVariables": [
+        {
+          "variableId": "VariableID:2177:1074",
+          "variableName": "Color/Aliases/Neutrals/transparent",
+          "variableCollectionId": "VariableCollectionId:20:79",
+          "variableCollectionName": "Global",
+          "modes": [
+            "20:1"
+          ]
+        }
+      ]
+    }
+  ],
+  "recommendedStrategies": [
+    {
+      "key": "localize",
+      "label": "Make aliases self-contained",
+      "when": "Best for portability / cross-file refactors",
+      "steps": [
+        "Identify which library/file owns each missing targetId",
+        "Create equivalent local variables in the target file",
+        "Repoint aliases to the new local variable IDs"
+      ]
+    },
+    {
+      "key": "explicit-dependency",
+      "label": "Make library dependency explicit",
+      "when": "Best when a shared published variable library is the source of truth",
+      "steps": [
+        "Ensure the external variable library is published and attached",
+        "Avoid “harvested” references by re-linking to the published source",
+        "Document the dependency in repo docs"
+      ]
+    },
+    {
+      "key": "bake-values",
+      "label": "Replace aliases with literal values",
+      "when": "Best for one-off tokens that should not follow upstream changes",
+      "steps": [
+        "Resolve alias values per mode",
+        "Write literal values into the variable modes"
+      ]
+    }
+  ]
+}

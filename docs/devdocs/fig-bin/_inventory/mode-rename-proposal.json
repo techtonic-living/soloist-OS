@@ -1,0 +1,198 @@
+{
+  "schemaVersion": "soloist-os.harmonization.mode-rename-proposal.v1",
+  "generatedAt": "2026-01-01T14:07:42.528Z",
+  "baseline": {
+    "manifestPath": "docs/devdocs/fig-bin/_inventory/baseline-manifest.json",
+    "findingsPath": "docs/devdocs/fig-bin/_inventory/latest-findings.json",
+    "selectionPolicy": "newestPerFileName",
+    "uniqueFileNamesExpected": 8
+  },
+  "summaryByFile": {
+    "00_Global Design System": {
+      "total": 1,
+      "actionable": 1,
+      "blocked": 0
+    },
+    "Flock Design Library": {
+      "total": 1,
+      "actionable": 1,
+      "blocked": 0
+    },
+    "Global Library": {
+      "total": 1,
+      "actionable": 1,
+      "blocked": 0
+    },
+    "GS - Primitives": {
+      "total": 1,
+      "actionable": 1,
+      "blocked": 0
+    },
+    "sandman": {
+      "total": 3,
+      "actionable": 3,
+      "blocked": 0
+    },
+    "Smart Swatch": {
+      "total": 3,
+      "actionable": 3,
+      "blocked": 0
+    },
+    "Soloist OS Plugin": {
+      "total": 1,
+      "actionable": 1,
+      "blocked": 0
+    },
+    "unBind Library": {
+      "total": 1,
+      "actionable": 1,
+      "blocked": 0
+    }
+  },
+  "changes": [
+    {
+      "fileName": "00_Global Design System",
+      "snapshotPath": "docs/devdocs/fig-bin/00_Global_Design_System/variables-snapshot_00_Global_Design_System_no-fileKey_2026-01-01T13-10-51-048Z.json",
+      "collectionId": "VariableCollectionId:12:143",
+      "collectionName": "Variable collection",
+      "modeId": "12:0",
+      "fromName": "Mode 1",
+      "toName": "Default",
+      "confidence": "high",
+      "reason": "Single-mode collection; renaming \"Mode 1\" to \"Default\" improves clarity without changing semantics.",
+      "warnings": []
+    },
+    {
+      "fileName": "Flock Design Library",
+      "snapshotPath": "docs/devdocs/fig-bin/Flock_Design_Library/variables-snapshot_Flock_Design_Library_no-fileKey_2026-01-01T13-24-19-819Z.json",
+      "collectionId": "VariableCollectionId:23417:2461",
+      "collectionName": "Soloist Primitives",
+      "modeId": "23417:0",
+      "fromName": "Mode 1",
+      "toName": "Default",
+      "confidence": "high",
+      "reason": "Single-mode collection; renaming \"Mode 1\" to \"Default\" improves clarity without changing semantics.",
+      "warnings": []
+    },
+    {
+      "fileName": "Global Library",
+      "snapshotPath": "docs/devdocs/fig-bin/Global_Library/variables-snapshot_Global_Library_no-fileKey_2026-01-01T13-13-43-424Z.json",
+      "collectionId": "VariableCollectionId:2:326",
+      "collectionName": "Primitives",
+      "modeId": "2:2",
+      "fromName": "Mode 1",
+      "toName": "Default",
+      "confidence": "high",
+      "reason": "Single-mode collection; renaming \"Mode 1\" to \"Default\" improves clarity without changing semantics.",
+      "warnings": []
+    },
+    {
+      "fileName": "GS - Primitives",
+      "snapshotPath": "docs/devdocs/fig-bin/GS_-_Primitives/variables-snapshot_GS_-_Primitives_no-fileKey_2026-01-01T13-18-38-857Z.json",
+      "collectionId": "VariableCollectionId:19:850",
+      "collectionName": "Foundations",
+      "modeId": "19:0",
+      "fromName": "Mode 1",
+      "toName": "Default",
+      "confidence": "high",
+      "reason": "Single-mode collection; renaming \"Mode 1\" to \"Default\" improves clarity without changing semantics.",
+      "warnings": []
+    },
+    {
+      "fileName": "sandman",
+      "snapshotPath": "docs/devdocs/fig-bin/sandman/variables-snapshot_sandman_no-fileKey_2026-01-01T09-50-48-762Z.json",
+      "collectionId": "VariableCollectionId:5:105",
+      "collectionName": "Interface",
+      "modeId": "5:1",
+      "fromName": "Mode 1",
+      "toName": "Default",
+      "confidence": "high",
+      "reason": "Single-mode collection; renaming \"Mode 1\" to \"Default\" improves clarity without changing semantics.",
+      "warnings": []
+    },
+    {
+      "fileName": "sandman",
+      "snapshotPath": "docs/devdocs/fig-bin/sandman/variables-snapshot_sandman_no-fileKey_2026-01-01T09-50-48-762Z.json",
+      "collectionId": "VariableCollectionId:1:2955",
+      "collectionName": "System",
+      "modeId": "1:2",
+      "fromName": "Mode 1",
+      "toName": "Default",
+      "confidence": "high",
+      "reason": "Single-mode collection; renaming \"Mode 1\" to \"Default\" improves clarity without changing semantics.",
+      "warnings": []
+    },
+    {
+      "fileName": "sandman",
+      "snapshotPath": "docs/devdocs/fig-bin/sandman/variables-snapshot_sandman_no-fileKey_2026-01-01T09-50-48-762Z.json",
+      "collectionId": "VariableCollectionId:1:2954",
+      "collectionName": "User",
+      "modeId": "1:1",
+      "fromName": "Mode 1",
+      "toName": "Default",
+      "confidence": "high",
+      "reason": "Single-mode collection; renaming \"Mode 1\" to \"Default\" improves clarity without changing semantics.",
+      "warnings": []
+    },
+    {
+      "fileName": "Smart Swatch",
+      "snapshotPath": "docs/devdocs/fig-bin/Smart_Swatch/variables-snapshot_Smart_Swatch_no-fileKey_2026-01-01T12-16-02-239Z.json",
+      "collectionId": "VariableCollectionId:5:105",
+      "collectionName": "Interface",
+      "modeId": "5:1",
+      "fromName": "Mode 1",
+      "toName": "Default",
+      "confidence": "high",
+      "reason": "Single-mode collection; renaming \"Mode 1\" to \"Default\" improves clarity without changing semantics.",
+      "warnings": []
+    },
+    {
+      "fileName": "Smart Swatch",
+      "snapshotPath": "docs/devdocs/fig-bin/Smart_Swatch/variables-snapshot_Smart_Swatch_no-fileKey_2026-01-01T12-16-02-239Z.json",
+      "collectionId": "VariableCollectionId:1:2955",
+      "collectionName": "System",
+      "modeId": "1:2",
+      "fromName": "Mode 1",
+      "toName": "Default",
+      "confidence": "high",
+      "reason": "Single-mode collection; renaming \"Mode 1\" to \"Default\" improves clarity without changing semantics.",
+      "warnings": []
+    },
+    {
+      "fileName": "Smart Swatch",
+      "snapshotPath": "docs/devdocs/fig-bin/Smart_Swatch/variables-snapshot_Smart_Swatch_no-fileKey_2026-01-01T12-16-02-239Z.json",
+      "collectionId": "VariableCollectionId:1:2954",
+      "collectionName": "User",
+      "modeId": "1:1",
+      "fromName": "Mode 1",
+      "toName": "Default",
+      "confidence": "high",
+      "reason": "Single-mode collection; renaming \"Mode 1\" to \"Default\" improves clarity without changing semantics.",
+      "warnings": []
+    },
+    {
+      "fileName": "Soloist OS Plugin",
+      "snapshotPath": "docs/devdocs/fig-bin/Soloist_OS_Plugin/variables-snapshot_Soloist_OS_Plugin_no-fileKey_2026-01-01T12-08-56-670Z.json",
+      "collectionId": "VariableCollectionId:20:79",
+      "collectionName": "Global",
+      "modeId": "20:1",
+      "fromName": "Mode 1",
+      "toName": "Default",
+      "confidence": "high",
+      "reason": "Single-mode collection; renaming \"Mode 1\" to \"Default\" improves clarity without changing semantics.",
+      "warnings": []
+    },
+    {
+      "fileName": "unBind Library",
+      "snapshotPath": "docs/devdocs/fig-bin/unBind_Library/variables-snapshot_unBind_Library_no-fileKey_2026-01-01T13-31-04-672Z.json",
+      "collectionId": "VariableCollectionId:11:367",
+      "collectionName": "System",
+      "modeId": "11:3",
+      "fromName": "Mode 1",
+      "toName": "Default",
+      "confidence": "high",
+      "reason": "Single-mode collection; renaming \"Mode 1\" to \"Default\" improves clarity without changing semantics.",
+      "warnings": []
+    }
+  ]
+}

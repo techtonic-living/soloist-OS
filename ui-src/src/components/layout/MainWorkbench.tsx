@@ -29,7 +29,7 @@ export const MainWorkbench = ({
 				{/* Subheader row (keeps borders aligned with assistant header) */}
 				<div className="h-12 flex items-center px-4 border-b border-glass-stroke bg-bg-surface/40" />
 
-				<div className="flex-1 min-h-0">
+				<div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
 					<AnimatePresence mode="wait">
 						<motion.div
 							key="workbench-content"
@@ -37,7 +37,7 @@ export const MainWorkbench = ({
 							animate={{ opacity: 1 }}
 							exit={{ opacity: 0 }}
 							transition={{ duration: 0.2 }}
-							className="h-full w-full"
+							className="min-h-full w-full"
 						>
 							{children}
 						</motion.div>
