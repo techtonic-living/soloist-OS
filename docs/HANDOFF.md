@@ -1,12 +1,12 @@
 # Soloist OS — Handoff (Design System refactor)
 
-**Last updated:** 2026-01-05  
+**Last updated:** 2026-01-05
 **Working branch:** `figmaDS-refactor`
 
 This repo is running a **drift-killer loop** between Figma and code. The goal is that “truth” lives in:
 
-1) exported contracts/snapshots under `design/contracts/`  
-2) deterministic seed/checklist in `plugin/code.tsx`  
+1) exported contracts/snapshots under `design/contracts/`
+2) deterministic seed/checklist in `plugin/code.tsx`
 3) UI implementations that follow contracts (starting with **Button**)
 
 ## What’s true (do not regress)

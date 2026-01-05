@@ -1129,9 +1129,7 @@ function safeFileKey(): string | null {
 
 function stableVariantComboKey(variantProps: { [k: string]: string } | null) {
 	if (!variantProps) return "__NO_VARIANT_PROPS__";
-	const keys = Object.keys(variantProps).sort((a, b) =>
-		a.localeCompare(b)
-	);
+	const keys = Object.keys(variantProps).sort((a, b) => a.localeCompare(b));
 	let out = "";
 	for (let i = 0; i < keys.length; i++) {
 		const k = keys[i];
@@ -1206,8 +1204,14 @@ function addUnknownVariantValueIssues(params: {
 	allowedValuesByProp: Record<string, string[]>;
 	props: { [key: string]: string } | null;
 }) {
-	const { issues, set, component, expectedProps, allowedValuesByProp, props } =
-		params;
+	const {
+		issues,
+		set,
+		component,
+		expectedProps,
+		allowedValuesByProp,
+		props,
+	} = params;
 	if (!props) return;
 	for (const propName of expectedProps) {
 		const v = props[propName];
@@ -1272,14 +1276,18 @@ async function scanComponentVariantIssues(): Promise<
 	}) as ComponentSetNode[];
 
 	for (const set of sets) {
-		const { expectedProps, allowedValuesByProp } = getVariantGroupDefinitions(set);
+		const { expectedProps, allowedValuesByProp } =
+			getVariantGroupDefinitions(set);
 		const seen: Record<string, ComponentNode[]> = {};
 		const children = set.children ?? [];
 		for (const child of children) {
 			if (child.type !== "COMPONENT") continue;
 			const comp = child;
 			// eslint-disable-next-line deprecation/deprecation
-			const props = (comp.variantProperties as { [k: string]: string } | undefined) ?? null;
+			const props =
+				(comp.variantProperties as
+					| { [k: string]: string }
+					| undefined) ?? null;
 
 			addMissingVariantPropertyIssues({
 				issues,
@@ -1526,7 +1534,8 @@ async function syncColors(colors: { name: string; hex: string }[]) {
 		(c) => c.name === "Soloist Primitives"
 	);
 	const existed = Boolean(collection);
-	collection ??= figma.variables.createVariableCollection("Soloist Primitives");
+	collection ??=
+		figma.variables.createVariableCollection("Soloist Primitives");
 	if (!existed) {
 		collection.renameMode(collection.defaultModeId, "Value");
 	}
@@ -1541,7 +1550,11 @@ async function syncColors(colors: { name: string; hex: string }[]) {
 				v.name === color.name &&
 				v.variableCollectionId === collection?.id
 		);
-		variable ??= figma.variables.createVariable(color.name, collection, "COLOR");
+		variable ??= figma.variables.createVariable(
+			color.name,
+			collection,
+			"COLOR"
+		);
 
 		const rgb = hexToRgb(color.hex);
 		// Note: variable.setValueForMode expects r,g,b (0-1). If alpha is needed it might be different, but figma API handles RGBA objects usually?
@@ -1559,7 +1572,8 @@ async function syncSpacing(variables: { name: string; value: number }[]) {
 	let collection = localCollections.find(
 		(c) => c.name === "Soloist Primitives"
 	);
-	collection ??= figma.variables.createVariableCollection("Soloist Primitives");
+	collection ??=
+		figma.variables.createVariableCollection("Soloist Primitives");
 
 	const existingVars = await figma.variables.getLocalVariablesAsync();
 
@@ -1571,7 +1585,11 @@ async function syncSpacing(variables: { name: string; value: number }[]) {
 				existing.name === varName &&
 				existing.variableCollectionId === collection?.id
 		);
-		variable ??= figma.variables.createVariable(varName, collection, "FLOAT");
+		variable ??= figma.variables.createVariable(
+			varName,
+			collection,
+			"FLOAT"
+		);
 
 		variable.setValueForMode(collection.defaultModeId, v.value);
 		count++;
@@ -1647,7 +1665,8 @@ async function syncSemantics(
 		(c) => c.name === "Soloist Tokens"
 	);
 	const tokenCollectionExisted = Boolean(tokenCollection);
-	tokenCollection ??= figma.variables.createVariableCollection("Soloist Tokens");
+	tokenCollection ??=
+		figma.variables.createVariableCollection("Soloist Tokens");
 	if (!tokenCollectionExisted) {
 		tokenCollection.renameMode(tokenCollection.defaultModeId, "Light");
 		tokenCollection.addMode("Dark");
@@ -1672,7 +1691,11 @@ async function syncSemantics(
 				v.name === token.name &&
 				v.variableCollectionId === tokenCollection?.id
 		);
-		variable ??= figma.variables.createVariable(token.name, tokenCollection, "COLOR");
+		variable ??= figma.variables.createVariable(
+			token.name,
+			tokenCollection,
+			"COLOR"
+		);
 
 		// Resolve Aliases
 		// Light Value
@@ -1734,7 +1757,8 @@ async function handleSeedSoloistStarterKit(
 	try {
 		figma.notify("Seeding Soloist starter kit tokens...");
 		const result = await seedSoloistStarterKit({
-			overwriteExistingValues: msg.payload?.overwriteExistingValues ?? false,
+			overwriteExistingValues:
+				msg.payload?.overwriteExistingValues ?? false,
 		});
 		figma.ui.postMessage({
 			type: "seed-starter-kit-result",

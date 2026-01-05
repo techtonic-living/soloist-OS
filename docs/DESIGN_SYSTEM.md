@@ -10,12 +10,12 @@ The Soloist OS visual language is "Cinematic Technical" – combining the precis
 
 We use a specific font stack to differentiate content types:
 
-| Role        | Font Family    | Tailwind Class | Usage                                        |
-| ----------- | -------------- | -------------- | -------------------------------------------- |
-| **Brand**   | Hubballi       | `font-brand`   | Headings, Logos, "Cinematic" labeling        |
-| **UI**      | Inter          | `font-sans`    | General UI text, labels, readable content    |
+| Role        | Font Family                       | Tailwind Class | Usage                                        |
+| ----------- | --------------------------------- | -------------- | -------------------------------------------- |
+| **Brand**   | Hubballi                          | `font-brand`   | Headings, Logos, "Cinematic" labeling        |
+| **UI**      | Inter                             | `font-sans`    | General UI text, labels, readable content    |
 | **Display** | Satoshi (web) / Acier BAT (Figma) | `font-display` | Large key numbers, stats, feature highlights |
-| **Code**    | JetBrains Mono | `font-mono`    | Code snippets, hex values, technical data    |
+| **Code**    | JetBrains Mono                    | `font-mono`    | Code snippets, hex values, technical data    |
 
 #### Figma typography governance (important)
 
