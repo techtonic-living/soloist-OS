@@ -38,13 +38,39 @@ See [design/contracts/README.md](../design/contracts/README.md#icon-glyphs-add-n
 
 **Next primitive: TextField**
 
-Workflow pattern established:
-1. Agent generates component-specific instructions
-2. Agent pastes into `designAssistant` component (node 2002:712) in Figma
-3. Designer builds component in Figma following instructions
-4. Designer exports contract JSON via plugin
-5. Agent implements code against contract
-6. Re-export to verify zero drift
+Workflow pattern established (designAssistant integration):
+
+1. **Agent sends instructions to Figma:**
+   - Plugin has pre-built instructions for each component
+   - In plugin UI: Connect tab → "Write instructions: designAssistant"
+   - Click component button (e.g., "TextField Instructions")
+   - Instructions written to node 2002:712 (designAssistant component)
+
+2. **Designer builds in Figma:**
+   - View instructions in designAssistant component
+   - Follow step-by-step guidance
+   - Use exact token bindings specified
+
+3. **Export and verify:**
+   - Export contract via plugin
+   - Verify zero issues in contract JSON
+   - Report node ID to agent
+
+4. **Agent implements code:**
+   - Implement component against contract
+   - Add to PrimitivesDemo for testing
+   - Test all variants/states
+
+5. **Drift check:**
+   - Re-export contract
+   - Verify still zero issues
+   - Commit contract + code together
+
+**Technical details:**
+- Instructions: `plugin/code.tsx` constants (BUTTON_BUILD_NOTES_V1, TEXTFIELD_BUILD_NOTES_V1)
+- Message types: `apply-{component}-build-notes-to-node`
+- Target node: 2002:712 (designAssistant component)
+- Mode: "replace" (always overwrites for current instructions)
 
 ## What’s true (do not regress)
 

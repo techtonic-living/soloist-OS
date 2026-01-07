@@ -7,18 +7,37 @@
 **When starting a new component:**
 
 1. Agent identifies next component to build (e.g., "TextField")
-2. Agent generates component-specific instructions based on this template
-3. **Agent pastes instructions into the `designAssistant` component in Figma** (node 2002:712)
-   - This allows the designer to view step-by-step guidance directly in Figma while building
+2. **Agent uses the Soloist OS plugin to send instructions:**
+   - Plugin has pre-built instructions for each component (stored in `plugin/code.tsx`)
+   - In plugin UI → Connect tab → "Write instructions: designAssistant" section
+   - Click the component button (e.g., "TextField Instructions")
+   - Instructions automatically written to `designAssistant` component (node 2002:712)
+3. Designer opens Figma and views instructions in designAssistant component
 4. Designer creates the component following the instructions
-5. Designer exports the contract and reports back
+5. Designer exports the contract via plugin and reports back
 6. Agent implements code against the contract
+
+**Current Implementation:**
+- Instructions stored as constants in `plugin/code.tsx`:
+  - `BUTTON_BUILD_NOTES_V1`
+  - `TEXTFIELD_BUILD_NOTES_V1`
+- Plugin message types:
+  - `apply-button-build-notes-to-node`
+  - `apply-textfield-build-notes-to-node`
+- UI buttons in ConnectView component
+
+**Future Optimization:**
+- Move instructions to `design/contracts/templates/*.md` files
+- Plugin reads templates at runtime (no rebuild needed)
+- Agent just creates/updates markdown files
+- UI auto-generates buttons from available templates
 
 **Why this pattern:**
 - Keeps design + code instructions synchronized
 - Designer sees the exact constraints while building in Figma
 - Prevents drift before it starts (design against known tokens/rules)
 - Creates a single source of truth for each component's requirements
+- No manual copy/paste needed
 
 ## Context
 

@@ -44,10 +44,40 @@ Do not violate these unless the user explicitly changes the contract + docs:
 
 ## Next planned work
 
-- First primitive thin slice: **Button**
-  - Export `design/contracts/primitives/Button.contract.json`
-  - Implement Button in code against the contract
+- Next primitive: **TextField**
+  - Use plugin to send instructions to designAssistant (node 2002:712)
+  - Designer builds in Figma following instructions
+  - Export `design/contracts/primitives/TextField.contract.json`
+  - Implement TextField in code against the contract
   - Re-export + drift-check
+
+## DesignAssistant Workflow (Important)
+
+When starting a new primitive component:
+
+1. **Send instructions to Figma** (don't copy/paste manually):
+   - Open plugin UI → Connect tab
+   - Find "Write instructions: designAssistant" section
+   - Click the component button (e.g., "TextField Instructions")
+   - Instructions automatically written to node 2002:712
+
+2. **Current components with instructions:**
+   - Button: `BUTTON_BUILD_NOTES_V1` in `plugin/code.tsx`
+   - TextField: `TEXTFIELD_BUILD_NOTES_V1` in `plugin/code.tsx`
+
+3. **To add new component instructions:**
+   - Add `{COMPONENT}_BUILD_NOTES_V1` constant to `plugin/code.tsx`
+   - Add `write{Component}NotesIntoTextNode()` function
+   - Add `handleApply{Component}BuildNotesToNode()` handler
+   - Add message type to `PluginMessage` union
+   - Add case to `onUiMessage` switch
+   - Add button to ConnectView UI
+   - Rebuild plugin + UI
+
+4. **Future optimization:**
+   - Move to `design/contracts/templates/*.md` files
+   - Plugin reads at runtime (no rebuild)
+   - Just create/update markdown files
 
 ## If you think context was reset
 
