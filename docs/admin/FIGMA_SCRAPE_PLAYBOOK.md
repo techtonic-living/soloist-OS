@@ -86,6 +86,17 @@ Allowed state values:
 - Spacing and radii should reference variables when possible.
 - Shadows may be effect styles but must use token-like naming.
 
+## 5.5) Icon provenance (policy)
+
+If you paste/trace icon vectors from third-party sources (e.g. Tabler), store provenance in the **Figma component description** for the icon glyph:
+
+- Source URL
+- Library (+ version if known)
+- License name + URL
+- Modification notes
+
+If you want this provenance to be machine-readable for agents/tools, mirror it in `design/contracts/icons/icon-provenance.json`.
+
 ## 6) Handoff package checklist
 
 When you share the Figma file, include:

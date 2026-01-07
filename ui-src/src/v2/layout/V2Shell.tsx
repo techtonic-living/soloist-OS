@@ -1,11 +1,12 @@
 import { Card } from "../primitives/Card";
 import { IconButton } from "../primitives/IconButton";
 import { Button } from "../primitives/Button";
+import { PrimaryToolbarsMock } from "../mockups/PrimaryToolbarsMock";
 import { PanelLeft, PanelRight, Search, Home, Sparkles } from "lucide-react";
 
 export function V2Shell() {
 	return (
-		<div className="soloist-app-grid h-screen w-screen bg-bg-void overflow-hidden text-sm">
+		<div className="soloist-app-grid soloist-app-grid--railCollapsed h-screen w-screen bg-bg-void overflow-hidden text-sm">
 			<V2Header />
 			<V2LeftRail />
 			<V2Main />
@@ -17,27 +18,29 @@ export function V2Shell() {
 
 function V2Header() {
 	return (
-		<header className="flex items-center justify-between px-4 border-b border-glass-stroke bg-bg-void/40 backdrop-blur-sm">
-			<div className="flex items-center gap-2">
-				<IconButton title="Home" ariaLabel="Home" icon={Home} />
-				<div className="text-xs font-mono tracking-wider text-white/70">
-					SOLOIST OS / V2 FOUNDATION
+		<header className="grid-header-span border-b border-glass-stroke bg-bg-void/40 backdrop-blur-sm">
+			<div className="col-span-3 flex items-center justify-between px-4">
+				<div className="flex items-center gap-2">
+					<IconButton title="Home" ariaLabel="Home" icon={Home} />
+					<div className="text-xs font-mono tracking-wider text-white/70">
+						SOLOIST OS / V2 FOUNDATION
+					</div>
 				</div>
-			</div>
 
-			<div className="flex items-center gap-2">
-				<div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-glass-stroke bg-white/5">
-					<Search size={14} className="text-white/40" />
-					<input
-						className="bg-transparent outline-none text-xs font-mono text-white/70 placeholder:text-white/30 w-[220px]"
-						placeholder="Search (v2 stub)"
-						title="Search"
-						aria-label="Search"
-					/>
+				<div className="flex items-center gap-2">
+					<div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-glass-stroke bg-white/5">
+						<Search size={14} className="text-white/40" />
+						<input
+							className="bg-transparent outline-none text-xs font-mono text-white/70 placeholder:text-white/30 w-[220px]"
+							placeholder="Search (v2 stub)"
+							title="Search"
+							aria-label="Search"
+						/>
+					</div>
+					<Button variant="ghost" title="Roadmap" ariaLabel="Roadmap">
+						Roadmap
+					</Button>
 				</div>
-				<Button variant="ghost" title="Roadmap" ariaLabel="Roadmap">
-					Roadmap
-				</Button>
 			</div>
 		</header>
 	);
@@ -45,7 +48,7 @@ function V2Header() {
 
 function V2LeftRail() {
 	return (
-		<nav className="border-r border-glass-stroke bg-bg-void/30 backdrop-blur-sm p-3">
+		<nav className="grid-rail-left border-r border-glass-stroke bg-bg-void/30 backdrop-blur-sm p-3">
 			<div className="flex flex-col gap-2">
 				<Card className="p-3">
 					<div className="text-xs font-mono tracking-wider text-white/70">
@@ -94,7 +97,7 @@ function V2LeftRail() {
 
 function V2Main() {
 	return (
-		<main className="p-6 overflow-y-auto custom-scrollbar">
+		<main className="grid-main-content p-6 overflow-y-auto custom-scrollbar">
 			<Card className="p-6">
 				<div className="flex items-center justify-between">
 					<div>
@@ -152,6 +155,15 @@ function V2Main() {
 						</ul>
 					</Card>
 				</div>
+
+				<div className="mt-6">
+					<div className="text-xs font-mono tracking-wider text-white/70">
+						PRIMARY TOOLBARS (MOCK)
+					</div>
+					<div className="mt-3">
+						<PrimaryToolbarsMock />
+					</div>
+				</div>
 			</Card>
 		</main>
 	);
@@ -159,7 +171,7 @@ function V2Main() {
 
 function V2RightPanel() {
 	return (
-		<aside className="border-l border-glass-stroke bg-bg-void/30 backdrop-blur-sm p-4 overflow-y-auto custom-scrollbar">
+		<aside className="grid-assistant-right border-l border-glass-stroke bg-bg-void/30 backdrop-blur-sm p-4 overflow-y-auto custom-scrollbar">
 			<Card className="p-4">
 				<div className="text-xs font-mono tracking-wider text-white/70">
 					ASSISTANT / INSPECTOR
@@ -175,13 +187,15 @@ function V2RightPanel() {
 
 function V2Footer() {
 	return (
-		<footer className="border-t border-glass-stroke bg-bg-void/40 backdrop-blur-sm px-4 py-3 flex items-center justify-between">
-			<div className="text-xs font-mono text-white/60">
-				Status: v2 shell running
-			</div>
-			<div className="text-xs font-mono text-white/40">
-				Tip: append <span className="text-accent-cyan">?v2</span> to the
-				URL
+		<footer className="grid-footer-span border-t border-glass-stroke bg-bg-void/40 backdrop-blur-sm">
+			<div className="col-span-3 px-4 py-3 flex items-center justify-between">
+				<div className="text-xs font-mono text-white/60">
+					Status: v2 shell running
+				</div>
+				<div className="text-xs font-mono text-white/40">
+					Tip: append <span className="text-accent-cyan">?v2</span> to
+					the URL
+				</div>
 			</div>
 		</footer>
 	);

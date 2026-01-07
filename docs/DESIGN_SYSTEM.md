@@ -2,6 +2,18 @@
 
 > **Note**: This is a living document. As new patterns emerge, they should be documented here to maintain consistency.
 
+## What this doc is (and isn’t)
+
+This document defines the **product-facing design language** and **UI behavior conventions** for Soloist OS (what we ship).
+
+- If you are implementing UI in code, this is your primary reference.
+- If you are constructing Figma primitives/components for scraping, use the Figma-first build spec: `docs/admin/DESIGN_SYSTEM_STARTER_KIT.md`.
+
+When something is duplicated between these docs, the intent is:
+
+- `docs/DESIGN_SYSTEM.md` = **what** the system should be (visual + interaction rules)
+- `docs/admin/DESIGN_SYSTEM_STARTER_KIT.md` = **how** to build it in Figma so scraping stays deterministic
+
 ## 1. Brand Identity
 
 The Soloist OS visual language is "Cinematic Technical" – combining the precision of developer tools with the elegance of high-end creative software.
@@ -203,9 +215,9 @@ Organize mode is a _precision interaction mode_.
 
 Must handle asynchronous API latency (metadata generation) gracefully.
 
--   **State 1 (Default)**: Outline icon (`lucide-heart`).
+-   **State 1 (Default)**: Outline heart icon.
 -   **State 2 (Pending)**: Animate scale/pulse while awaiting API response.
--   **State 3 (Active)**: Filled icon (`fill-red-500`) with "pop" animation.
+-   **State 3 (Active)**: Filled heart icon (`fill-red-500`) with "pop" animation.
 -   **Rule**: Never snap instantly without feedback; use the animation to bridge the API delay.
 -   **Contrast Pattern (Swatches)**: Heart toggles appearing on/within color swatches must follow the text color of their labels:
     -   **Dark swatches**: `text-white hover:bg-white/20`
@@ -371,9 +383,40 @@ Classes referencing `transition-all duration-300` are common. We use a custom "C
 
 ### Iconography
 
--   Use **Lucide React** for all system icons.
+-   Use **Tabler icons** (stroke-based) for all system icons.
 -   **Toolbar Icons**: Standard size is `size={16}` for primary toolbars and `size={14}` for secondary/management clusters.
--   **Stroke Weight**: Default (2px). Revert any ad-hoc weight increases (e.g., 2.5px) to maintain the "Technical Cinematic" baseline.
+-   **Stroke Weight**: Default is **1px** (Tabler baseline). Avoid ad-hoc stroke overrides.
+
+    If an icon must support multiple strokes, use the design system stroke ladder (e.g. `stroke/thin = 1`, `stroke/medium = 1.5`) and keep the available options deliberate (avoid “almost the same” weights).
+
+#### Icon sources & attribution (Figma)
+
+When we import or trace icon vectors from third-party libraries (e.g. Tabler), we must keep provenance attached to the design artifact.
+
+**Decision (Pattern 1):** store attribution in the **Figma component description** for the icon glyph component (or the icon component set if glyphs are variants).
+
+Minimum fields to include:
+
+- **Source**: URL to the icon page (or repo path)
+- **Library**: name (and version if known)
+- **License**: name + URL
+- **Modifications**: any geometry/stroke/grid normalization notes
+
+Suggested description template:
+
+- Source: <url>
+- Library: <name> (<version or "unknown">)
+- License: <name> (<url>)
+- Modifications: <none | notes>
+
+Machine-readable mirror (recommended for solo + agent workflows):
+
+- Keep a matching record in `design/contracts/icons/icon-provenance.json` so automation can read provenance deterministically.
+
+Internal CDN (recommended when icons ship from our infra):
+
+- If icon SVGs are mirrored/served from an internal CDN, record the canonical URL (or URL pattern) in the same provenance record (the `internalCdn` fields in `design/contracts/icons/icon-provenance.json`).
+- This lets code + automation resolve the runtime asset source deterministically, without scraping Figma.
 
 ## 7. The Studio Workbench
 
@@ -446,7 +489,7 @@ Features in this section have been tuned to a high degree of polish. **Do not re
 
 -   **Structure**: Must use a dual-motion system (Parent rotates CW, Child rotates CCW) to keep the particle upright while orbiting.
 -   **Anti-Pattern**: Replacing this with a simple CSS `rotate` spin, which causes the inner content (like delete badges) to rotate improperly.
--   **Iconography**: The sampler icon is **Target** (`lucide-target`), not `Orbit`.
+-   **Iconography**: The sampler icon is **Target**, not `Orbit`.
 
 ### Global State vs. Local State
 

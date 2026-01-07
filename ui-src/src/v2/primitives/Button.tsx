@@ -1,9 +1,14 @@
 import { ReactNode } from "react";
+import { Icon, type IconName, type IconStroke } from "./Icon";
 
 type ButtonVariant = "glass" | "ghost";
 
 type ButtonProps = {
 	children: ReactNode;
+	iconLeft?: IconName;
+	iconRight?: IconName;
+	iconSize?: number;
+	iconStroke?: IconStroke;
 	variant?: ButtonVariant;
 	disabled?: boolean;
 	onClick?: () => void;
@@ -20,6 +25,10 @@ type ButtonProps = {
  */
 export function Button({
 	children,
+	iconLeft,
+	iconRight,
+	iconSize = 14,
+	iconStroke = 1,
 	variant = "glass",
 	disabled,
 	onClick,
@@ -46,7 +55,23 @@ export function Button({
 			className={`${base} ${variantCls} ${disabledCls} px-3 py-2 ${className}`}
 			disabled={disabled}
 		>
+			{iconLeft && (
+				<Icon
+					name={iconLeft}
+					size={iconSize}
+					stroke={iconStroke}
+					className="opacity-90"
+				/>
+			)}
 			{children}
+			{iconRight && (
+				<Icon
+					name={iconRight}
+					size={iconSize}
+					stroke={iconStroke}
+					className="opacity-90"
+				/>
+			)}
 		</button>
 	);
 }

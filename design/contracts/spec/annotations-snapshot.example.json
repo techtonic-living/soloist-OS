@@ -1,0 +1,29 @@
+{
+	"schemaVersion": "soloist-os.annotations.snapshot.v1",
+	"meta": {
+		"exportedAt": "2026-01-07T00:00:00.000Z",
+		"fileName": "Soloist OS",
+		"fileKey": null,
+		"scope": "current-page"
+	},
+	"annotations": [
+		{
+			"pageId": "0:1",
+			"pageName": "01_PRIMITIVES",
+			"targetId": "1:234",
+			"targetName": "Button / variant=glass, size=md, state=default",
+			"targetType": "COMPONENT",
+			"frameId": "1:235",
+			"frameName": "__annotations",
+			"items": [
+				{
+					"name": "SPEC: hitTargetMin",
+					"type": "TEXT",
+					"x": 0,
+					"y": 0,
+					"characters": "SPEC: hitTargetMin: 44x44\nNOTE: keep outside scrape bounds"
+				}
+			]
+		}
+	]
+}

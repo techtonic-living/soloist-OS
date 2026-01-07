@@ -60,6 +60,10 @@ See `design/contracts/README.md` for the loop.
 
 ## Next step (thin slice): Button
 
+Implementation plan (workflow upgrades):
+
+- `docs/admin/LEVEL_UP_WORKFLOW_PLAN.md`
+
 Target workflow:
 
 1) In Figma: finalize a **Button** component set (variants + bindings).

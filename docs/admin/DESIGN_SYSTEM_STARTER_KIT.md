@@ -1,5 +1,17 @@
 # Soloist OS — Design System Starter Kit (for Figma-first build)
 
+## What this doc is (and isn’t)
+
+This document is the **Figma-first construction spec** for building primitives/components in a way that is **mechanically scrapeable** into code.
+
+- If you are designing components in Figma specifically for scraping, follow this doc.
+- If you are implementing UI in code (or deciding product-facing interaction/visual rules), the primary reference is `docs/DESIGN_SYSTEM.md`.
+
+Where both docs mention the same topic, the split is intentional:
+
+- `docs/DESIGN_SYSTEM.md` = **what** the system should be (visual + interaction rules)
+- `docs/admin/DESIGN_SYSTEM_STARTER_KIT.md` = **how** to build it in Figma so scraping stays deterministic
+
 This starter kit is designed for your workflow:
 
 1) You build the mockup with the design system **baked in** (variables + components).
@@ -29,6 +41,57 @@ Create these pages (names matter):
 - `99_SANDBOX` — experiments (not scraped)
 
 Scraping rule: we only scrape from `01_PRIMITIVES`, `02_COMPONENTS`, `03_SHELL`.
+
+### Annotations (recommended, but keep them scrape-safe)
+
+Annotations are great for communicating intent, constraints, and edge cases — but they must not create scraping ambiguity.
+
+Important distinction:
+
+- **Dev Mode annotations** (Figma’s built-in feature) are great for humans, but they are **not currently a reliable read/write surface for our automation**.
+	- They are not represented as normal document nodes (Frames/Text) in a way our plugin pipeline can deterministically export/apply.
+	- Treat them as the *presentation layer* for humans.
+- **Contract annotations** (our automation surface) are plain Figma nodes: a child frame named `__annotations` containing TEXT.
+	- These are fully readable/writable by the plugin and can be exported to JSON contracts.
+
+Rules:
+
+- Prefer **Figma comments** for discussion.
+- Prefer **annotation frames** on `99_SANDBOX` (or a dedicated non-scraped page) for durable specs.
+- Avoid placing annotation layers inside scrape targets on `01_PRIMITIVES`, `02_COMPONENTS`, `03_SHELL`.
+
+If you *must* annotate on a scraped page **and the annotations belong to specific components/variants** (the usual case):
+
+- Put annotation content **inside the component/variant frame**, but isolate it in a dedicated child frame named `__annotations`.
+- Treat `__annotations` as a mechanical container:
+	- Only text nodes inside this frame are considered annotations.
+	- Keep names structured (e.g. `SPEC: hitTargetMin`, `NOTE: iconStroke`).
+- Make it scrape-safe:
+	- Prefer placing it off to the side within the component bounds (or in a non-overlapping area).
+	- Lock it.
+	- If your scraper/export pipeline supports it, hide it (optional).
+
+If you need **page-level** notes that aren’t tied to a specific component:
+
+- Use a top-level `__annotations` frame on the page (same naming), outside scrape targets.
+- Keep those notes high-level (naming conventions, global constraints), not per-variant behavior.
+
+Recommended annotation format (mechanical + searchable):
+
+- Start with a short tag: `SPEC:`, `NOTE:`, `TODO:`
+- Use key/value lines when possible (e.g. `hitTargetMin: 44x44`, `defaultStroke: 1`, `noToolColorIcons: true`).
+
+Automation option (recommended if you want annotations to be “agent-readable”):
+
+- Figma’s Plugin API can be used to **create/manage annotations in bulk** (including Dev Mode annotation workflows).
+- If you go this route, treat Figma annotations as the **human-facing** layer and add an export step that writes a deterministic JSON snapshot into the repo (e.g. `design/contracts/spec/annotations.json`).
+	- Rationale: our current automated reads of Figma structure are not reliable for extracting annotation/comment text, but they *are* reliable for consuming repo contracts.
+
+Recommended workflow when you prefer Dev Mode annotations:
+
+1) Keep using **Dev Mode annotations** for day-to-day design intent.
+2) When a component/variant needs to be “agent-writable”, mirror the final intent into the component’s **contract annotations** (`__annotations` frame + TEXT).
+3) Export/apply snapshots via the plugin to round-trip intent through `design/contracts/spec/`.
 
 ---
 
@@ -354,6 +417,29 @@ Properties:
 Rules:
 - Icon vectors should be stroke-based and use the `Soloist / Stroke` variables for stroke width once those exist.
 - **Do not** create “tool-colored icon variants” inside `Icon`.
+
+Provenance / attribution (required):
+
+- Store icon provenance in the **Figma component description** (Pattern 1).
+- Do this on the *glyph component* (or on the `Icon` component set if glyphs are implemented as variants).
+
+Minimum fields:
+
+- Source: URL to the icon (or repo path)
+- Library: name (+ version if known)
+- License: name + URL
+- Modifications: stroke/grid/path normalization notes
+
+Suggested description template:
+
+- Source: <url>
+- Library: <name> (<version or "unknown">)
+- License: <name> (<url>)
+- Modifications: <none | notes>
+
+Machine-readable mirror (recommended):
+
+- Also record this in `design/contracts/icons/icon-provenance.json` so code/agents can read provenance without relying on Figma UI fields.
 
 Tool color rule (Option A):
 - Tool identity belongs to the **button**, not the icon.
