@@ -88,6 +88,13 @@ type PluginMessage =
 			};
 	  }
 	| {
+			type: "export-icon-glyphs";
+			payload?: {
+				/** Optional: restrict to specific instance swap property name */
+				instanceSwapPropertyName?: string;
+			};
+	  }
+	| {
 			type: "apply-annotations-snapshot";
 			payload: {
 				snapshot: unknown;
@@ -1472,6 +1479,349 @@ async function handleExportButtonContract(
 		});
 		figma.ui.postMessage({
 			type: "button-contract-error",
+			message: e?.message ?? String(e),
+		});
+	}
+}
+
+async function handleExportIconGlyphs(
+	msg: Extract<PluginMessage, { type: "export-icon-glyphs" }>
+): Promise<void> {
+	try {
+		figma.notify("Exporting icon glyph inventory...");
+
+		const selection = figma.currentPage.selection;
+		if (!selection || selection.length === 0) {
+			throw new Error(
+				"No selection. Select the Icon component set OR the IconGlyph/* frame and try again."
+			);
+		}
+
+		const node = selection[0];
+		let target: ComponentSetNode | ComponentNode | null = null;
+		let glyphContainerFrame: FrameNode | null = null;
+
+		// Accept either:
+		// 1. Icon component set (node 2002:498) - we auto-discover glyphs
+		// 2. IconGlyph/* frame (node 2002:217) - we directly export its children
+		if (
+			node.type === "FRAME" &&
+			(node.name === "IconGlyph/*" || node.name.startsWith("IconGlyph/"))
+		) {
+			// User selected the IconGlyph/* container or a glyph frame
+			if (node.name === "IconGlyph/*") {
+				glyphContainerFrame = node as FrameNode;
+			} else {
+				// Selected a specific glyph, go up to container
+				glyphContainerFrame = node.parent as FrameNode;
+			}
+
+			// We still need the Icon component set for metadata
+			// Search the page for it
+			const iconComponentSet = figma.currentPage.findOne(
+				(n) => n.type === "COMPONENT_SET" && n.name === "Icon"
+			) as ComponentSetNode | null;
+
+			if (iconComponentSet) {
+				target = iconComponentSet;
+			} else {
+				throw new Error(
+					"Could not find Icon component set on current page. Please select the Icon component set instead."
+				);
+			}
+
+			figma.notify(`Using glyph library: ${glyphContainerFrame.name}`);
+		} else if (node.type === "COMPONENT_SET") {
+			target = node;
+		} else if (node.type === "COMPONENT") {
+			const parent = node.parent;
+			if (parent && parent.type === "COMPONENT_SET") {
+				target = parent;
+			} else {
+				target = node;
+			}
+		} else {
+			throw new Error(
+				"Selection must be the Icon component set OR the IconGlyph/* frame."
+			);
+		}
+		if (!target) {
+			throw new Error("Could not determine Icon component set.");
+		}
+
+		// Get component property definitions
+		const propDefs = getComponentPropertyDefinitions(target);
+		if (!propDefs) {
+			throw new Error("Icon component has no component properties.");
+		}
+
+		// Find instance swap properties
+		const instanceSwapProps = Object.entries(propDefs).filter(
+			([, def]) => def.type === "INSTANCE_SWAP"
+		);
+
+		if (instanceSwapProps.length === 0) {
+			throw new Error("Icon component has no instance swap properties.");
+		}
+
+		// Collect glyph component keys
+		const [propKey, propDef] = instanceSwapProps[0];
+		const swapDef = propDef as InstanceSwapComponentPropertyDefinition;
+
+		let glyphComponentKeys: Array<{ key: string }> = [];
+
+		// Strategy 1: Use the directly selected IconGlyph/* frame if available
+		if (glyphContainerFrame) {
+			const allChildren = glyphContainerFrame.children ?? [];
+
+			// Each glyph can be COMPONENT_SET (with stroke variants) or FRAME
+			const glyphNodes = allChildren.filter(
+				(child): child is ComponentSetNode | FrameNode =>
+					(child.type === "COMPONENT_SET" ||
+						child.type === "FRAME") &&
+					child.name.startsWith("IconGlyph/")
+			);
+
+			if (glyphNodes.length === 0) {
+				const childSummary = allChildren
+					.slice(0, 5)
+					.map((c) => `${c.name} (${c.type})`)
+					.join(", ");
+				throw new Error(
+					`Frame "${
+						glyphContainerFrame.name
+					}" has no IconGlyph/* children. Found ${
+						allChildren.length
+					} children: ${childSummary}${
+						allChildren.length > 5 ? "..." : ""
+					}`
+				);
+			}
+
+			glyphComponentKeys = glyphNodes.map((n) => ({ key: n.id }));
+			figma.notify(
+				`Found ${glyphNodes.length} icon glyphs in ${glyphContainerFrame.name}.`
+			);
+		}
+		// Strategy 2: Use configured preferred values
+		else if (
+			swapDef.preferredValues &&
+			swapDef.preferredValues.length > 0
+		) {
+			glyphComponentKeys = swapDef.preferredValues;
+		}
+		// Strategy 3: Auto-discover by following instance
+		else {
+			// Fallback: find the IconGlyph/* frame by examining an actual instance
+			// Get the first variant from the Icon component set
+			const firstVariant =
+				target.type === "COMPONENT_SET"
+					? ((target.children ?? [])[0] as ComponentNode | undefined)
+					: target;
+
+			if (!firstVariant) {
+				throw new Error("Icon component set has no variants.");
+			}
+
+			// Find the instance that uses the swap property
+			// Look for any INSTANCE node in the variant
+			const findFirstInstance = (node: BaseNode): InstanceNode | null => {
+				if ((node as any).type === "INSTANCE") {
+					return node as InstanceNode;
+				}
+				if ("children" in node) {
+					for (const child of (node as ChildrenMixin).children) {
+						const found = findFirstInstance(child);
+						if (found) return found;
+					}
+				}
+				return null;
+			};
+
+			const instance = findFirstInstance(firstVariant);
+			if (!instance) {
+				throw new Error(
+					`Could not find instance in Icon variant "${firstVariant.name}". The Icon component should contain an instance that swaps to the glyph library.`
+				);
+			}
+
+			// Get the main component of this instance
+			const mainComponent = instance.mainComponent;
+			if (!mainComponent) {
+				throw new Error(
+					`Instance "${instance.name}" has no main component.`
+				);
+			}
+
+			// The main component is a stroke variant (e.g., stroke=thin) inside IconGlyph/home
+			// Navigate up: stroke component → IconGlyph/home frame → IconGlyph/* container
+			const glyphFrame = mainComponent.parent;
+			if (!glyphFrame || glyphFrame.type !== "FRAME") {
+				throw new Error(
+					`Main component "${
+						mainComponent.name
+					}" parent is not a FRAME. Expected: IconGlyph/{name} frame. Found: ${
+						glyphFrame?.type || "null"
+					} named "${glyphFrame?.name || "unknown"}"`
+				);
+			}
+
+			const glyphContainer = glyphFrame.parent;
+			if (!glyphContainer || glyphContainer.type !== "FRAME") {
+				throw new Error(
+					`Glyph frame "${
+						glyphFrame.name
+					}" parent is not a FRAME. Expected: IconGlyph/* container. Found: ${
+						glyphContainer?.type || "null"
+					} named "${glyphContainer?.name || "unknown"}"`
+				);
+			}
+
+			// Collect all IconGlyph/{name} frames from the container
+			const glyphFrames = (glyphContainer.children ?? []).filter(
+				(child): child is FrameNode =>
+					child.type === "FRAME" &&
+					child.name.startsWith("IconGlyph/")
+			);
+
+			if (glyphFrames.length === 0) {
+				throw new Error(
+					`Container "${glyphContainer.name}" has no IconGlyph/* child frames.`
+				);
+			}
+
+			// Convert frames to component keys (use frame IDs)
+			glyphComponentKeys = glyphFrames.map((f) => ({ key: f.id }));
+
+			figma.notify(
+				`Found ${glyphFrames.length} icon glyphs in ${glyphContainer.name} (auto-discovered).`
+			);
+		}
+
+		if (glyphComponentKeys.length === 0) {
+			throw new Error(
+				`No icon glyphs found. Instance swap property "${propKey}" has no preferred values and could not auto-discover glyphs.`
+			);
+		}
+
+		// Resolve component keys to component names
+		// Each glyph can be:
+		// - COMPONENT (simple icon, no stroke variants)
+		// - COMPONENT_SET (component with stroke weight variants)
+		// - FRAME (container frame with COMPONENT children for stroke variants)
+		const glyphs: Array<{
+			componentKey: string;
+			componentName: string;
+			nodeType: "COMPONENT" | "COMPONENT_SET" | "FRAME";
+			strokeVariants?: Array<{
+				nodeId: string;
+				nodeName: string;
+				stroke?: string; // extracted from "stroke=thin" name pattern or variant property
+			}>;
+		}> = [];
+
+		for (const compKey of glyphComponentKeys) {
+			try {
+				const node = await figma.getNodeByIdAsync(compKey.key);
+
+				if (!node) continue;
+
+				if (node.type === "COMPONENT_SET") {
+					// Component set with stroke weight variants
+					const componentSet = node as ComponentSetNode;
+					const variants = (componentSet.children ?? [])
+						.filter(
+							(n): n is ComponentNode => n.type === "COMPONENT"
+						)
+						.map((variant) => {
+							// eslint-disable-next-line deprecation/deprecation
+							const variantProps =
+								(variant.variantProperties as
+									| { [k: string]: string }
+									| undefined) ?? {};
+							return {
+								nodeId: variant.id,
+								nodeName: variant.name,
+								stroke: variantProps.stroke ?? undefined,
+							};
+						});
+
+					glyphs.push({
+						componentKey: compKey.key,
+						componentName: componentSet.name,
+						nodeType: "COMPONENT_SET",
+						strokeVariants:
+							variants.length > 0 ? variants : undefined,
+					});
+				} else if (node.type === "FRAME") {
+					// Frame containing component children (IconGlyph/home pattern)
+					const frame = node as FrameNode;
+					const components = (frame.children ?? [])
+						.filter(
+							(n): n is ComponentNode => n.type === "COMPONENT"
+						)
+						.map((comp) => {
+							// Extract stroke from name pattern "stroke=thin"
+							const strokeMatch =
+								comp.name.match(/stroke\s*=\s*(\w+)/);
+							return {
+								nodeId: comp.id,
+								nodeName: comp.name,
+								stroke: strokeMatch?.[1] ?? undefined,
+							};
+						});
+
+					glyphs.push({
+						componentKey: compKey.key,
+						componentName: frame.name,
+						nodeType: "FRAME",
+						strokeVariants:
+							components.length > 0 ? components : undefined,
+					});
+				} else if (node.type === "COMPONENT") {
+					// Simple component (no stroke weight variants)
+					glyphs.push({
+						componentKey: compKey.key,
+						componentName: node.name,
+						nodeType: "COMPONENT",
+					});
+				}
+			} catch (e) {
+				console.warn(
+					`Could not resolve component key ${compKey.key}:`,
+					e
+				);
+			}
+		}
+
+		const inventory = {
+			schemaVersion: "soloist-os.primitives.icon-glyphs.inventory.v1",
+			meta: {
+				exportedAt: new Date().toISOString(),
+				fileName: figma.root.name,
+				fileKey: null,
+			},
+			source: {
+				nodeId: target.id,
+				nodeName: target.name,
+				nodeType: target.type,
+				instanceSwapPropertyName: propKey,
+			},
+			glyphs,
+		};
+
+		figma.ui.postMessage({
+			type: "icon-glyphs-ready",
+			payload: inventory,
+		});
+		figma.notify(`Exported ${glyphs.length} icon glyphs.`);
+	} catch (e: any) {
+		console.error("PLUGIN: Error exporting icon glyphs", e);
+		figma.notify("Icon glyph export error: " + e.message, {
+			error: true,
+		});
+		figma.ui.postMessage({
+			type: "icon-glyphs-error",
 			message: e?.message ?? String(e),
 		});
 	}
@@ -3664,6 +4014,8 @@ async function onUiMessage(msg: PluginMessage): Promise<void> {
 			return handleExportIconContract(msg);
 		case "export-button-contract":
 			return handleExportButtonContract(msg);
+		case "export-icon-glyphs":
+			return handleExportIconGlyphs(msg);
 		case "apply-annotations-snapshot":
 			return handleApplyAnnotationsSnapshot(msg);
 		case "apply-mode-renames":

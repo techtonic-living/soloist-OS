@@ -400,50 +400,55 @@ Rule:
 
 ### 3.2 Icon (Tabler-backed)
 
-Component name:
-- `Icon`
+### 3.2 Icon (Tabler-backed)
 
-Properties:
-- `name`: (component set variant)
-	- Use kebab-case, Tabler-like names (e.g. `home`, `compass`, `chevron-right`).
-	- Rule: **name selects glyph only** (never implies color).
-- `size`: `sm | md | lg`
-	- Suggested mapping: `sm=16`, `md=20`, `lg=24` px.
-- `tone`: `primary | secondary | muted`
-	- `primary` → `color/text/primary`
-	- `secondary` → `color/text/secondary`
-	- `muted` → `color/text/muted`
+**Figma structure:**
 
-Rules:
-- Icon vectors should be stroke-based and use the `Soloist / Stroke` variables for stroke width once those exist.
-- **Do not** create “tool-colored icon variants” inside `Icon`.
+1. **Icon component set** (main primitive):
+   - `Icon` component set with variants: `size` (sm/md/lg) × `tone` (primary/secondary/muted)
+   - Instance swap property `name` → swaps to IconGlyph library
+   - 9 total variants (size × tone combinations)
 
-Provenance / attribution (required):
+2. **IconGlyph/* library** (separate frame):
+   - Container frame named `IconGlyph/*`
+   - Each icon glyph is a COMPONENT_SET: `IconGlyph/{name}` (e.g. `IconGlyph/home`)
+   - Each glyph component set has stroke weight variants:
+     - `stroke=thin` (1px)
+     - `stroke=hairline` (0.5px)
+     - `stroke=medium` (1.5px)
+     - `stroke=bold` (2px) — optional
 
-- Store icon provenance in the **Figma component description** (Pattern 1).
-- Do this on the *glyph component* (or on the `Icon` component set if glyphs are implemented as variants).
+**Component properties:**
 
-Minimum fields:
+- `name`: (instance swap property)
+        - Swaps to IconGlyph/{name} library
+        - Use kebab-case, Tabler-like names (e.g. `home`, `compass`, `chevron-right`)
+        - Rule: **name selects glyph only** (never implies color)
+- `size`: `sm | md | lg` (variant property)
+        - Mapping: `sm=16`, `md=20`, `lg=24` px
+- `tone`: `primary | secondary | muted` (variant property)
+        - `primary` → `color/text/primary`
+        - `secondary` → `color/text/secondary`
+        - `muted` → `color/text/muted`
 
-- Source: URL to the icon (or repo path)
-- Library: name (+ version if known)
-- License: name + URL
-- Modifications: stroke/grid/path normalization notes
+**Rules:**
 
-Suggested description template:
+- Icon vectors should be stroke-based and use the stroke ladder (0.5/1/1.5/2)
+- Each IconGlyph frame should contain stroke variant components
+- **Do not** create "tool-colored icon variants" inside `Icon`
+- Icons use color/text/* (tone-based), never color/tool/*
 
-- Source: <url>
-- Library: <name> (<version or "unknown">)
-- License: <name> (<url>)
-- Modifications: <none | notes>
+**Provenance / attribution:**
 
-Machine-readable mirror (recommended):
+- Store icon provenance in the **Figma component description** on each `IconGlyph/{name}` frame
+- Apply to the glyph frame container, not individual stroke variant components
+- Minimum fields: Source URL, Library name/version, License name/URL, Modifications notes
+- Machine-readable mirror (recommended): `design/contracts/icons/icon-provenance.json`
 
-- Also record this in `design/contracts/icons/icon-provenance.json` so code/agents can read provenance without relying on Figma UI fields.
+**Tool color rule (Option A):**
+- Tool identity belongs to the **button**, not the icon
+- If an icon needs a tool color (e.g. Explore cyan), the **ToolButton** variant applies `color/tool/{tool}` to the *Icon instance* stroke/fill in that component
 
-Tool color rule (Option A):
-- Tool identity belongs to the **button**, not the icon.
-- If an icon needs a tool color (e.g. Explore cyan), the **ToolButton** variant applies `color/tool/{tool}` to the *Icon instance* stroke/fill in that component.
 
 ### 3.3 IconButton
 ### 3.7 Tabs

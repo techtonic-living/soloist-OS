@@ -271,6 +271,13 @@ export const ConnectView = ({
 				nodeName?: string;
 			}>
 		>([]);
+	const [iconGlyphsStatus, setIconGlyphsStatus] = useState<
+		"idle" | "exporting" | "success" | "error"
+	>("idle");
+	const [iconGlyphsError, setIconGlyphsError] = useState<string | undefined>(
+		undefined
+	);
+	const [iconGlyphsData, setIconGlyphsData] = useState<any>(undefined);
 	const [buttonNotesStatus, setButtonNotesStatus] = useState<
 		"idle" | "applying" | "success" | "error"
 	>("idle");
@@ -644,6 +651,21 @@ export const ConnectView = ({
 		);
 	};
 
+	const handleExportIconGlyphs = () => {
+		setIconGlyphsStatus("exporting");
+		setIconGlyphsError(undefined);
+		setIconGlyphsData(undefined);
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "export-icon-glyphs",
+					payload: {},
+				},
+			},
+			parentOrigin
+		);
+	};
+
 	const handleApplyButtonBuildNotes = () => {
 		setButtonNotesStatus("applying");
 		setButtonNotesError(undefined);
@@ -918,6 +940,37 @@ export const ConnectView = ({
 				setButtonContractStatus("error");
 				setButtonContractError(message || "Unknown error");
 				setTimeout(() => setButtonContractStatus("idle"), 5000);
+			}
+			if (type === "icon-glyphs-ready") {
+				const payload = event.data.pluginMessage?.payload;
+				const exportedAt = payload?.meta?.exportedAt
+					? String(payload.meta.exportedAt)
+					: new Date().toISOString();
+				const fileNameBase = payload?.meta?.fileName
+					? String(payload.meta.fileName)
+					: "figma-file";
+				const fileKey = payload?.meta?.fileKey
+					? String(payload.meta.fileKey)
+					: "no-fileKey";
+				const stamp = exportedAt.replace(/[:.]/g, "-");
+				const filename = sanitizeFilename(
+					`Icon.glyphs__${fileNameBase}__${fileKey}__${stamp}.json`
+				);
+
+				try {
+					downloadJson(filename, payload);
+					setIconGlyphsData(payload);
+					setIconGlyphsStatus("success");
+					setTimeout(() => setIconGlyphsStatus("idle"), 2500);
+				} catch (e: any) {
+					setIconGlyphsStatus("error");
+					setIconGlyphsError(e?.message ?? String(e));
+				}
+			}
+			if (type === "icon-glyphs-error") {
+				setIconGlyphsStatus("error");
+				setIconGlyphsError(message || "Unknown error");
+				setTimeout(() => setIconGlyphsStatus("idle"), 5000);
 			}
 			if (type === "button-notes-applied") {
 				const payload = event.data.pluginMessage?.payload;
@@ -1952,6 +2005,72 @@ export const ConnectView = ({
 										<div className="text-xs font-mono text-red-400">
 											Icon contract export error:{" "}
 											{iconContractError}
+										</div>
+									)}
+								</div>
+							</div>
+							<div className="mt-4 p-4 rounded-xl bg-bg-raised/30 border border-white/5">
+								<div className="text-xs font-mono text-gray-400 uppercase tracking-wide mb-3">
+									Icon glyph inventory
+								</div>
+								<div className="flex flex-col gap-3">
+									<div className="flex items-center justify-between gap-3 flex-wrap">
+										<button
+											onClick={handleExportIconGlyphs}
+											disabled={
+												iconGlyphsStatus === "exporting"
+											}
+											className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-[11px] uppercase tracking-wider font-semibold ${
+												iconGlyphsStatus === "success"
+													? "bg-green-500/10 text-green-400 border-green-500/30"
+													: iconGlyphsStatus ===
+													  "error"
+													? "bg-red-500/10 text-red-400 border-red-500/30"
+													: "bg-accent-cyan/10 hover:bg-accent-cyan/20 text-accent-cyan border-accent-cyan/30"
+											}`}
+										>
+											<Download size={14} />
+											<span>
+												{iconGlyphsStatus ===
+												"exporting"
+													? "EXPORTING..."
+													: iconGlyphsStatus ===
+													  "success"
+													? "GLYPHS EXPORTED"
+													: "EXPORT ICON GLYPHS"}
+											</span>
+										</button>
+										<div className="text-xs font-mono text-gray-500">
+											Select the Icon component set before
+											exporting.
+										</div>
+									</div>
+
+									{iconGlyphsData && (
+										<div className="mt-1 p-3 rounded-lg bg-bg-raised/20 border border-white/5">
+											<div className="text-xs font-mono text-gray-400 uppercase tracking-wide mb-2">
+												{iconGlyphsData.glyphs
+													?.length ?? 0}{" "}
+												glyphs detected
+											</div>
+											<div className="text-xs text-gray-300 max-h-32 overflow-y-auto space-y-1">
+												{iconGlyphsData.glyphs?.map(
+													(g: any) => (
+														<div
+															key={g.componentKey}
+															className="font-mono"
+														>
+															{g.componentName}
+														</div>
+													)
+												)}
+											</div>
+										</div>
+									)}
+									{iconGlyphsError && (
+										<div className="text-xs font-mono text-red-400">
+											Icon glyph export error:{" "}
+											{iconGlyphsError}
 										</div>
 									)}
 								</div>

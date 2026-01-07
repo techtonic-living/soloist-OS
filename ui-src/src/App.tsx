@@ -11,6 +11,7 @@ import { OrganizeView } from "./components/OrganizeView";
 import { KnowledgeBase } from "./components/KnowledgeBase";
 import { SettingsView } from "./components/SettingsView";
 import { TypographyAtelier } from "./components/TypographyAtelier";
+import { PrimitivesDemo } from "./components/PrimitivesDemo";
 import { useSoloist } from "./context/SoloistContext";
 import { PresetColor } from "./data/colorPresets";
 
@@ -108,6 +109,9 @@ const App = () => {
 		}
 		if (activeTool === "settings") {
 			return { sectionLabel: "System", label: "Settings", subTools: [] };
+		}
+		if (activeTool === "primitives") {
+			return { sectionLabel: "System", label: "Primitives", subTools: [] };
 		}
 
 		// Fallback for other nav entries (e.g. structure-*, document-*)
@@ -255,6 +259,7 @@ const App = () => {
 				{activeTool === "organize" && <OrganizeView />}
 				{activeTool === "knowledge" && <KnowledgeBase />}
 				{activeTool === "settings" && <SettingsView />}
+				{activeTool === "primitives" && <PrimitivesDemo />}
 				{activeTool !== "welcome" &&
 					activeTool !== "explore-colors" &&
 					activeTool !== "explore-typography" &&
@@ -263,7 +268,8 @@ const App = () => {
 					activeTool !== "export" &&
 					activeTool !== "organize" &&
 					activeTool !== "knowledge" &&
-					activeTool !== "settings" && (
+					activeTool !== "settings" &&
+					activeTool !== "primitives" && (
 						<div className="h-full w-full flex items-center justify-center text-white/20 font-mono tracking-widest uppercase">
 							Tool Implementation Pending
 						</div>

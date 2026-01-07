@@ -41,6 +41,7 @@ import {
 	FolderTree,
 	Terminal,
 	Cpu,
+	BoxSelect,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -139,6 +140,7 @@ const NAV_GROUPS = [
 			{ id: "organize", label: "Organize", icon: FolderTree },
 			{ id: "knowledge", label: "Knowledge", icon: BookOpen },
 			{ id: "export", label: "Export", icon: Terminal },
+			{ id: "primitives", label: "Primitives", icon: BoxSelect },
 			{ id: "settings", label: "Settings", icon: Settings },
 		],
 	},

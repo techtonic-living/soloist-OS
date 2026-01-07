@@ -393,7 +393,9 @@ Classes referencing `transition-all duration-300` are common. We use a custom "C
 
 When we import or trace icon vectors from third-party libraries (e.g. Tabler), we must keep provenance attached to the design artifact.
 
-**Decision (Pattern 1):** store attribution in the **Figma component description** for the icon glyph component (or the icon component set if glyphs are variants).
+**Figma structure:** Icons use an instance swap pattern. The main `Icon` component set has a `name` property that swaps to the `IconGlyph/*` library. Each icon glyph is a COMPONENT_SET (`IconGlyph/{name}`) with stroke weight variants (thin/hairline/medium/bold).
+
+**Decision (Pattern 1):** store attribution in the **Figma component description** on each `IconGlyph/{name}` frame container.
 
 Minimum fields to include:
 

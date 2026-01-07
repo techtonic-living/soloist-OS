@@ -1,13 +1,42 @@
 # Soloist OS — Handoff (Design System refactor)
 
-**Last updated:** 2026-01-05
+**Last updated:** 2026-01-07
 **Working branch:** `figmaDS-refactor`
 
-This repo is running a **drift-killer loop** between Figma and code. The goal is that “truth” lives in:
+This repo is running a **drift-killer loop** between Figma and code. The goal is that "truth" lives in:
 
 1) exported contracts/snapshots under `design/contracts/`
 2) deterministic seed/checklist in `plugin/code.tsx`
-3) UI implementations that follow contracts (starting with **Button**)
+3) UI implementations that follow contracts
+
+## Current status
+
+**Completed primitives:**
+- ✅ **Icon** contract exported (9 variants: sm/md/lg × primary/secondary/muted, zero issues)
+- ✅ **Icon** component implemented against contract ([Icon.tsx](../ui-src/src/v2/primitives/Icon.tsx))
+- ✅ **Button** contract exported (12 variants: glass/ghost × sm/md/lg × default/disabled, zero issues)
+- ✅ **Button** component implemented against contract ([Button.tsx](../ui-src/src/v2/primitives/Button.tsx))
+
+**Icon glyph inventory: ✅ Operational**
+
+13 glyphs exported and synchronized (2026-01-07). Systematic workflow established to prevent drift:
+
+**Figma structure:**
+- `Icon` component set (node 2002:498) with instance swap property `name#2002:3`
+- `IconGlyph/*` frame (node 2002:217) containing 13 glyph component sets
+- Each glyph: `IconGlyph/{name}` (COMPONENT_SET) → stroke variants (thin/hairline/medium)
+- Current glyphs: home, brand-safari, settings-2, affiliate, device-desktop-analytics, book, writing-sign, slash, minus, minus-vertical, chevron-right, circle-chevron-right, circle-chevrons-right
+
+**To add new icons:**
+1. Add IconGlyph/{name} component sets to Figma (with stroke variants)
+2. Export from plugin → "EXPORT ICON GLYPHS" 
+3. Update `FIGMA_TO_TABLER` mapping in `scripts/generate-icon-component.mjs`
+4. Run `npm run generate:icons`
+5. Commit Icon.glyphs.json + Icon.tsx
+
+See [design/contracts/README.md](../design/contracts/README.md#icon-glyphs-add-new-icons) for full workflow.
+
+**Next primitive: Button thin slice** (export Button.contract.json → implement against contract)
 
 ## What’s true (do not regress)
 
@@ -54,31 +83,32 @@ npm run dev:plugin:live
 ## Where the “contracts” live
 
 - `design/contracts/variables/` — exported variables snapshots
-- `design/contracts/primitives/` — (next) primitive contracts, e.g. Button
+- `design/contracts/primitives/` — primitive contracts (Icon, Button) + glyph inventories
+- `design/contracts/spec/` — (future) component specs
 
-See `design/contracts/README.md` for the loop.
+See `design/contracts/README.md` for workflows.
 
-## Next step (thin slice): Button
+## Contracts-first loop workflow (established)
 
-Implementation plan (workflow upgrades):
+## Contracts-first loop workflow (established)
 
-- `docs/admin/LEVEL_UP_WORKFLOW_PLAN.md`
+**General primitive workflow:**
 
-Target workflow:
-
-1) In Figma: finalize a **Button** component set (variants + bindings).
-2) Export `design/contracts/primitives/Button.contract.json`.
-3) Implement the Button in code against the contract.
+1) In Figma: finalize a component set (variants + token bindings).
+2) Export `design/contracts/primitives/[Component].contract.json`.
+3) Implement the component in code against the contract.
 4) Re-export and drift-check (contract ↔ Figma ↔ code).
 
-What to decide up front for the Button contract:
+**Icon-specific workflow (glyph inventory):**
 
-- Variant schema (e.g. `kind`, `size`, `state`, `icon`, `tone`)
-- Token bindings for:
-  - bg / stroke / text
-  - hover/press/focus states
-- Motion policy:
-  - use named states/variants and respect reduced-motion preferences.
+When icon glyphs are added/changed:
+
+1) Export glyph inventory from Figma.
+2) Update Figma→Tabler mapping in generator script.
+3) Run `npm run generate:icons` to auto-generate Icon.tsx.
+4) Commit inventory + generated component.
+
+This prevents manual Icon.tsx edits and ensures Figma is the source of truth.
 
 ---
 
@@ -128,6 +158,21 @@ What to decide up front for the Button contract:
   - Session persistence: inspected Color/Palette selection persists when switching tools/tabs
   - Hover tool reliability: refined event propagation to prevent click-through without disabling controls
 
+✅ Design System Primitives (Jan 7, 2026)
+  - Established contracts-first workflow (Figma → contract JSON → code implementation)
+  - Exported Icon.contract.json (9 variants, zero issues)
+  - Exported Button.contract.json (12 variants, zero issues)
+  - Implemented Icon.tsx against contract (size/tone props, correct token bindings)
+  - Implemented Button.tsx against contract (variant/size/state props, glass/ghost variants)
+  - Built systematic Icon glyph inventory workflow (export → map → generate → commit)
+  - Exported Icon.glyphs.json with 13 glyphs from Figma (COMPONENT_SET with stroke variants)
+  - Populated FIGMA_TO_TABLER mapping with all 13 icons
+  - Generated Icon.tsx via `npm run generate:icons` (auto-generated with Tabler imports)
+  - Fixed generator to quote object keys for IconGlyph/* names
+  - Current glyphs: home, brand-safari, settings-2, affiliate, device-desktop-analytics, book, writing-sign, slash, minus, minus-vertical, chevron-right, circle-chevron-right, circle-chevrons-right
+
 **Missing/Todo:**
 🔴 Export Terminal is hardcoded (Needs state link verification)
 🔴 Connect "Sync" button to Plugin API payload (Full E2E test)
+🟡 Test Icon component in UI (verify size/tone/glyph rendering)
+🟡 Button primitive thin slice (export Button.glyphs.json → implement against contract)
