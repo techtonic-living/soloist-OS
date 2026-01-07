@@ -69,8 +69,8 @@ export function Button({
 	// Contract-defined variant styles
 	const variantClass =
 		variant === "glass"
-			? "bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 active:bg-white/15 active:border-white/25" // color/glass/subtle + color/glass/stroke + color/text/primary
-			: "bg-transparent border-none text-gray-400 hover:text-white active:text-gray-300"; // transparent + color/text/secondary
+			? "bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 active:bg-white/15 active:border-white/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black" // color/glass/subtle + color/glass/stroke + color/text/primary
+			: "bg-transparent border-none text-gray-400 hover:text-white active:text-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:ring-offset-2 focus-visible:ring-offset-black"; // transparent + color/text/secondary
 
 	const disabledClass = disabled ? "opacity-50 pointer-events-none" : "";
 
