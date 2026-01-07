@@ -69,7 +69,7 @@ export function Button({
 	// Contract-defined variant styles
 	const variantClass =
 		variant === "glass"
-			? "bg-white/5 border border-white/10 text-white" // color/glass/subtle + color/glass/stroke + color/text/primary
+			? "bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20" // color/glass/subtle + color/glass/stroke + color/text/primary
 			: "bg-transparent border-none text-gray-400 hover:text-white"; // transparent + color/text/secondary
 
 	const disabledClass = disabled ? "opacity-50 pointer-events-none" : "";
