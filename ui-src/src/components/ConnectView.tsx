@@ -589,9 +589,6 @@ export const ConnectView = ({
 		}
 	})();
 
-	const writeButtonNotesLabel =
-		buttonNotesStatus === "applying" ? "WRITING..." : "WRITE BUTTON NOTES";
-
 	const handleExportVariablesSnapshot = () => {
 		setSnapshotStatus("exporting");
 		setSnapshotError(undefined);
@@ -689,6 +686,21 @@ export const ConnectView = ({
 			{
 				pluginMessage: {
 					type: "apply-button-build-notes-to-node",
+					payload: { nodeId: "2002:712", mode: "replace" },
+				},
+			},
+			parentOrigin
+		);
+	};
+
+	const handleWriteTextFieldBuildNotesToDesignAssistant = () => {
+		setButtonNotesStatus("applying");
+		setButtonNotesError(undefined);
+		setButtonNotesAppliedTo(undefined);
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "apply-textfield-build-notes-to-node",
 					payload: { nodeId: "2002:712", mode: "replace" },
 				},
 			},
@@ -2221,7 +2233,19 @@ export const ConnectView = ({
 											className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-[11px] uppercase tracking-wider font-semibold ${buttonNotesStatusClass}`}
 										>
 											<Download size={14} />
-											<span>{writeButtonNotesLabel}</span>
+											<span>Button Instructions</span>
+										</button>
+										<button
+											onClick={
+												handleWriteTextFieldBuildNotesToDesignAssistant
+											}
+											disabled={
+												buttonNotesStatus === "applying"
+											}
+											className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-[11px] uppercase tracking-wider font-semibold ${buttonNotesStatusClass}`}
+										>
+											<Download size={14} />
+											<span>TextField Instructions</span>
 										</button>
 										<div className="text-xs font-mono text-gray-500">
 											Writes into node 2002:712
