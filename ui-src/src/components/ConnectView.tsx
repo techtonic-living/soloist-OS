@@ -12,6 +12,7 @@ import {
 	Zap,
 	Share2,
 	Download,
+	Upload,
 } from "lucide-react";
 
 // --- Generators (Migrated from ExportTerminal) ---
@@ -241,6 +242,49 @@ export const ConnectView = ({
 		  }>
 		| undefined
 	>(undefined);
+	const [iconContractStatus, setIconContractStatus] = useState<
+		"idle" | "exporting" | "success" | "error"
+	>("idle");
+	const [iconContractError, setIconContractError] = useState<
+		string | undefined
+	>(undefined);
+	const [iconContractIssuePreview, setIconContractIssuePreview] = useState<
+		Array<{
+			severity: string;
+			code: string;
+			message: string;
+			nodeName?: string;
+		}>
+	>([]);
+	const [buttonContractStatus, setButtonContractStatus] = useState<
+		"idle" | "exporting" | "success" | "error"
+	>("idle");
+	const [buttonContractError, setButtonContractError] = useState<
+		string | undefined
+	>(undefined);
+	const [buttonContractIssuePreview, setButtonContractIssuePreview] =
+		useState<
+			Array<{
+				severity: string;
+				code: string;
+				message: string;
+				nodeName?: string;
+			}>
+		>([]);
+	const [buttonNotesStatus, setButtonNotesStatus] = useState<
+		"idle" | "applying" | "success" | "error"
+	>("idle");
+	const [buttonNotesError, setButtonNotesError] = useState<
+		string | undefined
+	>(undefined);
+	const [buttonNotesAppliedTo, setButtonNotesAppliedTo] = useState<
+		| {
+				nodeId: string;
+				nodeName?: string;
+				nodeType?: string;
+		  }
+		| undefined
+	>(undefined);
 
 	type ModeRenameChange = {
 		fileName?: string;
@@ -291,6 +335,79 @@ export const ConnectView = ({
 	);
 	const [modeRenameResult, setModeRenameResult] = useState<
 		ModeRenameResult | undefined
+	>(undefined);
+
+	type AnnotationsSnapshotV1 = {
+		schemaVersion: "soloist-os.annotations.snapshot.v1";
+		meta: {
+			exportedAt: string;
+			fileName?: string;
+			fileKey?: string | null;
+			scope: "current-page";
+		};
+		annotations: Array<{
+			pageId: string;
+			pageName: string;
+			targetId?: string;
+			targetName?: string;
+			targetType?: string;
+			frameId: string;
+			frameName: string;
+			items: Array<{
+				type: "TEXT";
+				nodeId?: string;
+				name?: string;
+				x?: number;
+				y?: number;
+				characters: string;
+			}>;
+		}>;
+	};
+
+	type ApplyAnnotationsResultV1 = {
+		schemaVersion: "soloist-os.annotations.apply-result.v1";
+		meta: {
+			ranAt: string;
+			fileName?: string;
+			fileKey?: string | null;
+			pageId: string;
+			pageName: string;
+			mode: "replace";
+		};
+		summary: {
+			frameCreated: boolean;
+			framesCreated?: number;
+			targetsApplied?: number;
+			skipped?: number;
+			deleted: number;
+			created: number;
+		};
+		issues?: Array<{
+			severity: "warning" | "error";
+			message: string;
+			targetId?: string;
+			targetName?: string;
+		}>;
+	};
+
+	const [annotationsStatus, setAnnotationsStatus] = useState<
+		| "idle"
+		| "exporting"
+		| "exported"
+		| "loading"
+		| "ready"
+		| "applying"
+		| "success"
+		| "error"
+	>("idle");
+	const [annotationsSnapshot, setAnnotationsSnapshot] = useState<
+		AnnotationsSnapshotV1 | undefined
+	>(undefined);
+	const [annotationsApplyResult, setAnnotationsApplyResult] = useState<
+		ApplyAnnotationsResultV1 | undefined
+	>(undefined);
+	const [annotationsError, setAnnotationsError] = useState<
+		string | undefined
 	>(undefined);
 
 	const [seedOverwrite, setSeedOverwrite] = useState(false);
@@ -443,6 +560,31 @@ export const ConnectView = ({
 	const modeRenameItems: NonNullable<ModeRenameResult["items"]> =
 		Array.isArray(modeRenameResult?.items) ? modeRenameResult.items : [];
 
+	const buttonNotesStatusClass = (() => {
+		switch (buttonNotesStatus) {
+			case "success":
+				return "bg-green-500/10 text-green-400 border-green-500/30";
+			case "error":
+				return "bg-red-500/10 text-red-400 border-red-500/30";
+			default:
+				return "bg-white/5 hover:bg-white/10 text-gray-200 border-white/10";
+		}
+	})();
+
+	const attachButtonNotesLabel = (() => {
+		switch (buttonNotesStatus) {
+			case "applying":
+				return "APPLYING...";
+			case "success":
+				return "NOTES ADDED";
+			default:
+				return "ADD BUTTON BUILD NOTES";
+		}
+	})();
+
+	const writeButtonNotesLabel =
+		buttonNotesStatus === "applying" ? "WRITING..." : "WRITE BUTTON NOTES";
+
 	const handleExportVariablesSnapshot = () => {
 		setSnapshotStatus("exporting");
 		setSnapshotError(undefined);
@@ -451,6 +593,130 @@ export const ConnectView = ({
 				pluginMessage: {
 					type: "export-variables-snapshot",
 					payload: { includeValues: true },
+				},
+			},
+			parentOrigin
+		);
+	};
+
+	const handleExportAnnotationsSnapshot = () => {
+		setAnnotationsStatus("exporting");
+		setAnnotationsError(undefined);
+		setAnnotationsApplyResult(undefined);
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "export-annotations-snapshot",
+					payload: { scope: "current-page" },
+				},
+			},
+			parentOrigin
+		);
+	};
+
+	const handleExportIconContract = () => {
+		setIconContractStatus("exporting");
+		setIconContractError(undefined);
+		setIconContractIssuePreview([]);
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "export-icon-contract",
+					payload: { includeVariableNames: true },
+				},
+			},
+			parentOrigin
+		);
+	};
+
+	const handleExportButtonContract = () => {
+		setButtonContractStatus("exporting");
+		setButtonContractError(undefined);
+		setButtonContractIssuePreview([]);
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "export-button-contract",
+					payload: { includeVariableNames: true },
+				},
+			},
+			parentOrigin
+		);
+	};
+
+	const handleApplyButtonBuildNotes = () => {
+		setButtonNotesStatus("applying");
+		setButtonNotesError(undefined);
+		setButtonNotesAppliedTo(undefined);
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "apply-button-build-notes",
+					payload: { mode: "append" },
+				},
+			},
+			parentOrigin
+		);
+	};
+
+	const handleWriteButtonBuildNotesToDesignAssistant = () => {
+		setButtonNotesStatus("applying");
+		setButtonNotesError(undefined);
+		setButtonNotesAppliedTo(undefined);
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "apply-button-build-notes-to-node",
+					payload: { nodeId: "2002:712", mode: "replace" },
+				},
+			},
+			parentOrigin
+		);
+	};
+
+	const handleLoadAnnotationsSnapshot = async (
+		e: ChangeEvent<HTMLInputElement>
+	) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+
+		setAnnotationsStatus("loading");
+		setAnnotationsError(undefined);
+		setAnnotationsApplyResult(undefined);
+
+		try {
+			const text = await file.text();
+			const parsed = JSON.parse(text);
+			if (
+				parsed?.schemaVersion !== "soloist-os.annotations.snapshot.v1"
+			) {
+				throw new Error(
+					"Invalid snapshot (expected schemaVersion soloist-os.annotations.snapshot.v1)."
+				);
+			}
+			setAnnotationsSnapshot(parsed as AnnotationsSnapshotV1);
+			setAnnotationsStatus("ready");
+		} catch (err: any) {
+			setAnnotationsStatus("error");
+			setAnnotationsError(err?.message ?? String(err));
+		}
+		// Allow re-uploading the same file.
+		e.target.value = "";
+	};
+
+	const postApplyAnnotationsSnapshot = () => {
+		if (!annotationsSnapshot) return;
+		setAnnotationsStatus("applying");
+		setAnnotationsError(undefined);
+		setAnnotationsApplyResult(undefined);
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "apply-annotations-snapshot",
+					payload: {
+						snapshot: annotationsSnapshot,
+						mode: "replace",
+					},
 				},
 			},
 			parentOrigin
@@ -534,6 +800,161 @@ export const ConnectView = ({
 			if (type === "variables-snapshot-error") {
 				setSnapshotStatus("error");
 				setSnapshotError(message || "Unknown error");
+			}
+			if (type === "annotations-snapshot-ready") {
+				const payload = event.data.pluginMessage?.payload;
+				const exportedAt = payload?.meta?.exportedAt
+					? String(payload.meta.exportedAt)
+					: new Date().toISOString();
+				const fileNameBase = payload?.meta?.fileName
+					? String(payload.meta.fileName)
+					: "figma-file";
+				const fileKey = payload?.meta?.fileKey
+					? String(payload.meta.fileKey)
+					: "no-fileKey";
+				const stamp = exportedAt.replace(/[:.]/g, "-");
+				const filename = sanitizeFilename(
+					`annotations-snapshot__${fileNameBase}__${fileKey}__${stamp}.json`
+				);
+
+				try {
+					downloadJson(filename, payload);
+					setAnnotationsSnapshot(payload as AnnotationsSnapshotV1);
+					setAnnotationsStatus("exported");
+					setTimeout(() => setAnnotationsStatus("idle"), 2500);
+				} catch (e: any) {
+					setAnnotationsStatus("error");
+					setAnnotationsError(e?.message ?? String(e));
+				}
+			}
+			if (type === "annotations-snapshot-error") {
+				setAnnotationsStatus("error");
+				setAnnotationsError(message || "Unknown error");
+			}
+			if (type === "icon-contract-ready") {
+				const payload = event.data.pluginMessage?.payload;
+				const exportedAt = payload?.meta?.exportedAt
+					? String(payload.meta.exportedAt)
+					: new Date().toISOString();
+				const fileNameBase = payload?.meta?.fileName
+					? String(payload.meta.fileName)
+					: "figma-file";
+				const fileKey = payload?.meta?.fileKey
+					? String(payload.meta.fileKey)
+					: "no-fileKey";
+				const stamp = exportedAt.replace(/[:.]/g, "-");
+				const filename = sanitizeFilename(
+					`Icon.contract__${fileNameBase}__${fileKey}__${stamp}.json`
+				);
+
+				try {
+					downloadJson(filename, payload);
+					setIconContractStatus("success");
+					const issues = Array.isArray(payload?.issues)
+						? payload.issues
+						: [];
+					setIconContractIssuePreview(
+						issues.slice(0, 6).map((i: any) => ({
+							severity: String(i?.severity ?? "info"),
+							code: String(i?.code ?? ""),
+							message: String(i?.message ?? ""),
+							nodeName:
+								typeof i?.nodeName === "string"
+									? i.nodeName
+									: undefined,
+						}))
+					);
+					setTimeout(() => setIconContractStatus("idle"), 2500);
+				} catch (e: any) {
+					setIconContractStatus("error");
+					setIconContractError(e?.message ?? String(e));
+				}
+			}
+			if (type === "icon-contract-error") {
+				setIconContractStatus("error");
+				setIconContractError(message || "Unknown error");
+				setTimeout(() => setIconContractStatus("idle"), 5000);
+			}
+			if (type === "button-contract-ready") {
+				const payload = event.data.pluginMessage?.payload;
+				const exportedAt = payload?.meta?.exportedAt
+					? String(payload.meta.exportedAt)
+					: new Date().toISOString();
+				const fileNameBase = payload?.meta?.fileName
+					? String(payload.meta.fileName)
+					: "figma-file";
+				const fileKey = payload?.meta?.fileKey
+					? String(payload.meta.fileKey)
+					: "no-fileKey";
+				const stamp = exportedAt.replace(/[:.]/g, "-");
+				const filename = sanitizeFilename(
+					`Button.contract__${fileNameBase}__${fileKey}__${stamp}.json`
+				);
+
+				try {
+					downloadJson(filename, payload);
+					setButtonContractStatus("success");
+					const issues = Array.isArray(payload?.issues)
+						? payload.issues
+						: [];
+					setButtonContractIssuePreview(
+						issues.slice(0, 6).map((i: any) => ({
+							severity: String(i?.severity ?? "info"),
+							code: String(i?.code ?? ""),
+							message: String(i?.message ?? ""),
+							nodeName:
+								typeof i?.nodeName === "string"
+									? i.nodeName
+									: undefined,
+						}))
+					);
+					setTimeout(() => setButtonContractStatus("idle"), 2500);
+				} catch (e: any) {
+					setButtonContractStatus("error");
+					setButtonContractError(e?.message ?? String(e));
+				}
+			}
+			if (type === "button-contract-error") {
+				setButtonContractStatus("error");
+				setButtonContractError(message || "Unknown error");
+				setTimeout(() => setButtonContractStatus("idle"), 5000);
+			}
+			if (type === "button-notes-applied") {
+				const payload = event.data.pluginMessage?.payload;
+				setButtonNotesAppliedTo(
+					payload && typeof payload?.nodeId === "string"
+						? {
+								nodeId: payload.nodeId,
+								nodeName:
+									typeof payload?.nodeName === "string"
+										? payload.nodeName
+										: undefined,
+								nodeType:
+									typeof payload?.nodeType === "string"
+										? payload.nodeType
+										: undefined,
+						  }
+						: undefined
+				);
+				setButtonNotesStatus("success");
+				setTimeout(() => setButtonNotesStatus("idle"), 3000);
+			}
+			if (type === "button-notes-error") {
+				setButtonNotesStatus("error");
+				setButtonNotesError(message || "Unknown error");
+				setTimeout(() => setButtonNotesStatus("idle"), 5000);
+			}
+			if (type === "annotations-apply-result") {
+				const payload = event.data.pluginMessage
+					?.payload as ApplyAnnotationsResultV1;
+				setAnnotationsApplyResult(payload);
+				setAnnotationsStatus("success");
+				setTimeout(() => setAnnotationsStatus("idle"), 3000);
+			}
+			if (type === "annotations-apply-error") {
+				setAnnotationsStatus("error");
+				setAnnotationsError(message || "Unknown error");
+				setTimeout(() => setAnnotationsStatus("idle"), 5000);
 			}
 			if (type === "mode-renames-result") {
 				const payload = event.data.pluginMessage
@@ -658,6 +1079,27 @@ export const ConnectView = ({
 		if (checklistStatus === "missing") return "CHECKLIST: MISSING";
 		if (checklistStatus === "error") return "CHECKLIST ERROR";
 		return "RUN CHECKLIST";
+	})();
+
+	const annotationsExportButtonClass = (() => {
+		if (annotationsStatus === "exporting")
+			return "bg-white/5 text-gray-300 border-white/10";
+		if (annotationsStatus === "error")
+			return "bg-red-500/10 text-red-400 border-red-500/30";
+		if (annotationsStatus === "success" || annotationsStatus === "exported")
+			return "bg-green-500/10 text-green-400 border-green-500/30";
+		return "bg-accent-cyan/10 hover:bg-accent-cyan/20 text-accent-cyan border-accent-cyan/30";
+	})();
+
+	const annotationsExportButtonLabel = (() => {
+		if (annotationsStatus === "exporting") return "EXPORTING...";
+		if (annotationsStatus === "exported") return "SNAPSHOT SAVED";
+		return "EXPORT ANNOTATIONS";
+	})();
+
+	const annotationsApplyButtonLabel = (() => {
+		if (annotationsStatus === "applying") return "APPLYING...";
+		return "APPLY (REPLACE)";
 	})();
 
 	const missingCollections = checklistResult?.missing?.collections ?? [];
@@ -1306,6 +1748,374 @@ export const ConnectView = ({
 									</ul>
 								</div>
 							)}
+							<div className="mt-4 p-4 rounded-xl bg-bg-raised/30 border border-white/5">
+								<div className="text-xs font-mono text-gray-400 uppercase tracking-wide mb-3">
+									Contract annotations snapshot (TEXT in
+									__annotations)
+								</div>
+								<div className="flex flex-col gap-3">
+									<div className="flex items-center justify-between gap-3 flex-wrap">
+										<button
+											onClick={
+												handleExportAnnotationsSnapshot
+											}
+											disabled={
+												annotationsStatus ===
+												"exporting"
+											}
+											className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-[11px] uppercase tracking-wider font-semibold ${annotationsExportButtonClass}`}
+										>
+											<Download size={14} />
+											<span>
+												{annotationsExportButtonLabel}
+											</span>
+										</button>
+
+										<div className="flex items-center gap-2 flex-wrap">
+											<input
+												type="file"
+												accept="application/json,.json"
+												onChange={
+													handleLoadAnnotationsSnapshot
+												}
+												aria-label="Annotations snapshot JSON"
+												className="text-xs text-gray-300"
+											/>
+											<button
+												onClick={
+													postApplyAnnotationsSnapshot
+												}
+												disabled={
+													!annotationsSnapshot ||
+													annotationsStatus ===
+														"applying"
+												}
+												className="flex items-center gap-2 px-3 py-2 rounded-lg border border-accent-cyan/30 bg-accent-cyan/10 hover:bg-accent-cyan/20 transition-all text-[11px] uppercase tracking-wider font-semibold text-accent-cyan disabled:opacity-40 disabled:cursor-default"
+											>
+												<Upload size={14} />
+												<span>
+													{
+														annotationsApplyButtonLabel
+													}
+												</span>
+											</button>
+										</div>
+									</div>
+
+									{annotationsSnapshot && (
+										<div className="text-xs font-mono text-gray-500">
+											Loaded snapshot:{" "}
+											{
+												annotationsSnapshot.annotations
+													.length
+											}{" "}
+											annotation container(s)
+										</div>
+									)}
+									{annotationsApplyResult?.summary && (
+										<div className="text-xs font-mono text-gray-300">
+											Applied to page{" "}
+											{
+												annotationsApplyResult.meta
+													.pageName
+											}
+											:{" "}
+											{
+												annotationsApplyResult.summary
+													.created
+											}{" "}
+											created,{" "}
+											{
+												annotationsApplyResult.summary
+													.deleted
+											}{" "}
+											removed
+											{typeof annotationsApplyResult
+												.summary.targetsApplied ===
+											"number"
+												? `, ${annotationsApplyResult.summary.targetsApplied} target(s)`
+												: ""}
+											{typeof annotationsApplyResult
+												.summary.framesCreated ===
+												"number" &&
+											annotationsApplyResult.summary
+												.framesCreated > 0
+												? `, ${annotationsApplyResult.summary.framesCreated} __annotations frame(s) created`
+												: ""}
+											{typeof annotationsApplyResult
+												.summary.skipped === "number" &&
+											annotationsApplyResult.summary
+												.skipped > 0
+												? `, ${annotationsApplyResult.summary.skipped} skipped`
+												: ""}
+											.
+										</div>
+									)}
+									{annotationsApplyResult?.issues &&
+										annotationsApplyResult.issues.length >
+											0 && (
+											<div className="text-xs font-mono text-yellow-300">
+												{
+													annotationsApplyResult
+														.issues[0].message
+												}
+											</div>
+										)}
+									{annotationsError && (
+										<div className="text-xs font-mono text-red-400">
+											Annotations error:{" "}
+											{annotationsError}
+										</div>
+									)}
+								</div>
+							</div>
+							<div className="mt-4 p-4 rounded-xl bg-bg-raised/30 border border-white/5">
+								<div className="text-xs font-mono text-gray-400 uppercase tracking-wide mb-3">
+									Primitive contract: Icon
+								</div>
+								<div className="flex flex-col gap-3">
+									<div className="flex items-center justify-between gap-3 flex-wrap">
+										<button
+											onClick={handleExportIconContract}
+											disabled={
+												iconContractStatus ===
+												"exporting"
+											}
+											className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-[11px] uppercase tracking-wider font-semibold ${
+												iconContractStatus === "success"
+													? "bg-green-500/10 text-green-400 border-green-500/30"
+													: iconContractStatus ===
+													  "error"
+													? "bg-red-500/10 text-red-400 border-red-500/30"
+													: "bg-accent-cyan/10 hover:bg-accent-cyan/20 text-accent-cyan border-accent-cyan/30"
+											}`}
+										>
+											<Download size={14} />
+											<span>
+												{iconContractStatus ===
+												"exporting"
+													? "EXPORTING..."
+													: iconContractStatus ===
+													  "success"
+													? "CONTRACT SAVED"
+													: "EXPORT ICON CONTRACT"}
+											</span>
+										</button>
+										<div className="text-xs font-mono text-gray-500">
+											Select the Icon component (or
+											component set) before exporting.
+										</div>
+									</div>
+
+									{iconContractIssuePreview.length > 0 && (
+										<div className="mt-1 p-3 rounded-lg bg-bg-raised/20 border border-white/5">
+											<div className="text-xs font-mono text-gray-400 uppercase tracking-wide mb-2">
+												Detected issues (preview)
+											</div>
+											<ul className="text-xs text-gray-300 space-y-1">
+												{iconContractIssuePreview.map(
+													(i) => (
+														<li
+															key={`${
+																i.severity
+															}|${i.code}|${
+																i.nodeName ?? ""
+															}|${i.message}`}
+															className="flex gap-2"
+														>
+															<span
+																className={
+																	i.severity ===
+																	"error"
+																		? "text-red-400"
+																		: i.severity ===
+																		  "warning"
+																		? "text-yellow-400"
+																		: "text-gray-400"
+																}
+															>
+																[{i.severity}]
+															</span>
+															<span>
+																{i.nodeName
+																	? `${i.nodeName}: `
+																	: ""}
+																{i.message}
+															</span>
+														</li>
+													)
+												)}
+											</ul>
+										</div>
+									)}
+									{iconContractError && (
+										<div className="text-xs font-mono text-red-400">
+											Icon contract export error:{" "}
+											{iconContractError}
+										</div>
+									)}
+								</div>
+							</div>
+							<div className="mt-4 p-4 rounded-xl bg-bg-raised/30 border border-white/5">
+								<div className="text-xs font-mono text-gray-400 uppercase tracking-wide mb-3">
+									Primitive contract: Button
+								</div>
+								<div className="flex flex-col gap-3">
+									<div className="flex items-center justify-between gap-3 flex-wrap">
+										<button
+											onClick={handleExportButtonContract}
+											disabled={
+												buttonContractStatus ===
+												"exporting"
+											}
+											className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-[11px] uppercase tracking-wider font-semibold ${
+												buttonContractStatus ===
+												"success"
+													? "bg-green-500/10 text-green-400 border-green-500/30"
+													: buttonContractStatus ===
+													  "error"
+													? "bg-red-500/10 text-red-400 border-red-500/30"
+													: "bg-accent-cyan/10 hover:bg-accent-cyan/20 text-accent-cyan border-accent-cyan/30"
+											}`}
+										>
+											<Download size={14} />
+											<span>
+												{buttonContractStatus ===
+												"exporting"
+													? "EXPORTING..."
+													: buttonContractStatus ===
+													  "success"
+													? "CONTRACT SAVED"
+													: "EXPORT BUTTON CONTRACT"}
+											</span>
+										</button>
+										<div className="text-xs font-mono text-gray-500">
+											Select the Button component set
+											before exporting.
+										</div>
+									</div>
+
+									{buttonContractIssuePreview.length > 0 && (
+										<div className="mt-1 p-3 rounded-lg bg-bg-raised/20 border border-white/5">
+											<div className="text-xs font-mono text-gray-400 uppercase tracking-wide mb-2">
+												Detected issues (preview)
+											</div>
+											<ul className="text-xs text-gray-300 space-y-1">
+												{buttonContractIssuePreview.map(
+													(i) => (
+														<li
+															key={`${
+																i.severity
+															}|${i.code}|${
+																i.nodeName ?? ""
+															}|${i.message}`}
+															className="flex gap-2"
+														>
+															<span
+																className={
+																	i.severity ===
+																	"error"
+																		? "text-red-400"
+																		: i.severity ===
+																		  "warning"
+																		? "text-yellow-400"
+																		: "text-gray-400"
+																}
+															>
+																[{i.severity}]
+															</span>
+															<span>
+																{i.nodeName
+																	? `${i.nodeName}: `
+																	: ""}
+																{i.message}
+															</span>
+														</li>
+													)
+												)}
+											</ul>
+										</div>
+									)}
+									{buttonContractError && (
+										<div className="text-xs font-mono text-red-400">
+											Button contract export error:{" "}
+											{buttonContractError}
+										</div>
+									)}
+								</div>
+							</div>
+							<div className="mt-4 p-4 rounded-xl bg-bg-raised/30 border border-white/5">
+								<div className="text-xs font-mono text-gray-400 uppercase tracking-wide mb-3">
+									Attach notes: Button
+								</div>
+								<div className="flex flex-col gap-3">
+									<div className="flex items-center justify-between gap-3 flex-wrap">
+										<button
+											onClick={
+												handleApplyButtonBuildNotes
+											}
+											disabled={
+												buttonNotesStatus === "applying"
+											}
+											className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-[11px] uppercase tracking-wider font-semibold ${buttonNotesStatusClass}`}
+										>
+											<Download size={14} />
+											<span>
+												{attachButtonNotesLabel}
+											</span>
+										</button>
+										<div className="text-xs font-mono text-gray-500">
+											Select the target layer (e.g.
+											02_COMPONENTS → Button) then click.
+										</div>
+									</div>
+									{buttonNotesAppliedTo?.nodeName && (
+										<div className="text-xs font-mono text-gray-300">
+											Applied to:{" "}
+											{buttonNotesAppliedTo.nodeName}
+											{buttonNotesAppliedTo.nodeType
+												? ` (${buttonNotesAppliedTo.nodeType})`
+												: ""}
+										</div>
+									)}
+									{buttonNotesError && (
+										<div className="text-xs font-mono text-red-400">
+											Button notes error:{" "}
+											{buttonNotesError}
+										</div>
+									)}
+								</div>
+							</div>
+							<div className="mt-4 p-4 rounded-xl bg-bg-raised/30 border border-white/5">
+								<div className="text-xs font-mono text-gray-400 uppercase tracking-wide mb-3">
+									Write instructions: designAssistant
+								</div>
+								<div className="flex flex-col gap-3">
+									<div className="flex items-center justify-between gap-3 flex-wrap">
+										<button
+											onClick={
+												handleWriteButtonBuildNotesToDesignAssistant
+											}
+											disabled={
+												buttonNotesStatus === "applying"
+											}
+											className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-[11px] uppercase tracking-wider font-semibold ${buttonNotesStatusClass}`}
+										>
+											<Download size={14} />
+											<span>{writeButtonNotesLabel}</span>
+										</button>
+										<div className="text-xs font-mono text-gray-500">
+											Writes into node 2002:712
+											(designAssistant) text.
+										</div>
+									</div>
+									<div className="text-xs font-mono text-gray-500">
+										Note: this replaces the text content
+										block so the instructions are always
+										current.
+									</div>
+								</div>
+							</div>
 							<div className="mt-4 p-4 rounded-xl bg-bg-raised/30 border border-white/5">
 								<div className="text-xs font-mono text-gray-400 uppercase tracking-wide mb-3">
 									Apply proposals: mode rename (Mode 1 →
