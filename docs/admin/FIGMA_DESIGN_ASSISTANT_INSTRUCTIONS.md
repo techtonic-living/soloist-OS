@@ -2,6 +2,24 @@
 
 **Purpose:** Guide AI design assistant (Figma AI) through creating new primitive components that align with the contracts-first drift-killer workflow.
 
+## Workflow: How These Instructions Are Used
+
+**When starting a new component:**
+
+1. Agent identifies next component to build (e.g., "TextField")
+2. Agent generates component-specific instructions based on this template
+3. **Agent pastes instructions into the `designAssistant` component in Figma** (node 2002:712)
+   - This allows the designer to view step-by-step guidance directly in Figma while building
+4. Designer creates the component following the instructions
+5. Designer exports the contract and reports back
+6. Agent implements code against the contract
+
+**Why this pattern:**
+- Keeps design + code instructions synchronized
+- Designer sees the exact constraints while building in Figma
+- Prevents drift before it starts (design against known tokens/rules)
+- Creates a single source of truth for each component's requirements
+
 ## Context
 
 This project uses a **contracts-first workflow** to prevent drift between Figma and code:

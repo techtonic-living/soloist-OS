@@ -29,14 +29,22 @@ This repo is running a **drift-killer loop** between Figma and code. The goal is
 
 **To add new icons:**
 1. Add IconGlyph/{name} component sets to Figma (with stroke variants)
-2. Export from plugin → "EXPORT ICON GLYPHS" 
+2. Export from plugin → "EXPORT ICON GLYPHS"
 3. Update `FIGMA_TO_TABLER` mapping in `scripts/generate-icon-component.mjs`
 4. Run `npm run generate:icons`
 5. Commit Icon.glyphs.json + Icon.tsx
 
 See [design/contracts/README.md](../design/contracts/README.md#icon-glyphs-add-new-icons) for full workflow.
 
-**Next primitive: Button thin slice** (export Button.contract.json → implement against contract)
+**Next primitive: TextField**
+
+Workflow pattern established:
+1. Agent generates component-specific instructions
+2. Agent pastes into `designAssistant` component (node 2002:712) in Figma
+3. Designer builds component in Figma following instructions
+4. Designer exports contract JSON via plugin
+5. Agent implements code against contract
+6. Re-export to verify zero drift
 
 ## What’s true (do not regress)
 
