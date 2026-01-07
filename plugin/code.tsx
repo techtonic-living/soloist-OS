@@ -130,6 +130,14 @@ type PluginMessage =
 				mode?: "replace" | "append";
 			};
 	  }
+	| {
+			type: "apply-textfield-build-notes-to-node";
+			payload: {
+				/** Target node id (e.g. a designAssistant component or a TEXT node inside it). */
+				nodeId: string;
+				mode?: "replace" | "append";
+			};
+	  }
 	| { type: "pick-color" }
 	| { type: "request-selection-colors" };
 
@@ -370,6 +378,138 @@ GOVERNANCE RULES (DO NOT VIOLATE)
 Contract path: design/contracts/primitives/Button.contract.json
 `;
 
+const TEXTFIELD_BUILD_NOTES_V1 = `TextField Component — Build Instructions
+
+═══════════════════════════════════════════════════════════════════════════════
+TEXTFIELD COMPONENT — SOLOIST OS
+═══════════════════════════════════════════════════════════════════════════════
+
+Component: TextField
+Target Variants: 12 total (4 states × 3 sizes)
+Contract: design/contracts/primitives/TextField.contract.json
+
+═══════════════════════════════════════════════════════════════════════════════
+1. CREATE COMPONENT SET
+═══════════════════════════════════════════════════════════════════════════════
+
+• Name: TextField
+• Position: Near Icon and Button primitives
+• Type: Component Set (will add variants)
+
+═══════════════════════════════════════════════════════════════════════════════
+2. DEFINE VARIANT PROPERTIES
+═══════════════════════════════════════════════════════════════════════════════
+
+Add these variant properties:
+
+• state: default | focused | disabled | error
+• size: sm | md | lg
+
+Total variants: 4 states × 3 sizes = 12 variants
+
+═══════════════════════════════════════════════════════════════════════════════
+3. STRUCTURE (EACH VARIANT)
+═══════════════════════════════════════════════════════════════════════════════
+
+TextField (component)
+  └─ Container (frame, auto layout horizontal)
+      ├─ IconLeft (Icon instance, instance swap, optional)
+      ├─ Input Text (text layer)
+      ├─ Placeholder (text layer, conditional visibility)
+      └─ IconRight (Icon instance, instance swap, optional)
+
+═══════════════════════════════════════════════════════════════════════════════
+4. TOKEN BINDINGS (CRITICAL — NO HARD-CODED VALUES)
+═══════════════════════════════════════════════════════════════════════════════
+
+CONTAINER:
+• Fill: color/glass/subtle
+• Stroke: color/glass/stroke
+• Stroke Weight: stroke/thin (1px)
+• Corner Radius: radius/lg (16px)
+• Padding: space/3 (12px) or space/4 (16px)
+• Gap: space/2 (8px) between icons and text
+
+HEIGHT (MATCH BUTTON):
+• sm: 32px (h-8)
+• md: 44px (h-11)
+• lg: 56px (h-14)
+
+TYPOGRAPHY (BIND TO TEXT STYLES):
+• sm: Text style ui/05 (14px Inter)
+• md: Text style ui/06 or ui/07 (16px Inter)
+• lg: Text style ui/08 or ui/09 (18-20px Inter)
+
+⚠️ FONT FAMILY: font/ui (Inter), NOT font/mono
+
+TEXT COLORS (STATE-BASED):
+• Input text (default/focused): color/text/primary (#FFFFFF)
+• Placeholder: color/text/secondary (#FFFFFFb8)
+• Disabled: color/text/tertiary (or 40% opacity)
+• Error text: color/signal/error
+
+STATE-SPECIFIC STYLES:
+
+FOCUSED:
+• Border stroke: color/accent/primary (#3D8BFF)
+• Optional: Add shadow/neon-glow effect
+
+ERROR:
+• Border stroke: color/signal/error
+
+DISABLED:
+• Opacity: 50%
+• Cursor: not-allowed (handled in code)
+
+═══════════════════════════════════════════════════════════════════════════════
+5. COMPONENT PROPERTIES
+═══════════════════════════════════════════════════════════════════════════════
+
+Add Instance Swap properties:
+
+• iconLeft: Instance swap → Icon component set, property glyph#2002:3
+  Make optional (can be empty)
+
+• iconRight: Instance swap → Icon component set, property glyph#2002:3
+  Make optional (can be empty)
+
+═══════════════════════════════════════════════════════════════════════════════
+6. PRE-EXPORT CHECKLIST
+═══════════════════════════════════════════════════════════════════════════════
+
+Before exporting, verify:
+
+✅ All fills bound to color/* variables (no hex values)
+✅ All strokes bound to stroke/* variables
+✅ All radii bound to radius/* variables
+✅ All spacing uses space/* variables
+✅ All text uses Text Styles (ui/05, ui/06, etc.)
+✅ Component properties (iconLeft/Right) are instance swap type
+✅ All 12 variants present (4 states × 3 sizes)
+
+═══════════════════════════════════════════════════════════════════════════════
+7. EXPORT CONTRACT
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Select TextField component set
+2. Note the node ID from URL (node-id=XXXX-XXX)
+3. Run plugin: Export Component Contract
+4. Report node ID and "zero issues" confirmation
+
+═══════════════════════════════════════════════════════════════════════════════
+GOVERNANCE RULES (DO NOT VIOLATE)
+═══════════════════════════════════════════════════════════════════════════════
+
+✓ Use font/ui (Inter) for text inputs, NOT font/mono
+✓ Stroke ladder: 0.5/1/1.5/2 (hairline/thin/medium/bold)
+✓ Typography variables = font family only; Text Styles = size/line-height
+✓ Use spacing tokens (space/*) for padding/gap, not hardcoded px
+✓ Use radius tokens (radius/*) for corner radius, not hardcoded px
+✓ State colors must use variables: color/accent/primary (focused), color/signal/error (error)
+
+Contract path: design/contracts/primitives/TextField.contract.json
+`;
+
 function findNearestNodeWithDescription(
 	start: BaseNode
 ): (BaseNode & { description: string }) | null {
@@ -469,6 +609,28 @@ async function writeButtonNotesIntoTextNode(opts: {
 		startMarker,
 		endMarker,
 		content: BUTTON_BUILD_NOTES_V1,
+		mode: opts.mode,
+	});
+	opts.text.characters = next;
+}
+
+async function writeTextFieldNotesIntoTextNode(opts: {
+	text: TextNode;
+	mode: "replace" | "append";
+}): Promise<void> {
+	const ok = await loadTextNodeFontForEdit(opts.text);
+	if (!ok) {
+		throw new Error(
+			"Unable to load font for target text node. Try selecting a simpler text node (non-mixed font), or ensure Inter is available."
+		);
+	}
+	const startMarker = "[soloist:textfield-build-notes:v1:start]";
+	const endMarker = "[soloist:textfield-build-notes:v1:end]";
+	const next = upsertMarkedBlock({
+		existing: opts.text.characters ?? "",
+		startMarker,
+		endMarker,
+		content: TEXTFIELD_BUILD_NOTES_V1,
 		mode: opts.mode,
 	});
 	opts.text.characters = next;
@@ -3979,6 +4141,66 @@ async function handleApplyButtonBuildNotesToNode(
 	}
 }
 
+async function handleApplyTextFieldBuildNotesToNode(
+	msg: Extract<PluginMessage, { type: "apply-textfield-build-notes-to-node" }>
+): Promise<void> {
+	try {
+		const nodeId = msg.payload?.nodeId;
+		if (!nodeId || typeof nodeId !== "string") {
+			figma.ui.postMessage({
+				type: "textfield-notes-error",
+				message: "Missing nodeId.",
+			});
+			return;
+		}
+
+		const raw = await figma.getNodeByIdAsync(nodeId);
+		if (!raw) {
+			figma.notify(`Node not found: ${nodeId}`, { error: true });
+			figma.ui.postMessage({
+				type: "textfield-notes-error",
+				message: `Node not found: ${nodeId}`,
+			});
+			return;
+		}
+
+		const text = findTextTargetWithin(raw as BaseNode);
+		if (!text) {
+			figma.notify(
+				"Target node has no TEXT layer to write into. Point to a TEXT node or a component/frame containing one.",
+				{ error: true }
+			);
+			figma.ui.postMessage({
+				type: "textfield-notes-error",
+				message:
+					"Target has no TEXT layer. Provide a TEXT node id, or a container that contains a text layer.",
+			});
+			return;
+		}
+
+		const mode = msg.payload?.mode ?? "replace";
+		await writeTextFieldNotesIntoTextNode({ text, mode });
+		figma.notify(`Wrote TextField notes into text: ${text.name}`);
+		figma.ui.postMessage({
+			type: "textfield-notes-applied",
+			payload: {
+				nodeId: (text as any).id,
+				nodeName: (text as any).name,
+				nodeType: (text as any).type,
+			},
+		});
+	} catch (e: any) {
+		console.error("PLUGIN: Error applying textfield build notes to node", e);
+		figma.notify("TextField notes error: " + (e?.message ?? String(e)), {
+			error: true,
+		});
+		figma.ui.postMessage({
+			type: "textfield-notes-error",
+			message: e?.message ?? String(e),
+		});
+	}
+}
+
 function handleResizeUi(
 	msg: Extract<PluginMessage, { type: "resize-ui" }>
 ): void {
@@ -4024,6 +4246,8 @@ async function onUiMessage(msg: PluginMessage): Promise<void> {
 			return handleApplyButtonBuildNotes(msg);
 		case "apply-button-build-notes-to-node":
 			return handleApplyButtonBuildNotesToNode(msg);
+		case "apply-textfield-build-notes-to-node":
+			return handleApplyTextFieldBuildNotesToNode(msg);
 		case "resize-ui":
 			handleResizeUi(msg);
 			return;
