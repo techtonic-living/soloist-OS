@@ -1,0 +1,302 @@
+{
+  "schemaVersion": "soloist-os.primitives.icon-glyphs.inventory.v1",
+  "meta": {
+    "exportedAt": "2026-01-07T20:31:22.310Z",
+    "fileName": "org-soloist-figmaPlugin",
+    "fileKey": null
+  },
+  "source": {
+    "nodeId": "2002:498",
+    "nodeName": "Icon",
+    "nodeType": "COMPONENT_SET",
+    "instanceSwapPropertyName": "name#2002:3"
+  },
+  "glyphs": [
+    {
+      "componentKey": "2002:207",
+      "componentName": "IconGlyph/home",
+      "nodeType": "COMPONENT_SET",
+      "strokeVariants": [
+        {
+          "nodeId": "2002:199",
+          "nodeName": "stroke=thin",
+          "stroke": "thin"
+        },
+        {
+          "nodeId": "2002:208",
+          "nodeName": "stroke=hairline",
+          "stroke": "hairline"
+        },
+        {
+          "nodeId": "2002:212",
+          "nodeName": "stroke=medium",
+          "stroke": "medium"
+        }
+      ]
+    },
+    {
+      "componentKey": "2002:276",
+      "componentName": "IconGlyph/brand-safari",
+      "nodeType": "COMPONENT_SET",
+      "strokeVariants": [
+        {
+          "nodeId": "2002:275",
+          "nodeName": "stroke=thin",
+          "stroke": "thin"
+        },
+        {
+          "nodeId": "2002:277",
+          "nodeName": "stroke=hairline",
+          "stroke": "hairline"
+        },
+        {
+          "nodeId": "2002:280",
+          "nodeName": "stroke=medium",
+          "stroke": "medium"
+        }
+      ]
+    },
+    {
+      "componentKey": "2002:289",
+      "componentName": "IconGlyph/settings-2",
+      "nodeType": "COMPONENT_SET",
+      "strokeVariants": [
+        {
+          "nodeId": "2002:288",
+          "nodeName": "stroke=thin",
+          "stroke": "thin"
+        },
+        {
+          "nodeId": "2002:293",
+          "nodeName": "stroke=hairline",
+          "stroke": "hairline"
+        },
+        {
+          "nodeId": "2002:290",
+          "nodeName": "stroke=medium",
+          "stroke": "medium"
+        }
+      ]
+    },
+    {
+      "componentKey": "2002:192",
+      "componentName": "IconGlyph/affiliate",
+      "nodeType": "COMPONENT_SET",
+      "strokeVariants": [
+        {
+          "nodeId": "2002:189",
+          "nodeName": "stroke=thin",
+          "stroke": "thin"
+        },
+        {
+          "nodeId": "2002:190",
+          "nodeName": "stroke=hairline",
+          "stroke": "hairline"
+        },
+        {
+          "nodeId": "2002:191",
+          "nodeName": "stroke=medium",
+          "stroke": "medium"
+        }
+      ]
+    },
+    {
+      "componentKey": "2002:308",
+      "componentName": "IconGlyph/device-desktop-analytics",
+      "nodeType": "COMPONENT_SET",
+      "strokeVariants": [
+        {
+          "nodeId": "2002:307",
+          "nodeName": "stroke=thin",
+          "stroke": "thin"
+        },
+        {
+          "nodeId": "2002:309",
+          "nodeName": "stroke=hairline",
+          "stroke": "hairline"
+        },
+        {
+          "nodeId": "2002:318",
+          "nodeName": "stroke=medium",
+          "stroke": "medium"
+        }
+      ]
+    },
+    {
+      "componentKey": "2002:336",
+      "componentName": "IconGlyph/book",
+      "nodeType": "COMPONENT_SET",
+      "strokeVariants": [
+        {
+          "nodeId": "2002:335",
+          "nodeName": "stroke=thin",
+          "stroke": "thin"
+        },
+        {
+          "nodeId": "2002:337",
+          "nodeName": "stroke=hairline",
+          "stroke": "hairline"
+        },
+        {
+          "nodeId": "2002:343",
+          "nodeName": "stroke=medium",
+          "stroke": "medium"
+        }
+      ]
+    },
+    {
+      "componentKey": "2002:365",
+      "componentName": "IconGlyph/writing-sign",
+      "nodeType": "COMPONENT_SET",
+      "strokeVariants": [
+        {
+          "nodeId": "2002:355",
+          "nodeName": "stroke=thin",
+          "stroke": "thin"
+        },
+        {
+          "nodeId": "2002:366",
+          "nodeName": "stroke=hairline",
+          "stroke": "hairline"
+        },
+        {
+          "nodeId": "2002:371",
+          "nodeName": "stroke=medium",
+          "stroke": "medium"
+        }
+      ]
+    },
+    {
+      "componentKey": "2002:442",
+      "componentName": "IconGlyph/slash",
+      "nodeType": "COMPONENT_SET",
+      "strokeVariants": [
+        {
+          "nodeId": "2002:441",
+          "nodeName": "stroke=thin",
+          "stroke": "thin"
+        },
+        {
+          "nodeId": "2002:443",
+          "nodeName": "stroke=hairline",
+          "stroke": "hairline"
+        },
+        {
+          "nodeId": "2002:445",
+          "nodeName": "stroke=medium",
+          "stroke": "medium"
+        }
+      ]
+    },
+    {
+      "componentKey": "2002:420",
+      "componentName": "IconGlyph/minus",
+      "nodeType": "COMPONENT_SET",
+      "strokeVariants": [
+        {
+          "nodeId": "2002:419",
+          "nodeName": "stroke=thin",
+          "stroke": "thin"
+        },
+        {
+          "nodeId": "2002:421",
+          "nodeName": "stroke=hairline",
+          "stroke": "hairline"
+        },
+        {
+          "nodeId": "2002:423",
+          "nodeName": "stroke=medium",
+          "stroke": "medium"
+        }
+      ]
+    },
+    {
+      "componentKey": "2002:432",
+      "componentName": "IconGlyph/minus-vertical",
+      "nodeType": "COMPONENT_SET",
+      "strokeVariants": [
+        {
+          "nodeId": "2002:429",
+          "nodeName": "stroke=thin",
+          "stroke": "thin"
+        },
+        {
+          "nodeId": "2002:433",
+          "nodeName": "stroke=hairline",
+          "stroke": "hairline"
+        },
+        {
+          "nodeId": "2002:435",
+          "nodeName": "stroke=medium",
+          "stroke": "medium"
+        }
+      ]
+    },
+    {
+      "componentKey": "2002:392",
+      "componentName": "IconGlyph/chevron-right",
+      "nodeType": "COMPONENT_SET",
+      "strokeVariants": [
+        {
+          "nodeId": "2002:391",
+          "nodeName": "stroke=thin",
+          "stroke": "thin"
+        },
+        {
+          "nodeId": "2002:393",
+          "nodeName": "stroke=hairline",
+          "stroke": "hairline"
+        },
+        {
+          "nodeId": "2002:395",
+          "nodeName": "stroke=medium",
+          "stroke": "medium"
+        }
+      ]
+    },
+    {
+      "componentKey": "2002:398",
+      "componentName": "IconGlyph/circle-chevron-right",
+      "nodeType": "COMPONENT_SET",
+      "strokeVariants": [
+        {
+          "nodeId": "2002:397",
+          "nodeName": "stroke=thin",
+          "stroke": "thin"
+        },
+        {
+          "nodeId": "2002:399",
+          "nodeName": "stroke=hairline",
+          "stroke": "hairline"
+        },
+        {
+          "nodeId": "2002:402",
+          "nodeName": "stroke=medium",
+          "stroke": "medium"
+        }
+      ]
+    },
+    {
+      "componentKey": "2002:406",
+      "componentName": "IconGlyph/circle-chevrons-right",
+      "nodeType": "COMPONENT_SET",
+      "strokeVariants": [
+        {
+          "nodeId": "2002:405",
+          "nodeName": "stroke=thin",
+          "stroke": "thin"
+        },
+        {
+          "nodeId": "2002:407",
+          "nodeName": "stroke=hairline",
+          "stroke": "hairline"
+        },
+        {
+          "nodeId": "2002:411",
+          "nodeName": "stroke=medium",
+          "stroke": "medium"
+        }
+      ]
+    }
+  ]
+}
