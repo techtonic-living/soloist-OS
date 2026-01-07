@@ -15,6 +15,7 @@ import { useState, useEffect, useRef } from "react";
 import { HeartToggle } from "./common/HeartToggle";
 import { useCopyFeedback } from "../hooks/useCopyFeedback";
 import { ColorControlPanel } from "./lab/ColorControlPanel";
+import { RemixStagingView } from "./lab/RemixStagingView";
 import { MagicBadge } from "./common/MagicBadge";
 import { SmartColorInput } from "./common";
 import { colord } from "colord";
@@ -47,6 +48,7 @@ interface AssistantPanelProps {
 	inspectedRemixIndex?: number | null;
 	generatorColors?: string[];
 	onUpdateRemixColor?: (index: number, color: string) => void;
+	onCommitToRemix?: (color: string) => void;
 }
 
 // --- Sub-components for Palette Inspection ---
@@ -1494,6 +1496,7 @@ export function AssistantPanel({
 	inspectedRemixIndex,
 	generatorColors = [],
 	onUpdateRemixColor,
+	onCommitToRemix,
 	onToggleFavorite: _onToggleFavorite,
 }: Readonly<AssistantPanelProps>) {
 	// --- Context Consumption ---
@@ -1508,6 +1511,10 @@ export function AssistantPanel({
 		harmonyMode,
 		setSecondaryColor,
 		setTertiaryColor,
+		stagedRemixColors,
+		setStagedRemixColors,
+		stagedRemixPalettes,
+		setStagedRemixPalettes,
 	} = useSoloist();
 
 	const aiLevel = settings.aiLevel;
@@ -1528,6 +1535,27 @@ export function AssistantPanel({
 	]);
 
 	const toast = useToast();
+
+	// Staging Handlers
+	const handleRemoveStagedColor = (index: number) => {
+		setStagedRemixColors((prev: string[]) =>
+			prev.filter((_: string, i: number) => i !== index)
+		);
+	};
+	const handleRemoveStagedPalette = (index: number) => {
+		setStagedRemixPalettes((prev: any[]) =>
+			prev.filter((_: any, i: number) => i !== index)
+		);
+	};
+	const handleSwapStagedPrimary = (index: number) => {
+		setStagedRemixColors((prev: string[]) => {
+			const next = [...prev];
+			const primary = next[0];
+			next[0] = next[index];
+			next[index] = primary;
+			return next;
+		});
+	};
 	// useSoloistSystem doesn't expose onUpdateColor directly, we might need to implement it here or usage was wrong.
 	// Checking the hook file, it returns { settings, updateSettings, updateData, dataStore }.
 	// Assuming onUpdateColor is NOT in the hook, we will implement the updater manually using updateSettings.
@@ -1840,51 +1868,66 @@ export function AssistantPanel({
 				</div>
 			</div>
 
-			<div
-				className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar"
-				style={{ scrollbarGutter: "stable" }}
-			>
-				<div>
-					<span className="text-accent-cyan text-xs font-mono mb-2 block uppercase tracking-wider opacity-60">
-						Active Tool
-					</span>
-					<h2 className="text-2xl text-white font-brand mb-2 leading-tight">
-						{content.title}
-					</h2>
-					<p className="text-gray-400 text-sm leading-relaxed">
-						{content.description}
-					</p>
+			{activeExploreTab === "remix" && inspectedRemixIndex === null ? (
+				<div className="flex-1 overflow-hidden relative">
+					<RemixStagingView
+						colors={stagedRemixColors}
+						palettes={stagedRemixPalettes}
+						onRemoveColor={handleRemoveStagedColor}
+						onRemovePalette={handleRemoveStagedPalette}
+						onCommitColor={(c: string) => onCommitToRemix?.(c)}
+						onCommitPalette={() => {}}
+						onSwapPrimary={handleSwapStagedPrimary}
+						onToggleFavoriteColor={_onToggleFavorite}
+					/>
 				</div>
-
-				{renderRemixInspectorSection()}
-				{renderInspectedColorSection()}
-				{renderInspectedPaletteSection()}
-
-				{showColorControls && seedColor && setSeedColor && (
-					<div className="pt-4 border-t border-white/5">
-						<ColorControlPanel
-							seedColor={seedColor}
-							setSeedColor={setSeedColor}
-							secondaryColor={secondaryColor || "#000000"}
-							setSecondaryColor={setSecondaryColor}
-							tertiaryColor={tertiaryColor || "#000000"}
-							setTertiaryColor={setTertiaryColor}
-							harmonyMode={harmonyMode}
-							activeColorSlot={activeColorSlot}
-							setActiveColorSlot={setActiveColorSlot}
-							settings={settings}
-							updateSettings={updateSettings}
-							toggleFavorite={toggleFavoriteColor}
-							togglePalette={handleTogglePalette}
-							onAddToRemix={onAddToRemix}
-							onLoadPalette={onLoadPalette}
-						/>
+			) : (
+				<div
+					className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar"
+					style={{ scrollbarGutter: "stable" }}
+				>
+					<div>
+						<span className="text-accent-cyan text-xs font-mono mb-2 block uppercase tracking-wider opacity-60">
+							Active Tool
+						</span>
+						<h2 className="text-2xl text-white font-brand mb-2 leading-tight">
+							{content.title}
+						</h2>
+						<p className="text-gray-400 text-sm leading-relaxed">
+							{content.description}
+						</p>
 					</div>
-				)}
 
-				{renderSuggestionsSection()}
-				{renderConceptsSection()}
-			</div>
+					{renderRemixInspectorSection()}
+					{renderInspectedColorSection()}
+					{renderInspectedPaletteSection()}
+
+					{showColorControls && seedColor && setSeedColor && (
+						<div className="pt-4 border-t border-white/5">
+							<ColorControlPanel
+								seedColor={seedColor}
+								setSeedColor={setSeedColor}
+								secondaryColor={secondaryColor || "#000000"}
+								setSecondaryColor={setSecondaryColor}
+								tertiaryColor={tertiaryColor || "#000000"}
+								setTertiaryColor={setTertiaryColor}
+								harmonyMode={harmonyMode}
+								activeColorSlot={activeColorSlot}
+								setActiveColorSlot={setActiveColorSlot}
+								settings={settings}
+								updateSettings={updateSettings}
+								toggleFavorite={toggleFavoriteColor}
+								togglePalette={handleTogglePalette}
+								onAddToRemix={onAddToRemix}
+								onLoadPalette={onLoadPalette}
+							/>
+						</div>
+					)}
+
+					{renderSuggestionsSection()}
+					{renderConceptsSection()}
+				</div>
+			)}
 		</div>
 	);
 }

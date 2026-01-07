@@ -429,7 +429,7 @@ export const ColorAtelier = ({
 					{activeTab === "generator" && (
 						<PaletteGenerator
 							key="generator"
-							onSavePalette={savePalette}
+							onSavePalette={() => savePalette(generatorColors)}
 							colors={generatorColors}
 							setColors={setGeneratorColors}
 							favoriteColors={

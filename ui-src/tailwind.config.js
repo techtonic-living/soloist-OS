@@ -25,10 +25,22 @@ export default {
 					dim: "#1c4e9e",
 				},
 				accent: {
-					violet: "#9466FF",
 					cyan: "#3FE3F2",
+					sky: "#69B1FF",
+					blue: "#3F5CFF",
+					indigo: "#5016DC",
+					violet: "#9254DE",
+					magenta: "#F759AB",
 					error: "#FF453A",
 					success: "#32D74B",
+				},
+				tool: {
+					explore: "#3FE3F2",
+					define: "#69B1FF",
+					structure: "#3F5CFF",
+					document: "#5016DC",
+					learn: "#9254DE",
+					record: "#F759AB",
 				},
 			},
 			boxShadow: {

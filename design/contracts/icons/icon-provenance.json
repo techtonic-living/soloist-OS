@@ -1,0 +1,29 @@
+{
+	"schemaVersion": "soloist-os.icons.provenance.v1",
+	"meta": {
+		"updatedAt": "YYYY-MM-DD",
+		"note": "Machine-readable icon provenance for agent + licensing audits. Keep in sync with Figma IconGlyph/* component descriptions."
+	},
+	"icons": {
+		"affiliate": {
+			"source": {
+				"url": "https://tabler.io/icons/icon/affiliate",
+				"library": "Tabler Icons",
+				"version": "unknown"
+			},
+			"license": {
+				"name": "<fill>",
+				"url": "<fill>"
+			},
+			"internalCdn": {
+				"pattern": "https://soloistos.cloud/assets/icons/tabler/outline-{stroke}/affiliate.svg",
+				"strokes": {
+					"hairline": "0.5",
+					"thin": "1",
+					"medium": "1.5"
+				}
+			},
+			"modifications": "<none | notes>"
+		}
+	}
+}

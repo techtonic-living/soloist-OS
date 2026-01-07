@@ -1,4 +1,10 @@
-import { Palette, SlidersHorizontal, Grid, Wand2 } from "lucide-react";
+import {
+	Palette,
+	SlidersHorizontal,
+	Grid,
+	Wand2,
+	LucideIcon,
+} from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ColorCreator } from "./lab/ColorCreator";
 import { PaletteGenerator } from "./lab/PaletteGenerator";
@@ -12,6 +18,11 @@ import {
 
 import { useSoloist } from "../context/SoloistContext";
 import { useToast } from "../context/ToastContext";
+import {
+	ColorGroup,
+	PaletteGroup,
+	UserLibrary,
+} from "../hooks/useSoloistSystem";
 
 interface ExploreViewProps {
 	activeTab: "colors" | "palettes" | "studio" | "remix";
@@ -56,6 +67,11 @@ export const ExploreView = (props: ExploreViewProps) => {
 
 	const toast = useToast();
 
+	const favoriteColors =
+		settings.library?.colors.map((c: any) =>
+			typeof c === "string" ? c : c.value
+		) || [];
+
 	// Derived colors for ColorCreator
 	const secondaryColor = secondaryRamp[5]?.hex || "#000000";
 	const tertiaryColor = tertiaryRamp[5]?.hex || "#000000";
@@ -74,10 +90,14 @@ export const ExploreView = (props: ExploreViewProps) => {
 
 	// Bulk add colors to library
 	const bulkAddColors = (colors: PresetColor[]) => {
-		const library = settings.library || {
+		const library: UserLibrary = settings.library || {
 			colors: [],
 			fonts: [],
 			palettes: [],
+			colorGroups: [],
+			paletteGroups: [],
+			collections: [],
+			projects: [],
 		};
 
 		// Merge new colors with existing ones
@@ -93,10 +113,14 @@ export const ExploreView = (props: ExploreViewProps) => {
 
 	// Bulk remove colors from library
 	const bulkRemoveColors = (colorsToRemove: PresetColor[]) => {
-		const library = settings.library || {
+		const library: UserLibrary = settings.library || {
 			colors: [],
 			fonts: [],
 			palettes: [],
+			colorGroups: [],
+			paletteGroups: [],
+			collections: [],
+			projects: [],
 		};
 
 		// Create set of hex values to remove for O(1) lookup
@@ -121,13 +145,16 @@ export const ExploreView = (props: ExploreViewProps) => {
 
 	// Group Management
 	const createGroup = (name: string, description: string) => {
-		const library = settings.library || {
+		const library: UserLibrary = settings.library || {
 			colors: [],
 			colorGroups: [],
 			fonts: [],
 			palettes: [],
+			paletteGroups: [],
+			collections: [],
+			projects: [],
 		};
-		const newGroup = {
+		const newGroup: ColorGroup = {
 			id: `group-${Date.now()}-${Math.random()
 				.toString(36)
 				.slice(2, 11)}`,
@@ -145,10 +172,10 @@ export const ExploreView = (props: ExploreViewProps) => {
 		});
 	};
 
-	const updateGroup = (id: string, updates: Partial<any>) => {
-		const library = settings.library;
+	const updateGroup = (id: string, updates: Partial<ColorGroup>) => {
+		const library: UserLibrary = settings.library;
 		if (!library || !library.colorGroups) return;
-		const updatedGroups = library.colorGroups.map((g) =>
+		const updatedGroups = library.colorGroups.map((g: ColorGroup) =>
 			g.id === id ? { ...g, ...updates } : g
 		);
 		updateSettings({
@@ -157,31 +184,33 @@ export const ExploreView = (props: ExploreViewProps) => {
 	};
 
 	const deleteGroup = (id: string) => {
-		const library = settings.library;
+		const library: UserLibrary = settings.library;
 		if (!library || !library.colorGroups) return;
 		// Colors are just removed from the group, they logically fall back to "My Favorites" (unassigned)
 		// No need to explicitly "move" them as they exist in library.colors
-		const updatedGroups = library.colorGroups.filter((g) => g.id !== id);
+		const updatedGroups = library.colorGroups.filter(
+			(g: ColorGroup) => g.id !== id
+		);
 		updateSettings({
 			library: { ...library, colorGroups: updatedGroups },
 		});
 	};
 
 	const moveColor = (colorHex: string, targetGroupId: string | null) => {
-		const library = settings.library;
+		const library: UserLibrary = settings.library;
 		if (!library || !library.colorGroups) return;
 
 		// 1. Remove from all groups first (disjoint ownership)
-		let updatedGroups = library.colorGroups.map((g) => ({
+		let updatedGroups = library.colorGroups.map((g: ColorGroup) => ({
 			...g,
 			colorIds: g.colorIds.filter(
-				(c) => c.toUpperCase() !== colorHex.toUpperCase()
+				(c: string) => c.toUpperCase() !== colorHex.toUpperCase()
 			),
 		}));
 
 		// 2. Add to target group if specified
 		if (targetGroupId) {
-			updatedGroups = updatedGroups.map((g) => {
+			updatedGroups = updatedGroups.map((g: ColorGroup) => {
 				if (g.id === targetGroupId) {
 					return {
 						...g,
@@ -197,8 +226,8 @@ export const ExploreView = (props: ExploreViewProps) => {
 		});
 	};
 
-	const reorderGroups = (newOrder: any[]) => {
-		const library = settings.library;
+	const reorderGroups = (newOrder: ColorGroup[]) => {
+		const library: UserLibrary = settings.library;
 		if (!library) return;
 		updateSettings({
 			library: { ...library, colorGroups: newOrder },
@@ -207,13 +236,15 @@ export const ExploreView = (props: ExploreViewProps) => {
 
 	// Palette Group Management
 	const createPaletteGroup = (name: string, description: string) => {
-		const library = settings.library || {
+		const library: UserLibrary = settings.library || {
 			colors: [],
 			fonts: [],
 			palettes: [],
 			paletteGroups: [],
+			collections: [],
+			projects: [],
 		};
-		const newGroup = {
+		const newGroup: PaletteGroup = {
 			id: `pgroup-${Date.now()}-${Math.random()
 				.toString(36)
 				.slice(2, 11)}`,
@@ -231,10 +262,10 @@ export const ExploreView = (props: ExploreViewProps) => {
 		});
 	};
 
-	const updatePaletteGroup = (id: string, updates: Partial<any>) => {
-		const library = settings.library;
+	const updatePaletteGroup = (id: string, updates: Partial<PaletteGroup>) => {
+		const library: UserLibrary = settings.library;
 		if (!library || !library.paletteGroups) return;
-		const updatedGroups = library.paletteGroups.map((g) =>
+		const updatedGroups = library.paletteGroups.map((g: PaletteGroup) =>
 			g.id === id ? { ...g, ...updates } : g
 		);
 		updateSettings({
@@ -243,9 +274,11 @@ export const ExploreView = (props: ExploreViewProps) => {
 	};
 
 	const deletePaletteGroup = (id: string) => {
-		const library = settings.library;
+		const library: UserLibrary = settings.library;
 		if (!library || !library.paletteGroups) return;
-		const updatedGroups = library.paletteGroups.filter((g) => g.id !== id);
+		const updatedGroups = library.paletteGroups.filter(
+			(g: PaletteGroup) => g.id !== id
+		);
 		updateSettings({
 			library: { ...library, paletteGroups: updatedGroups },
 		});
@@ -255,18 +288,18 @@ export const ExploreView = (props: ExploreViewProps) => {
 		paletteName: string,
 		targetGroupId: string | null
 	) => {
-		const library = settings.library;
+		const library: UserLibrary = settings.library;
 		if (!library || !library.paletteGroups) return;
 
 		// 1. Remove from all groups first
-		let updatedGroups = library.paletteGroups.map((g) => ({
+		let updatedGroups = library.paletteGroups.map((g: PaletteGroup) => ({
 			...g,
-			paletteIds: g.paletteIds.filter((p) => p !== paletteName),
+			paletteIds: g.paletteIds.filter((p: string) => p !== paletteName),
 		}));
 
 		// 2. Add to target group if specified
 		if (targetGroupId) {
-			updatedGroups = updatedGroups.map((g) => {
+			updatedGroups = updatedGroups.map((g: PaletteGroup) => {
 				if (g.id === targetGroupId) {
 					return {
 						...g,
@@ -282,8 +315,8 @@ export const ExploreView = (props: ExploreViewProps) => {
 		});
 	};
 
-	const reorderPaletteGroups = (newOrder: any[]) => {
-		const library = settings.library;
+	const reorderPaletteGroups = (newOrder: PaletteGroup[]) => {
+		const library: UserLibrary = settings.library;
 		if (!library) return;
 		updateSettings({
 			library: { ...library, paletteGroups: newOrder },
@@ -300,20 +333,25 @@ export const ExploreView = (props: ExploreViewProps) => {
 	};
 
 	const removePalette = (index: number) => {
-		const library = settings.library || {
+		const library: UserLibrary = settings.library || {
 			colors: [],
 			fonts: [],
 			palettes: [],
+			paletteGroups: [],
+			collections: [],
+			projects: [],
 		};
 		const palette = library.palettes[index];
 		const newPalettes = [...library.palettes];
 		newPalettes.splice(index, 1);
 
 		// Also remove from any palette groups
-		const updatedPaletteGroups = (library.paletteGroups || []).map((g) => ({
-			...g,
-			paletteIds: g.paletteIds.filter((id) => id !== palette.name),
-		}));
+		const updatedPaletteGroups = (library.paletteGroups || []).map(
+			(g: PaletteGroup) => ({
+				...g,
+				paletteIds: g.paletteIds.filter((id) => id !== palette.name),
+			})
+		);
 
 		updateSettings({
 			library: {
@@ -335,7 +373,7 @@ export const ExploreView = (props: ExploreViewProps) => {
 	};
 
 	const removePalettes = (palettesToRemove: any[]) => {
-		const library = settings.library;
+		const library: UserLibrary = settings.library;
 		if (!library || !library.palettes) return;
 
 		const namesToRemove = new Set(palettesToRemove.map((p) => p.name));
@@ -344,10 +382,12 @@ export const ExploreView = (props: ExploreViewProps) => {
 		);
 
 		// Also remove from any palette groups
-		const updatedPaletteGroups = (library.paletteGroups || []).map((g) => ({
-			...g,
-			paletteIds: g.paletteIds.filter((id) => !namesToRemove.has(id)),
-		}));
+		const updatedPaletteGroups = (library.paletteGroups || []).map(
+			(g: PaletteGroup) => ({
+				...g,
+				paletteIds: g.paletteIds.filter((id) => !namesToRemove.has(id)),
+			})
+		);
 
 		updateSettings({
 			library: {
@@ -370,10 +410,12 @@ export const ExploreView = (props: ExploreViewProps) => {
 
 	// Bulk add palettes to library
 	const bulkAddPalettes = (palettes: any[]) => {
-		const library = settings.library || {
+		const library: UserLibrary = settings.library || {
 			colors: [],
 			fonts: [],
 			palettes: [],
+			collections: [],
+			projects: [],
 		};
 
 		// Filter out potential duplicates based on name/colors
@@ -441,7 +483,7 @@ export const ExploreView = (props: ExploreViewProps) => {
 							animate={{ opacity: 1, y: 0 }}
 							exit={{ opacity: 0, y: -10 }}
 							transition={{ duration: 0.2 }}
-							className="h-full p-6"
+							className="h-full p-6 overflow-y-auto custom-scrollbar"
 						>
 							<ColorLibrary
 								view="colors"
@@ -496,7 +538,7 @@ export const ExploreView = (props: ExploreViewProps) => {
 							animate={{ opacity: 1, y: 0 }}
 							exit={{ opacity: 0, y: -10 }}
 							transition={{ duration: 0.2 }}
-							className="h-full p-6"
+							className="h-full p-6 overflow-y-auto custom-scrollbar"
 						>
 							<PaletteLibrary
 								library={
@@ -557,7 +599,7 @@ export const ExploreView = (props: ExploreViewProps) => {
 							animate={{ opacity: 1, y: 0 }}
 							exit={{ opacity: 0, y: -10 }}
 							transition={{ duration: 0.2 }}
-							className="h-full"
+							className="h-full p-6 overflow-y-auto custom-scrollbar"
 						>
 							<ColorCreator
 								seedColor={seedColor}
@@ -570,6 +612,10 @@ export const ExploreView = (props: ExploreViewProps) => {
 								setHarmonyMode={setHarmonyMode}
 								activeColorSlot={activeColorSlot}
 								setActiveColorSlot={setActiveColorSlot}
+								favoriteColors={favoriteColors}
+								onToggleFavoriteColor={(hex: string) =>
+									toggleFavoriteColor(hex)
+								}
 							/>
 						</motion.div>
 					)}
@@ -582,20 +628,22 @@ export const ExploreView = (props: ExploreViewProps) => {
 							animate={{ opacity: 1, y: 0 }}
 							exit={{ opacity: 0, y: -10 }}
 							transition={{ duration: 0.2 }}
-							className="h-full p-6"
+							className="h-full p-6 overflow-y-auto custom-scrollbar"
 						>
 							<PaletteGenerator
-								onSavePalette={savePalette}
+								onSavePalette={() =>
+									savePalette(generatorColors)
+								}
 								colors={generatorColors}
 								setColors={setGeneratorColors}
-								inspectedIndex={inspectedRemixIndex}
-								onInspectColor={onInspectRemixColor}
-								favoriteColors={
-									settings.library?.colors.map((c: any) =>
-										typeof c === "string" ? c : c.value
-									) || []
+								inspectedIndex={
+									inspectedRemixIndex ?? undefined
 								}
-								onToggleFavoriteColor={toggleFavoriteColor}
+								onInspectColor={onInspectRemixColor}
+								favoriteColors={favoriteColors}
+								onToggleFavoriteColor={(color: string) =>
+									toggleFavoriteColor(color)
+								}
 							/>
 						</motion.div>
 					)}
@@ -607,7 +655,17 @@ export const ExploreView = (props: ExploreViewProps) => {
 
 // --- Subcomponents ---
 
-const TabButton = ({ active, onClick, icon: Icon, label }: any) => (
+const TabButton = ({
+	active,
+	onClick,
+	icon: Icon,
+	label,
+}: {
+	active: boolean;
+	onClick: () => void;
+	icon: LucideIcon;
+	label: string;
+}) => (
 	<button
 		onClick={onClick}
 		className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-mono transition-all ${

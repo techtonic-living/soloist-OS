@@ -47,4 +47,4 @@
 -   **Styling:** Tailwind CSS (Custom Config).
 -   **Animation:** Framer Motion.
 -   **Host:** Figma Plugin API (Sandbox).
--   **Icons:** Lucide React.
+-   **Icons:** Tabler icons (stroke-based).

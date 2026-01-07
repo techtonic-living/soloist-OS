@@ -1,0 +1,93 @@
+{
+  "generatedAt": "2026-01-01T13:52:45.449Z",
+  "rows": [
+    {
+      "fileName": "00_Global Design System",
+      "exportedAt": "2026-01-01T13:10:51.048Z",
+      "fileKey": "",
+      "snapshotPath": "docs/devdocs/fig-bin/00_Global_Design_System/variables-snapshot_00_Global_Design_System_no-fileKey_2026-01-01T13-10-51-048Z.json",
+      "collections": 6,
+      "variables": 167,
+      "hiddenFromPublishing": 0,
+      "aliasMissingLocalTargets": 0,
+      "issueCount": 0
+    },
+    {
+      "fileName": "Flock Design Library",
+      "exportedAt": "2026-01-01T13:24:19.819Z",
+      "fileKey": "",
+      "snapshotPath": "docs/devdocs/fig-bin/Flock_Design_Library/variables-snapshot_Flock_Design_Library_no-fileKey_2026-01-01T13-24-19-819Z.json",
+      "collections": 6,
+      "variables": 190,
+      "hiddenFromPublishing": 0,
+      "aliasMissingLocalTargets": 0,
+      "issueCount": 0
+    },
+    {
+      "fileName": "Global Library",
+      "exportedAt": "2026-01-01T13:13:43.424Z",
+      "fileKey": "",
+      "snapshotPath": "docs/devdocs/fig-bin/Global_Library/variables-snapshot_Global_Library_no-fileKey_2026-01-01T13-13-43-424Z.json",
+      "collections": 3,
+      "variables": 171,
+      "hiddenFromPublishing": 0,
+      "aliasMissingLocalTargets": 0,
+      "issueCount": 0
+    },
+    {
+      "fileName": "GS - Primitives",
+      "exportedAt": "2026-01-01T13:18:38.857Z",
+      "fileKey": "",
+      "snapshotPath": "docs/devdocs/fig-bin/GS_-_Primitives/variables-snapshot_GS_-_Primitives_no-fileKey_2026-01-01T13-18-38-857Z.json",
+      "collections": 6,
+      "variables": 567,
+      "hiddenFromPublishing": 1,
+      "aliasMissingLocalTargets": 0,
+      "issueCount": 0
+    },
+    {
+      "fileName": "sandman",
+      "exportedAt": "2026-01-01T09:50:48.762Z",
+      "fileKey": "",
+      "snapshotPath": "docs/devdocs/fig-bin/sandman/variables-snapshot_sandman_no-fileKey_2026-01-01T09-50-48-762Z.json",
+      "collections": 5,
+      "variables": 483,
+      "hiddenFromPublishing": 26,
+      "aliasMissingLocalTargets": 0,
+      "issueCount": 0
+    },
+    {
+      "fileName": "Smart Swatch",
+      "exportedAt": "2026-01-01T12:16:02.239Z",
+      "fileKey": "",
+      "snapshotPath": "docs/devdocs/fig-bin/Smart_Swatch/variables-snapshot_Smart_Swatch_no-fileKey_2026-01-01T12-16-02-239Z.json",
+      "collections": 5,
+      "variables": 483,
+      "hiddenFromPublishing": 26,
+      "aliasMissingLocalTargets": 0,
+      "issueCount": 0
+    },
+    {
+      "fileName": "Soloist OS Plugin",
+      "exportedAt": "2026-01-01T12:08:56.670Z",
+      "fileKey": "",
+      "snapshotPath": "docs/devdocs/fig-bin/Soloist_OS_Plugin/variables-snapshot_Soloist_OS_Plugin_no-fileKey_2026-01-01T12-08-56-670Z.json",
+      "collections": 5,
+      "variables": 716,
+      "hiddenFromPublishing": 229,
+      "aliasMissingLocalTargets": 6,
+      "issueCount": 0
+    },
+    {
+      "fileName": "unBind Library",
+      "exportedAt": "2026-01-01T13:31:04.672Z",
+      "fileKey": "",
+      "snapshotPath": "docs/devdocs/fig-bin/unBind_Library/variables-snapshot_unBind_Library_no-fileKey_2026-01-01T13-31-04-672Z.json",
+      "collections": 1,
+      "variables": 182,
+      "hiddenFromPublishing": 0,
+      "aliasMissingLocalTargets": 0,
+      "issueCount": 0
+    }
+  ]
+}

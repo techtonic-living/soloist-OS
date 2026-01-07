@@ -21,17 +21,25 @@ The Assistant and metadata features require a Google Gemini API Key.
 
 If changes in the React code (`ui-src`) are not appearing in Figma:
 
-1. **Force a Clean Build**:
+1. **Use the correct plugin dev loop** (recommended):
+        - **Dist-based (matches shipping plugin)**: run `npm run dev:plugin`.
+            This continuously rebuilds:
+            - `ui-src/dist/` (what the plugin UI loads)
+            - `dist/code.js` (the plugin backend)
+        - **Live UI (fastest iteration)**: import `manifest.dev.json` in Figma and run `npm run dev:plugin:live`.
+            This serves the UI from Vite (`http://localhost:5173`) while still watching the plugin backend.
+
+2. **Force a Clean Build**:
     ```bash
     npm run build
     ```
-2. **The "Watch" Trap**: Running `npm run watch` starts a Vite dev server at `localhost:5173`, but `manifest.json` points to `dist/index.html`. Figma will **not** see your live changes unless you run `npm run build` or update the manifest to point to the dev server.
-3. **Live Dev Mode (Optional)**: To see changes instantly without rebuilding, change `manifest.json`:
+3. **The "Watch" Trap**: Running `npm run watch` starts a Vite dev server at `localhost:5173`, but `manifest.json` points to `ui-src/dist/index.html`. Figma will **not** see your live changes unless you run the dist watcher (`npm run dev:plugin`) or switch to the live manifest (`manifest.dev.json`).
+4. **Live Dev Mode (Optional)**: To see changes instantly without rebuilding, either import `manifest.dev.json` *or* temporarily change `manifest.json`:
     ```json
     "ui": "http://localhost:5173"
     ```
     _Note: Remember to revert this before sharing the plugin!_
-4. **Figma Cache**: Use `Cmd + Opt + P` to re-run the last plugin, which usually forces a refresh.
+5. **Figma Cache**: Use `Cmd + Opt + P` to re-run the last plugin, which usually forces a refresh.
 
 ### Gemini API 403/404 Errors
 
@@ -45,4 +53,23 @@ If changes in the React code (`ui-src`) are not appearing in Figma:
 
 -   **Backend (`plugin/code.tsx`)**: Bundled via `esbuild` into `dist/code.js`.
 -   **Frontend (`ui-src/`)**: Built via `Vite` into `ui-src/dist/index.html`.
--   **Note**: The Figma manifest points to `ui-src/dist/index.html`. Any change in build paths must be reflected in `manifest.json`.
+-   **Note**: `manifest.json` points to `ui-src/dist/index.html`. Any change in build paths must be reflected in the manifest you imported into Figma.
+
+## 🧾 Contracts & Snapshots (drift killer)
+
+This repo treats exported artifacts in `design/contracts/` as the *mechanical source of truth* between Figma and code.
+
+- Variables snapshots export to: `design/contracts/variables/`
+- (Next) primitive contracts live in: `design/contracts/primitives/`
+
+Workflow:
+
+1. Seed / validate the starter kit (plugin UI → Connect).
+2. Export a variables snapshot.
+3. Commit the snapshot.
+4. Implement primitives against exported contracts.
+5. Re-export and diff to detect drift.
+
+## TypeScript note (plugin)
+
+`tsconfig.json` uses `lib: ["es2019"]` so modern built-ins like `Array#includes` are available to TypeScript when authoring the plugin.

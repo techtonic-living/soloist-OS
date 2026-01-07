@@ -1,30 +1,31 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { colord } from "colord";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
 	Sun,
 	Moon,
 	Zap,
-	Cloud,
-	ThermometerSnowflake,
-	ThermometerSun,
 	RotateCcw,
 	RotateCw,
-	Crosshair,
-	X,
 	Disc,
 	Orbit,
+	Heart,
 	ImagePlus,
-	Gauge,
 	Search,
-	MousePointer2,
 	Droplets,
 	Dices,
+	Waves,
+	Grid,
 } from "lucide-react";
 import { useToast } from "../../context/ToastContext";
 import { useSoloist } from "../../context/SoloistContext";
 
 import { ImageCanvasPicker } from "./ImageCanvasPicker";
+import { MotionColorPicker } from "../MotionColorPicker";
+import { DiscreteBlendedPicker } from "./DiscreteBlendedPicker";
+import { ColoredPencilsPicker } from "./ColoredPencilsPicker";
+import { GenerativeGlobePicker } from "./GenerativeGlobePicker";
+import { SharedSampler } from "../common/SharedSampler";
 
 import "./ColorCreator.css";
 
@@ -35,6 +36,8 @@ interface ColorCreatorProps {
 	setSecondaryColor: (color: string) => void;
 	tertiaryColor: string;
 	setTertiaryColor: (color: string) => void;
+	favoriteColors?: string[];
+	onToggleFavoriteColor?: (hex: string) => Promise<unknown> | void;
 	harmonyMode?: "complementary" | "analogous" | "triadic" | "manual";
 	setHarmonyMode?: (
 		mode: "complementary" | "analogous" | "triadic" | "manual"
@@ -52,6 +55,8 @@ type WheelMode =
 	| "cool"
 	| "warm";
 
+type StudioTab = "CONTINUOUS" | "DISCRETE" | "GENERATIVE" | "SAMPLED";
+
 export const ColorCreator = ({
 	seedColor,
 	setSeedColor,
@@ -59,6 +64,8 @@ export const ColorCreator = ({
 	tertiaryColor,
 	setSecondaryColor,
 	setTertiaryColor,
+	favoriteColors = [],
+	onToggleFavoriteColor,
 	harmonyMode = "complementary",
 	setHarmonyMode = () => {},
 	activeColorSlot = "primary",
@@ -69,21 +76,52 @@ export const ColorCreator = ({
 		setSampledColors,
 		isSamplerActive,
 		setIsSamplerActive,
+		canvasState,
+		setCanvasState,
 	} = useSoloist();
 
-	const [wheelMode, setWheelMode] = useState<WheelMode>("default");
-	const [pickerMode, setPickerMode] = useState<"wheel" | "image">("wheel");
-	const [activeImage, setActiveImage] = useState<string | null>(null);
+	const {
+		zoom: zoomVal,
+		rotate: rotateVal,
+		activeImage,
+		motionDensity,
+		motionSize,
+	} = canvasState;
+
+	const setZoomVal = (val: number) =>
+		setCanvasState((prev) => ({ ...prev, zoom: val }));
+	const setRotateVal = (val: number) =>
+		setCanvasState((prev) => ({ ...prev, rotate: val }));
+	const setActiveImage = (val: string | null) =>
+		setCanvasState((prev) => ({ ...prev, activeImage: val }));
+	const setMotionDensity = (val: number) =>
+		setCanvasState((prev) => ({ ...prev, motionDensity: val }));
+	const setMotionSize = (val: number) =>
+		setCanvasState((prev) => ({ ...prev, motionSize: val }));
+
+	const [wheelMode] = useState<WheelMode>("default");
+	const [activeTab, setActiveTab] = useState<StudioTab>("CONTINUOUS");
+
+	// Subtype states for each tab
+	const [discreteType, setDiscreteType] = useState<
+		"motion" | "blended" | "pencils" | "swatches"
+	>("motion");
+	const [genType, setGenType] = useState<
+		"gradient" | "globe" | "lava" | "kaleidoscope"
+	>("kaleidoscope");
+
 	const [lastUserImage, setLastUserImage] = useState<string | null>(null);
-	const [isSamplerHovered, setIsSamplerHovered] = useState(false);
 	const [hoverHex, setHoverHex] = useState<string | null>(null);
+	const [isFavoritingHex, setIsFavoritingHex] = useState<string | null>(null);
 
 	// Dynamic Control Bar State
-	// Kaleidoscope: speed + sensitivity | Image: zoom + rotate
-	const [speedVal, setSpeedVal] = useState(50);
-	const [senseVal, setSenseVal] = useState(50);
-	const [zoomVal, setZoomVal] = useState(50); // 50 = 1x, 0 = 0.5x, 100 = 2x
-	const [rotateVal, setRotateVal] = useState(0); // 0-360 degrees
+	const [speedVal, setSpeedVal] = useState(0);
+	const [senseVal, setSenseVal] = useState(0);
+
+	// Canvas Filters
+	const [brightness, setBrightness] = useState(1);
+	const [isInverted, setIsInverted] = useState(false);
+	const [vibrance, setVibrance] = useState(1);
 
 	// Persist last uploaded image & sampler state across sessions via Figma clientStorage
 	useEffect(() => {
@@ -158,7 +196,7 @@ export const ColorCreator = ({
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const lastToastTimeRef = useRef<number>(0);
 
-	// 0. Listen for Backend Messages (Color Picking & Live Sampling)
+	// Listen for Backend Messages (Color Picking & Live Sampling)
 	useEffect(() => {
 		const handleMessage = (event: MessageEvent) => {
 			const msg = event.data.pluginMessage;
@@ -175,7 +213,6 @@ export const ColorCreator = ({
 				) {
 					setLastUserImage(data);
 					setActiveImage(data);
-					setPickerMode("image");
 				} else if (key === "soloist-sampled-colors") {
 					if (data) setSampledColors(data);
 				} else if (key === "soloist-sampler-active") {
@@ -185,22 +222,22 @@ export const ColorCreator = ({
 				const newColors: string[] = msg.payload.colors || [];
 				if (newColors.length === 0) return;
 
-				// Filter out duplicates that are already in the sample set (optional polish)
-				// We want unique hexes in the orbit.
-				const uniqueIncoming = newColors.filter(
-					(hex) =>
-						!sampledColors.includes(hex) &&
-						// Also protect against duplicates within the incoming batch itself
-						newColors.indexOf(hex) === newColors.lastIndexOf(hex)
-				);
-
-				setSampledColors((prev: string[]) => {
-					// Re-filter against fresh state just in case
-					const distinct = uniqueIncoming.filter(
-						(c: string) => !prev.includes(c)
+				const uniqueIncoming = newColors
+					.map((c) => c.toLowerCase())
+					.filter(
+						(hex, idx, self) =>
+							!sampledColors
+								.map((c) => c.toLowerCase())
+								.includes(hex) && self.indexOf(hex) === idx
 					);
 
-					if (distinct.length === 0) return prev; // All duplicates
+				setSampledColors((prev: string[]) => {
+					const currentLowers = prev.map((c) => c.toLowerCase());
+					const distinct = uniqueIncoming.filter(
+						(c: string) => !currentLowers.includes(c)
+					);
+
+					if (distinct.length === 0) return prev;
 
 					const availableSlots = 10 - prev.length;
 
@@ -244,7 +281,6 @@ export const ColorCreator = ({
 
 		window.addEventListener("message", handleMessage);
 
-		// Initial request if active
 		if (isSamplerActive) {
 			parent.postMessage(
 				{ pluginMessage: { type: "request-selection-colors" } },
@@ -255,27 +291,14 @@ export const ColorCreator = ({
 		return () => window.removeEventListener("message", handleMessage);
 	}, [isSamplerActive, toast, sampledColors]);
 
-	// 5. Manage Color Slot Focus (Logic Refinement)
-	// Focus state should always be primary unless active mode is MANUAL
+	// Manage Color Slot Focus
 	useEffect(() => {
 		if (harmonyMode !== "manual" && activeColorSlot !== "primary") {
 			setActiveColorSlot?.("primary");
 		}
 	}, [harmonyMode, activeColorSlot, setActiveColorSlot]);
 
-	const toggleSampler = () => {
-		const newState = !isSamplerActive;
-		setIsSamplerActive(newState);
-		if (newState) {
-			parent.postMessage(
-				{ pluginMessage: { type: "request-selection-colors" } },
-				"*"
-			);
-		}
-		// PREVIOUSLY: setSampledColors([]); -> Removed to persist session state
-	};
-
-	// 1. Calculate Harmonies Instantly (Visual Feedack)
+	// Calculate Harmonies
 	const harmonies = useMemo(() => {
 		const c = colord(seedColor);
 		if (harmonyMode === "complementary") {
@@ -297,11 +320,10 @@ export const ColorCreator = ({
 		return { sec: null, tert: null };
 	}, [seedColor, harmonyMode]);
 
-	// 2. Sync Global State (Side Effect)
+	// Sync Global State
 	useEffect(() => {
 		if (harmonyMode === "manual") return;
 
-		// Only update if value is different to prevent infinite loops
 		if (
 			harmonies.sec &&
 			setSecondaryColor &&
@@ -325,9 +347,8 @@ export const ColorCreator = ({
 		tertiaryColor,
 	]);
 
-	// 3. Determine Display Colors
+	// Determine Display Colors
 	let activeColor = seedColor;
-	// Determine Colors for UI Display (Stable slots for the toolbar)
 	const displaySecondary =
 		harmonyMode === "manual"
 			? secondaryColor
@@ -353,12 +374,59 @@ export const ColorCreator = ({
 		}
 	}
 
-	// Parse Colors
 	const color = colord(activeColor);
 	const hsla = color.toHsl();
 
-	// Handle State Commits (Slot-Aware)
-	const commitHex = (hex: string) => {
+	const favoriteHexes = useMemo(() => {
+		return new Set(favoriteColors.map((c) => c.toUpperCase()));
+	}, [favoriteColors]);
+
+	const handleToggleFavorite = async (hex: string) => {
+		if (!onToggleFavoriteColor) return;
+		const normalized = hex.toUpperCase();
+		try {
+			setIsFavoritingHex(normalized);
+			await onToggleFavoriteColor(normalized);
+			toast.transient(
+				<span>
+					{favoriteHexes.has(normalized)
+						? "Removed from favorites"
+						: "Added to favorites"}{" "}
+					<span className="text-accent-cyan">{normalized}</span>
+				</span>
+			);
+		} catch (e) {
+			console.error("Failed to toggle favorite color", e);
+			toast.standard(
+				<span>
+					Couldn’t favorite{" "}
+					<span className="text-accent-cyan">{normalized}</span>
+				</span>
+			);
+		} finally {
+			setIsFavoritingHex(null);
+		}
+	};
+
+	const commitHex = (hex: string, options?: { skipRecording?: boolean }) => {
+		if (isSamplerActive && !options?.skipRecording) {
+			const normalizedHex = hex.toLowerCase();
+			setSampledColors((prev) => {
+				if (prev.some((c) => c.toLowerCase() === normalizedHex))
+					return prev;
+				if (prev.length >= 10) {
+					toast.standard(
+						<span>
+							<span className="text-accent-cyan">Orbit full</span>{" "}
+							(10/10)
+						</span>
+					);
+					return prev;
+				}
+				return [...prev, normalizedHex];
+			});
+		}
+
 		if (harmonyMode === "manual") {
 			if (activeColorSlot === "secondary") setSecondaryColor(hex);
 			else if (activeColorSlot === "tertiary") setTertiaryColor(hex);
@@ -369,48 +437,15 @@ export const ColorCreator = ({
 	};
 
 	const handleColorChange = (
-		updates: Partial<{ h: number; s: number; l: number }>
+		updates: Partial<{ h: number; s: number; l: number }>,
+		options?: { skipRecording?: boolean }
 	) => {
 		const newColor = colord({
 			h: updates.h ?? hsla.h,
 			s: updates.s ?? hsla.s,
 			l: updates.l ?? hsla.l,
 		}).toHex();
-		commitHex(newColor);
-	};
-
-	const applyWheelType = (type: WheelMode) => {
-		setWheelMode(type);
-		setPickerMode("wheel"); // Reset picker when mode changes or reset is clicked
-
-		// Always start from a neutral baseline to prevent stacking effects
-		let h = hsla.h;
-		let s = 50;
-		let l = 50;
-
-		switch (type) {
-			case "bright":
-				l = 80;
-				s = 100;
-				break;
-			case "dark":
-				l = 20;
-				s = 60;
-				break;
-			case "saturated":
-				s = 100;
-				break;
-			case "desaturated":
-				s = 25;
-				break;
-			case "cool":
-				h = 210;
-				break;
-			case "warm":
-				h = 30;
-				break;
-		}
-		handleColorChange({ h, s, l });
+		commitHex(newColor, options);
 	};
 
 	const shuffleColor = () => {
@@ -419,8 +454,7 @@ export const ColorCreator = ({
 			s: 40 + Math.floor(Math.random() * 50),
 			l: 40 + Math.floor(Math.random() * 40),
 		}).toHex();
-		commitHex(randomHex);
-		setPickerMode("wheel");
+		commitHex(randomHex, { skipRecording: true });
 	};
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -433,82 +467,240 @@ export const ColorCreator = ({
 				const result = ev.target.result as string;
 				setActiveImage(result);
 				setLastUserImage(result);
-				setPickerMode("image");
 			}
 		};
 		reader.readAsDataURL(file);
 	};
 
 	const activateCrayons = () => {
-		// Use the hosted/local asset for crayons
 		setActiveImage("generated:crayons");
-		setPickerMode("image");
 	};
 
-	return (
-		<div className="h-full flex flex-col items-center gap-6 p-6 overflow-y-auto custom-scrollbar bg-bg-surface/30 backdrop-blur-sm relative">
-			{/* Hidden File Input */}
-			<input
-				type="file"
-				ref={fileInputRef}
-				onChange={handleFileChange}
-				accept="image/*"
-				className="hidden"
-			/>
+	// --- Responsive Canvas Size Management ---
+	const canvasRef = useRef<HTMLDivElement>(null);
+	const [canvasSize, setCanvasSize] = useState(400);
 
-			{/* Background Ambience */}
-			<div className="absolute inset-0 pointer-events-none">
-				<div
-					className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[100px] opacity-10"
-					style={{ backgroundColor: activeColor }}
+	useEffect(() => {
+		if (!canvasRef.current) return;
+
+		const observer = new ResizeObserver((entries) => {
+			for (const entry of entries) {
+				const { width, height } = entry.contentRect;
+				// Maintain square aspect ratio based on the smaller dimension
+				const size = Math.min(width, height);
+				if (size > 0) setCanvasSize(size);
+			}
+		});
+
+		observer.observe(canvasRef.current);
+		return () => observer.disconnect();
+	}, []);
+
+	// ---------------------------
+	// Render Helpers
+	// ---------------------------
+
+	const renderTabs = () => (
+		<div className="flex-shrink-0 flex items-center justify-between w-full h-[43px] px-2 mb-6 border-b border-glass-stroke">
+			<div className="flex gap-4">
+				{(
+					[
+						"CONTINUOUS",
+						"DISCRETE",
+						"GENERATIVE",
+						"SAMPLED",
+					] as StudioTab[]
+				).map((tab) => {
+					const isActive = activeTab === tab;
+					return (
+						<button
+							key={tab}
+							onClick={() => setActiveTab(tab)}
+							className={`pb-2 text-xs font-mono tracking-wider transition-all relative ${
+								isActive
+									? "text-white"
+									: "text-gray-500 hover:text-gray-300"
+							}`}
+						>
+							{tab}
+							{isActive && (
+								<motion.div
+									layoutId="studio-tab-active"
+									className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-cyan shadow-[0_0_8px_rgba(63,227,242,0.8)]"
+									transition={{
+										type: "spring",
+										stiffness: 500,
+										damping: 30,
+									}}
+								/>
+							)}
+						</button>
+					);
+				})}
+			</div>
+		</div>
+	);
+
+	const renderTopToolbar = () => (
+		<div className="h-[43px] flex items-center justify-center gap-4 p-1 px-4 rounded-full bg-bg-raised/95 backdrop-blur-xl border border-glass-stroke shadow-monolith z-30 overflow-hidden translate-y-2">
+			<button
+				onClick={() => {
+					setBrightness(1);
+					setVibrance(1);
+					setIsInverted(false);
+				}}
+				className="p-2 text-gray-400 hover:text-white transition-colors"
+				title="Reset Filters"
+			>
+				<RotateCcw size={16} />
+			</button>
+
+			<div className="w-px h-4 bg-white/10" />
+
+			{/* Filter: Brightness */}
+			<div className="flex items-center gap-2 group">
+				<Sun
+					size={14}
+					className="text-white/40 group-hover:text-white transition-colors"
+				/>
+				<input
+					type="range"
+					min="0.5"
+					max="1.5"
+					step="0.01"
+					value={brightness}
+					onChange={(e) => setBrightness(Number(e.target.value))}
+					className="w-16 h-1 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-cyan"
 				/>
 			</div>
 
-			{/* Harmony Selection Toolbar (Top) */}
-			<div className="flex-shrink-0 flex items-center p-1 gap-1.5 rounded-full bg-bg-raised/95 backdrop-blur-xl border border-glass-stroke shadow-monolith z-30">
-				{["manual", "complementary", "analogous", "triadic"].map(
-					(m) => {
-						const isActive = harmonyMode === m;
-						return (
-							<button
-								key={m}
-								onClick={() => setHarmonyMode(m as any)}
-								className={`group relative flex items-center px-4 py-1.5 rounded-full transition-all duration-300 ${
-									isActive
-										? "bg-white/10 text-white shadow-sm ring-1 ring-white/20"
-										: "text-gray-400 hover:text-white hover:bg-white/5"
-								}`}
-								title={m.toUpperCase()}
-							>
-								{isActive && (
-									<motion.div
-										layoutId="harmony-active-pill"
-										className="absolute inset-0 bg-bg-surface rounded-full shadow-sm border border-glass-stroke -z-10"
-										transition={{
-											type: "spring",
-											stiffness: 500,
-											damping: 30,
-										}}
-									/>
-								)}
-								<span className="text-[10px] font-bold tracking-tight uppercase">
-									{m === "complementary"
-										? "Complementary"
-										: m === "analogous"
-										? "Analogous"
-										: m === "triadic"
-										? "Triadic"
-										: "Manual"}
-								</span>
-							</button>
-						);
-					}
-				)}
+			{/* Filter: Contrast/Vibrance (Combined for space) */}
+			<div className="flex items-center gap-2 group">
+				<Zap
+					size={14}
+					className="text-white/40 group-hover:text-white transition-colors"
+				/>
+				<input
+					type="range"
+					min="0"
+					max="2"
+					step="0.01"
+					value={vibrance}
+					onChange={(e) => setVibrance(Number(e.target.value))}
+					className="w-16 h-1 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-violet"
+				/>
 			</div>
 
-			{/* Main Workbench Area */}
-			<div className="flex-1 flex flex-row items-center justify-center gap-10 w-full max-w-4xl relative z-10 px-8 animate-in fade-in duration-300">
-				{/* Left Column: Color Slot Selection (Vertical) */}
+			<div className="w-px h-4 bg-white/10" />
+
+			{/* Action: Invert */}
+			<button
+				onClick={() => setIsInverted(!isInverted)}
+				className={`p-2 rounded-full transition-all ${
+					isInverted
+						? "text-accent-cyan bg-white/10"
+						: "text-gray-400 hover:text-white"
+				}`}
+				title="Invert Colors"
+			>
+				<Moon size={16} />
+			</button>
+
+			{wheelMode !== "default" && (
+				<>
+					<div className="w-px h-4 bg-white/10" />
+					<span className="text-[10px] text-accent-cyan font-mono uppercase px-2">
+						{wheelMode}
+					</span>
+				</>
+			)}
+		</div>
+	);
+
+	const renderLeftToolbar = () => (
+		<div className="w-[52px] flex items-center justify-center">
+			<div className="flex flex-col items-center gap-2 p-1.5 rounded-full bg-bg-raised/95 backdrop-blur-xl border border-glass-stroke shadow-monolith w-[44px]">
+				{activeTab === "CONTINUOUS" &&
+					["manual", "complementary", "analogous", "triadic"].map(
+						(m) => {
+							const isActive = harmonyMode === m;
+							return (
+								<button
+									key={m}
+									onClick={() => setHarmonyMode(m as any)}
+									className={`relative p-2 rounded-full transition-all ${
+										isActive
+											? "text-white"
+											: "text-gray-400 hover:text-white"
+									}`}
+									title={m.toUpperCase()}
+								>
+									{isActive && (
+										<motion.div
+											layoutId="harmony-active-bg"
+											className="absolute inset-0 bg-white/10 rounded-full shadow-sm border border-glass-stroke -z-10"
+										/>
+									)}
+									<Disc size={16} />
+								</button>
+							);
+						}
+					)}
+				{activeTab === "DISCRETE" &&
+					["motion", "blended", "pencils"].map((type) => {
+						const isActive = discreteType === type;
+						return (
+							<button
+								key={type}
+								onClick={() => setDiscreteType(type as any)}
+								className={`relative p-2 rounded-full transition-all ${
+									isActive
+										? "text-accent-cyan bg-white/10"
+										: "text-gray-500 hover:text-white"
+								}`}
+								title={type.toUpperCase()}
+							>
+								{type === "motion" && <Waves size={16} />}
+								{type === "blended" && <Droplets size={16} />}
+								{type === "pencils" && <Grid size={16} />}
+							</button>
+						);
+					})}
+				{activeTab === "GENERATIVE" &&
+					["kaleidoscope", "globe"].map((type) => {
+						const isActive = genType === type;
+						return (
+							<button
+								key={type}
+								onClick={() => setGenType(type as any)}
+								className={`relative p-2 rounded-full transition-all ${
+									isActive
+										? "text-accent-violet bg-white/10"
+										: "text-gray-500 hover:text-white"
+								}`}
+								title={type.toUpperCase()}
+							>
+								{type === "kaleidoscope" && <Orbit size={16} />}
+								{type === "globe" && <Sun size={16} />}
+							</button>
+						);
+					})}
+				{activeTab === "SAMPLED" && (
+					<button
+						className="p-2 text-primary bg-white/10 rounded-full"
+						onClick={() => fileInputRef.current?.click()}
+					>
+						<ImagePlus size={16} />
+					</button>
+				)}
+			</div>
+		</div>
+	);
+
+	const renderRightToolbar = () => (
+		<div className="w-[52px] flex items-center justify-center relative">
+			<div className="flex flex-col items-center gap-6">
+				{/* Color Slot Selection */}
 				<div className="flex flex-col items-center gap-2 p-1.5 rounded-full bg-bg-raised/95 backdrop-blur-xl border border-glass-stroke shadow-monolith w-[44px]">
 					{[
 						{ id: "primary", num: "1", color: seedColor },
@@ -517,538 +709,446 @@ export const ColorCreator = ({
 					].map((slot) => {
 						const isActive = activeColorSlot === slot.id;
 						const isManual = harmonyMode === "manual";
-
+						const slotHex = slot.color.toUpperCase();
+						const isFavorite = favoriteHexes.has(slotHex);
 						return (
-							<button
+							<div
 								key={slot.id}
-								onClick={() =>
-									isManual &&
-									setActiveColorSlot?.(slot.id as any)
-								}
-								className={`group relative p-1 rounded-full transition-all duration-300 ${
-									isManual
-										? "cursor-pointer"
-										: "cursor-default"
-								} ${
-									isActive
-										? "bg-white/10 shadow-sm ring-1 ring-white/20"
-										: isManual
-										? "hover:bg-white/5"
-										: ""
-								}`}
-								title={
-									isManual
-										? `Switch to ${
-												slot.id
-													.charAt(0)
-													.toUpperCase() +
-												slot.id.slice(1)
-										  } Slot`
-										: `${
-												slot.id
-													.charAt(0)
-													.toUpperCase() +
-												slot.id.slice(1)
-										  } Channel`
-								}
+								className="flex flex-col items-center gap-1"
 							>
-								<div
-									className={`w-6 h-6 rounded-full border border-white/20 shadow-sm transition-transform duration-300 flex items-center justify-center ${
+								<button
+									onClick={() =>
+										isManual &&
+										setActiveColorSlot?.(slot.id as any)
+									}
+									className={`group relative p-1 rounded-full transition-all duration-300 ${
+										isManual
+											? "cursor-pointer"
+											: "cursor-default"
+									} ${
 										isActive
-											? "scale-110 shadow-neon-glow"
-											: isManual
-											? "group-hover:scale-110"
+											? "bg-white/10 shadow-sm ring-1 ring-white/20"
 											: ""
 									}`}
-									style={{ backgroundColor: slot.color }}
 								>
-									<span className="text-[10px] font-black text-white mix-blend-difference opacity-60">
-										{slot.num}
-									</span>
-								</div>
-								{isActive && (
-									<motion.div
-										layoutId="active-slot-glow-vertical"
-										className="absolute -inset-0.5 rounded-full border border-accent-cyan/40 pointer-events-none"
-										initial={false}
-										transition={{
-											type: "spring",
-											stiffness: 500,
-											damping: 30,
-										}}
-									/>
+									<div
+										className={`w-6 h-6 rounded-full border border-white/20 shadow-sm transition-transform duration-300 flex items-center justify-center ${
+											isActive
+												? "scale-110 shadow-neon-glow"
+												: "group-hover:scale-110"
+										}`}
+										style={{ backgroundColor: slot.color }}
+									>
+										<span className="text-[10px] font-black text-white mix-blend-difference opacity-60">
+											{slot.num}
+										</span>
+									</div>
+									{isActive && (
+										<motion.div
+											layoutId="active-slot-glow"
+											className="absolute -inset-0.5 rounded-full border border-accent-cyan/40 pointer-events-none"
+										/>
+									)}
+								</button>
+
+								{onToggleFavoriteColor && (
+									<button
+										onClick={() =>
+											handleToggleFavorite(slotHex)
+										}
+										disabled={isFavoritingHex === slotHex}
+										className={`p-1 rounded-full transition-colors ${
+											isFavorite
+												? "text-accent-cyan"
+												: "text-gray-500 hover:text-white"
+										} ${
+											isFavoritingHex === slotHex
+												? "opacity-50 cursor-wait"
+												: ""
+										}`}
+										title={
+											isFavorite
+												? `Unfavorite ${slotHex}`
+												: `Favorite ${slotHex}`
+										}
+										aria-label={
+											isFavorite
+												? `Unfavorite ${slotHex}`
+												: `Favorite ${slotHex}`
+										}
+									>
+										<Heart
+											size={12}
+											fill={
+												isFavorite
+													? "currentColor"
+													: "none"
+											}
+											strokeWidth={2.5}
+										/>
+									</button>
 								)}
-							</button>
+							</div>
 						);
 					})}
 				</div>
 
-				{/* Center: The Core Interaction (Swappable Instrument) */}
-				<div className="relative w-[320px] h-[320px] flex-none flex items-center justify-center group scale-95 transition-all duration-300">
-					{pickerMode === "image" && activeImage ? (
-						<div className="absolute inset-0 w-full h-full flex items-center justify-center animate-in fade-in zoom-in duration-300">
-							<ImageCanvasPicker
-								onSelectColor={(hex) => {
-									commitHex(hex);
-									setSampledColors((prev) => {
-										if (prev.includes(hex)) return prev;
-										if (prev.length >= 10) {
-											toast.standard(
-												<span>
-													<span className="text-accent-cyan">
-														Orbit full
-													</span>{" "}
-													(10/10)
-												</span>
-											);
-											return prev;
-										}
-										return [...prev, hex];
-									});
-								}}
-								imageUrl={activeImage}
-								speedVal={speedVal}
-								senseVal={senseVal}
-								zoomVal={zoomVal}
-								rotateVal={rotateVal}
-							/>
-						</div>
-					) : (
-						<div className="absolute inset-0 flex items-center justify-center animate-in fade-in zoom-in duration-300 z-40 pointer-events-none">
-							<div className="pointer-events-auto">
-								<ColorWheel
-									size={320}
-									hue={hsla.h}
-									saturation={hsla.s}
-									onChange={(h, s) =>
-										handleColorChange({ h, s })
-									}
-									onHoverColor={setHoverHex}
-									secondaryColor={markerSecondary}
-									tertiaryColor={markerTertiary}
-									harmonyMode={harmonyMode}
-									lightness={hsla.l}
-									wheelMode={wheelMode}
-									showMarkers={true}
-								/>
-							</div>
-						</div>
-					)}
-
-					{/* Persistent Docked Control Bar */}
-					<div className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex items-center h-[42px] px-3 gap-2 rounded-full bg-bg-raised/95 backdrop-blur-xl border border-glass-stroke shadow-monolith z-30">
-						{/* Left Slider: Saturation (Wheel) / Speed (Atmosphere) / Zoom (Image) */}
-						<div
-							className="flex items-center gap-1.5 px-2"
-							title={
-								pickerMode === "wheel"
-									? "Saturation"
-									: activeImage === "generated:crayons"
-									? "Speed"
-									: "Zoom"
-							}
-						>
-							{pickerMode === "wheel" ? (
-								<Droplets size={16} className="text-white/40" />
-							) : activeImage === "generated:crayons" ? (
-								<Gauge size={16} className="text-white/40" />
-							) : (
-								<Search size={16} className="text-white/40" />
-							)}
-							<input
-								type="range"
-								min="0"
-								max="100"
-								value={
-									pickerMode === "wheel"
-										? hsla.s
-										: activeImage === "generated:crayons"
-										? speedVal
-										: zoomVal
-								}
-								onChange={(e) => {
-									const val = Number(e.target.value);
-									if (pickerMode === "wheel")
-										handleColorChange({ s: val });
-									else if (
-										activeImage === "generated:crayons"
-									)
-										setSpeedVal(val);
-									else setZoomVal(val);
-								}}
-								className="w-12 h-1 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-cyan [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-accent-cyan [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(63,227,242,0.5)]"
-							/>
-						</div>
-
-						{/* Hex Display (Reactive Background) */}
-						<div
-							className="px-3 h-[21px] flex items-center justify-center rounded-full border border-white/20 shadow-lg transition-colors duration-200"
-							style={{ backgroundColor: hoverHex || activeColor }}
-						>
-							<span
-								className="font-mono text-[11px] font-bold tracking-wider"
-								style={{
-									color: colord(
-										hoverHex || activeColor
-									).isDark()
-										? "rgba(255,255,255,0.95)"
-										: "rgba(0,0,0,0.9)",
-								}}
-							>
-								{(hoverHex || activeColor).toUpperCase()}
-							</span>
-						</div>
-
-						{/* Right Slider: Lightness (Wheel) / Sensitivity (Atmosphere) / Rotate (Image) */}
-						<div
-							className="flex items-center gap-1.5 px-2"
-							title={
-								pickerMode === "wheel"
-									? "Luminance"
-									: activeImage === "generated:crayons"
-									? "Sensitivity"
-									: "Rotate"
-							}
-						>
-							<input
-								type="range"
-								min="0"
-								max={
-									pickerMode === "wheel"
-										? "100"
-										: activeImage === "generated:crayons"
-										? "100"
-										: "360"
-								}
-								value={
-									pickerMode === "wheel"
-										? hsla.l
-										: activeImage === "generated:crayons"
-										? senseVal
-										: rotateVal
-								}
-								onChange={(e) => {
-									const val = Number(e.target.value);
-									if (pickerMode === "wheel")
-										handleColorChange({ l: val });
-									else if (
-										activeImage === "generated:crayons"
-									)
-										setSenseVal(val);
-									else setRotateVal(val);
-								}}
-								className="w-12 h-1 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-cyan [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-accent-cyan [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(63,227,242,0.5)]"
-							/>
-							{pickerMode === "wheel" ? (
-								<Sun size={16} className="text-white/40" />
-							) : activeImage === "generated:crayons" ? (
-								<MousePointer2
-									size={16}
-									className="text-white/40"
-								/>
-							) : (
-								<RotateCw size={16} className="text-white/40" />
-							)}
-						</div>
-					</div>
-				</div>
-
-				{/* Right Column: Orbital Sampler & Mode Selection */}
-				<div className="flex flex-col items-center gap-8 w-[52px]">
-					{/* Orbital Selection Sampler Container */}
-					<div
-						onMouseEnter={() => setIsSamplerHovered(true)}
-						onMouseLeave={() => setIsSamplerHovered(false)}
-						className="relative flex items-center justify-center w-14 h-14 bg-bg-surface backdrop-blur-xl rounded-full border border-glass-stroke shadow-monolith z-20"
-					>
-						{/* Center Toggle Button */}
-						<button
-							onClick={toggleSampler}
-							className={`relative w-10 h-10 rounded-full backdrop-blur-md border border-white/20 shadow-lg flex items-center justify-center transition-all duration-300 z-10 ${
-								isSamplerActive
-									? "bg-accent-cyan/20 text-accent-cyan scale-110"
-									: "bg-white/5 text-white/60 hover:bg-white/10 hover:scale-105"
-							}`}
-							title="Toggle Orbital Selection Mode"
-						>
-							<Crosshair
-								size={18}
-								className={
-									isSamplerActive
-										? "rotate-90 scale-110"
-										: "hover:rotate-90"
-								}
-							/>
-							{isSamplerActive && (
-								<div className="absolute inset-0 rounded-full animate-pulse bg-accent-cyan/20 -z-10" />
-							)}
-						</button>
-
-						{/* Orbiting Color Bubbles (Inside relative container) */}
-						{isSamplerActive &&
-							sampledColors
-								.slice(0, 10)
-								.map((hex: string, i: number) => {
-									const count = Math.min(
-										sampledColors.length,
-										10
-									);
-									const spreadAngle = (360 / count) * i;
-									const orbitAngle = (360 / count) * i;
-									const radius = isSamplerHovered
-										? 58
-										: 44 + (i % 2) * 6;
-									const scale = isSamplerHovered ? 1.25 : 1;
-
-									return (
-										<motion.div
-											key={`${hex}-${i}`}
-											className="absolute w-6 h-6"
-											style={{
-												left: "50%",
-												top: "50%",
-												marginLeft: "-12px",
-												marginTop: "-12px",
-											}}
-											animate={{
-												rotate: isSamplerHovered
-													? spreadAngle
-													: [
-															orbitAngle,
-															orbitAngle + 360,
-													  ],
-											}}
-											transition={{
-												rotate: isSamplerHovered
-													? {
-															type: "spring",
-															stiffness: 45,
-															damping: 14,
-													  }
-													: {
-															duration:
-																15 +
-																(i % 3) * 5,
-															repeat: Infinity,
-															ease: "linear",
-													  },
-											}}
-										>
-											<motion.div
-												className="absolute inset-0 group/bubble pointer-events-auto"
-												animate={{
-													x: radius,
-													scale: scale,
-													rotate: isSamplerHovered
-														? -spreadAngle
-														: [
-																-orbitAngle,
-																-(
-																	orbitAngle +
-																	360
-																),
-														  ],
-												}}
-												transition={{
-													x: {
-														type: "spring",
-														stiffness: 80,
-														damping: 12,
-													},
-													scale: {
-														type: "spring",
-														stiffness: 100,
-														damping: 10,
-													},
-													rotate: isSamplerHovered
-														? {
-																type: "spring",
-																stiffness: 45,
-																damping: 14,
-														  }
-														: {
-																duration:
-																	15 +
-																	(i % 3) * 5,
-																repeat: Infinity,
-																ease: "linear",
-														  },
-												}}
-											>
-												<button
-													onClick={() =>
-														commitHex(hex)
-													}
-													className="absolute inset-0 rounded-full border border-white/20 shadow-sm transition-transform duration-200 group-hover/bubble:scale-110 cursor-pointer"
-													style={{
-														backgroundColor: hex,
-													}}
-													title={`Sample ${hex}`}
-												/>
-												<button
-													onClick={(e) => {
-														e.stopPropagation();
-														setSampledColors(
-															(prev: string[]) =>
-																prev.filter(
-																	(
-																		c: string
-																	) =>
-																		c !==
-																		hex
-																)
-														);
-													}}
-													className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full text-white flex items-center justify-center opacity-0 group-hover/bubble:opacity-100 transition-all duration-200 scale-75 group-hover/bubble:scale-100 shadow-sm hover:bg-red-600 z-30"
-												>
-													<X
-														size={10}
-														strokeWidth={3}
-													/>
-												</button>
-											</motion.div>
-										</motion.div>
-									);
-								})}
-					</div>
-
-					{/* Vertical Toolkit (Modes) - Repositioned beneath sampler */}
-					<div className="flex flex-col items-center gap-1 p-1 rounded-full bg-bg-raised backdrop-blur-xl border border-glass-stroke shadow-monolith w-[40px]">
-						{[
-							{
-								id: "wheel",
-								icon: Disc,
-								color: "text-accent-cyan",
-								title: "Color Wheel",
-								action: () => setPickerMode("wheel"),
-							},
-							{
-								id: "atmosphere",
-								icon: Orbit,
-								color: "text-accent-violet",
-								title: "Atmosphere",
-								action: activateCrayons,
-							},
-							{
-								id: "image",
-								icon: ImagePlus,
-								color: "text-primary",
-								title: "Image Drop",
-								action: () => {
-									if (
-										lastUserImage &&
-										lastUserImage !== "generated:crayons"
-									) {
-										setActiveImage(lastUserImage);
-										setPickerMode("image");
-									} else {
-										fileInputRef.current?.click();
-									}
-								},
-							},
-						].map((mode) => {
-							const isActive =
-								mode.id === "wheel"
-									? pickerMode === "wheel"
-									: mode.id === "atmosphere"
-									? pickerMode === "image" &&
-									  activeImage === "generated:crayons"
-									: pickerMode === "image" &&
-									  activeImage !== "generated:crayons";
-
-							return (
-								<div
-									key={mode.id}
-									className="relative group/modebtn"
-								>
-									<button
-										onClick={mode.action}
-										className={`relative p-2 rounded-full transition-all hover:scale-105 active:scale-95 z-10 ${
-											isActive
-												? "text-white"
-												: "text-gray-400 hover:text-white"
-										}`}
-										title={mode.title}
-									>
-										{isActive && (
-											<motion.div
-												layoutId="mode-picker-active"
-												className="absolute inset-0 bg-bg-surface rounded-full shadow-sm border border-glass-stroke -z-10"
-												transition={{
-													type: "spring",
-													stiffness: 500,
-													damping: 30,
-												}}
-											/>
-										)}
-										<mode.icon
-											size={16}
-											className={mode.color}
-										/>
-									</button>
-									{mode.id === "image" &&
-										activeImage &&
-										activeImage !== "generated:crayons" && (
-											<button
-												onClick={(e) => {
-													e.stopPropagation();
-													setActiveImage(null);
-													setLastUserImage(null);
-													setPickerMode("wheel");
-													parent.postMessage(
-														{
-															pluginMessage: {
-																type: "save-storage",
-																payload: {
-																	key: "soloist-last-image",
-																	data: null,
-																},
-															},
-														},
-														"*"
-													);
-												}}
-												className="absolute -top-1 -right-1 w-3 h-3 bg-accent-cyan rounded-full text-white flex items-center justify-center opacity-0 group-hover/modebtn:opacity-100 transition-all duration-200 scale-75 group-hover/modebtn:scale-100 shadow-sm hover:bg-cyan-400 z-20"
-											>
-												<X size={7} strokeWidth={3} />
-											</button>
-										)}
-								</div>
-							);
-						})}
-					</div>
+				{/* Shared Sampler Orbit */}
+				<div className="relative">
+					<SharedSampler
+						onSelectColor={(hex: string) => commitHex(hex)}
+					/>
 				</div>
 			</div>
+		</div>
+	);
 
-			{/* Wheel Type Selector (Bottom Toolbar) */}
-			<div className="flex items-center h-[42px] px-1 gap-1 bg-bg-raised/95 backdrop-blur-xl rounded-full border border-glass-stroke shadow-monolith z-20">
-				{[
-					{ id: "default", icon: RotateCcw, label: "Default" },
-					{ id: "bright", icon: Sun, label: "Bright" },
-					{ id: "dark", icon: Moon, label: "Dark" },
-					{ id: "saturated", icon: Zap, label: "Vivid" },
-					{ id: "desaturated", icon: Cloud, label: "Muted" },
-					{ id: "cool", icon: ThermometerSnowflake, label: "Cool" },
-					{ id: "warm", icon: ThermometerSun, label: "Warm" },
-					{ id: "shuffle", icon: Dices, label: "Shuffle" },
-				].map((mode) => (
+	const renderBottomToolbar = () => (
+		<div className="h-[43px] flex items-center justify-center gap-4 p-1 px-4 rounded-full bg-bg-raised/95 backdrop-blur-xl border border-glass-stroke shadow-monolith z-30 -translate-y-2">
+			{/* Left Slider */}
+			<div className="flex items-center gap-2 px-2">
+				{activeTab === "CONTINUOUS" ? (
+					<Droplets size={14} className="text-white/40" />
+				) : (
+					<Search size={14} className="text-white/40" />
+				)}
+				<input
+					type="range"
+					min="0"
+					max="100"
+					value={
+						activeTab === "CONTINUOUS"
+							? hsla.s
+							: activeTab === "DISCRETE"
+							? motionDensity
+							: activeTab === "GENERATIVE"
+							? speedVal
+							: zoomVal
+					}
+					onChange={(e) => {
+						const val = Number(e.target.value);
+						if (activeTab === "CONTINUOUS")
+							handleColorChange(
+								{ s: val },
+								{ skipRecording: true }
+							);
+						else if (activeTab === "DISCRETE")
+							setMotionDensity(val);
+						else if (activeTab === "GENERATIVE") setSpeedVal(val);
+						else setZoomVal(val);
+					}}
+					className="w-24 h-1 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-cyan"
+				/>
+			</div>
+
+			<div className="w-px h-4 bg-white/10" />
+
+			{/* Hex Display */}
+			<div
+				className="px-3 h-[24px] flex items-center justify-center rounded-full border border-white/20 shadow-lg transition-colors duration-200 min-w-[80px]"
+				style={{ backgroundColor: hoverHex || activeColor }}
+			>
+				<span
+					className="font-mono text-[11px] font-bold tracking-wider"
+					style={{
+						color: colord(hoverHex || activeColor).isDark()
+							? "rgba(255,255,255,0.95)"
+							: "rgba(0,0,0,0.9)",
+					}}
+				>
+					{(hoverHex || activeColor).toUpperCase()}
+				</span>
+			</div>
+
+			<div className="w-px h-4 bg-white/10" />
+
+			{/* Right Slider */}
+			<div className="flex items-center gap-2 px-2">
+				<input
+					type="range"
+					min={activeTab === "SAMPLED" ? "-180" : "0"}
+					max={activeTab === "SAMPLED" ? "180" : "100"}
+					value={
+						activeTab === "CONTINUOUS"
+							? hsla.l
+							: activeTab === "DISCRETE"
+							? motionSize
+							: activeTab === "GENERATIVE"
+							? senseVal
+							: rotateVal
+					}
+					onChange={(e) => {
+						const val = Number(e.target.value);
+						if (activeTab === "CONTINUOUS")
+							handleColorChange(
+								{ l: val },
+								{ skipRecording: true }
+							);
+						else if (activeTab === "DISCRETE") setMotionSize(val);
+						else if (activeTab === "GENERATIVE") setSenseVal(val);
+						else setRotateVal(val);
+					}}
+					className="w-24 h-1 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-cyan"
+				/>
+				{activeTab === "CONTINUOUS" ? (
+					<Sun size={14} className="text-white/40" />
+				) : (
+					<RotateCw size={14} className="text-white/40" />
+				)}
+			</div>
+
+			<div className="w-px h-4 bg-white/10 mx-1" />
+			{onToggleFavoriteColor && (
+				<>
 					<button
-						key={mode.id}
 						onClick={() =>
-							mode.id === "shuffle"
-								? shuffleColor()
-								: applyWheelType(mode.id as WheelMode)
+							handleToggleFavorite(hoverHex || activeColor)
 						}
-						className={`w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300 ${
-							wheelMode === mode.id
-								? "bg-white/10 text-white shadow-sm ring-1 ring-white/20 scale-110"
-								: "text-white/40 hover:text-white hover:bg-white/5"
+						disabled={
+							isFavoritingHex ===
+							(hoverHex || activeColor).toUpperCase()
+						}
+						className={`p-2 transition-colors ${
+							favoriteHexes.has(
+								(hoverHex || activeColor).toUpperCase()
+							)
+								? "text-accent-cyan"
+								: "text-gray-400 hover:text-white"
+						} ${
+							isFavoritingHex ===
+							(hoverHex || activeColor).toUpperCase()
+								? "opacity-50 cursor-wait"
+								: ""
 						}`}
-						title={mode.label}
+						title={
+							favoriteHexes.has(
+								(hoverHex || activeColor).toUpperCase()
+							)
+								? `Unfavorite ${(
+										hoverHex || activeColor
+								  ).toUpperCase()}`
+								: `Favorite ${(
+										hoverHex || activeColor
+								  ).toUpperCase()}`
+						}
 					>
-						<mode.icon size={16} />
+						<Heart
+							size={16}
+							fill={
+								favoriteHexes.has(
+									(hoverHex || activeColor).toUpperCase()
+								)
+									? "currentColor"
+									: "none"
+							}
+						/>
 					</button>
-				))}
+					<div className="w-px h-4 bg-white/10 mx-1" />
+				</>
+			)}
+			<button
+				onClick={shuffleColor}
+				className="p-2 text-gray-400 hover:text-white transition-colors"
+				title="Shuffle"
+			>
+				<Dices size={16} />
+			</button>
+		</div>
+	);
+
+	return (
+		<div
+			className="h-full flex flex-col p-0 overflow-hidden custom-scrollbar relative"
+			style={{ scrollbarGutter: "stable" }}
+		>
+			<input
+				type="file"
+				ref={fileInputRef}
+				onChange={handleFileChange}
+				accept="image/*"
+				className="hidden"
+			/>
+
+			{renderTabs()}
+
+			<div className="relative w-full flex-1 overflow-visible">
+				{/* Toolbars - Anchored to edges */}
+				<div className="absolute top-0 left-1/2 -translate-x-1/2 z-40 pointer-events-auto">
+					{renderTopToolbar()}
+				</div>
+
+				<div className="absolute left-2 top-1/2 -translate-y-1/2 z-40 pointer-events-auto">
+					{renderLeftToolbar()}
+				</div>
+
+				<div className="absolute right-2 top-1/2 -translate-y-1/2 z-40 pointer-events-auto">
+					{renderRightToolbar()}
+				</div>
+
+				<div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-40 pointer-events-auto">
+					{renderBottomToolbar()}
+				</div>
+
+				{/* Center Scaling Canvas */}
+				<div className="absolute inset-0 flex items-center justify-center p-20 pointer-events-none">
+					{/* Center: Standardized Circular Canvas Rim */}
+					<div
+						ref={canvasRef}
+						className="relative aspect-square w-full max-w-[min(450px,70vh)] flex-none flex items-center justify-center group pointer-events-auto"
+					>
+						<div
+							className="absolute inset-0 rounded-full border-[1.5px] border-transparent opacity-80 z-50 pointer-events-none"
+							style={{
+								background:
+									"linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet) border-box",
+								WebkitMask:
+									"linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0)",
+								WebkitMaskComposite: "destination-out",
+								maskComposite: "exclude",
+							}}
+						/>
+
+						<div className="relative w-full h-full flex items-center justify-center">
+							<AnimatePresence mode="wait">
+								<motion.div
+									key={activeTab}
+									initial={{ opacity: 0, scale: 0.95 }}
+									animate={{ opacity: 1, scale: 1 }}
+									exit={{ opacity: 0, scale: 0.95 }}
+									transition={{ duration: 0.2 }}
+									className="w-full h-full flex items-center justify-center"
+								>
+									{activeTab === "CONTINUOUS" && (
+										<div className="w-full h-full relative">
+											<div className="absolute inset-0 flex items-center justify-center">
+												<ColorWheel
+													size={canvasSize - 20} // Inset slightly for the rim
+													hue={hsla.h}
+													saturation={hsla.s}
+													onChange={(h, s) =>
+														handleColorChange({
+															h,
+															s,
+														})
+													}
+													onHoverColor={setHoverHex}
+													secondaryColor={
+														markerSecondary
+													}
+													tertiaryColor={
+														markerTertiary
+													}
+													wheelMode={wheelMode}
+												/>
+											</div>
+										</div>
+									)}
+									{activeTab === "DISCRETE" && (
+										<>
+											{discreteType === "motion" && (
+												<MotionColorPicker
+													onChange={(hex) =>
+														commitHex(hex)
+													}
+													onHoverColor={setHoverHex}
+													density={motionDensity}
+													size={motionSize}
+												/>
+											)}
+											{discreteType === "blended" && (
+												<DiscreteBlendedPicker
+													onChange={(hex) =>
+														commitHex(hex)
+													}
+													onHoverColor={setHoverHex}
+												/>
+											)}
+											{discreteType === "pencils" && (
+												<ColoredPencilsPicker
+													onChange={(hex) =>
+														commitHex(hex)
+													}
+													onHoverColor={setHoverHex}
+												/>
+											)}
+										</>
+									)}
+									{activeTab === "GENERATIVE" &&
+										genType === "globe" && (
+											<GenerativeGlobePicker
+												onChange={(hex) =>
+													commitHex(hex)
+												}
+												onHoverColor={setHoverHex}
+											/>
+										)}
+									{activeTab === "GENERATIVE" &&
+										genType === "kaleidoscope" &&
+										activeImage && (
+											<div className="w-full h-full flex items-center justify-center">
+												<ImageCanvasPicker
+													onSelectColor={(hex) =>
+														commitHex(hex)
+													}
+													imageUrl={activeImage}
+													speedVal={speedVal}
+													senseVal={senseVal}
+													zoomVal={zoomVal}
+													rotateVal={rotateVal}
+													onHoverColor={setHoverHex}
+													brightness={brightness}
+													vibrance={vibrance}
+													isInverted={isInverted}
+												/>
+											</div>
+										)}
+									{activeTab === "SAMPLED" && activeImage && (
+										<div className="w-full h-full flex items-center justify-center">
+											<ImageCanvasPicker
+												onSelectColor={(hex) =>
+													commitHex(hex)
+												}
+												imageUrl={activeImage}
+												speedVal={0}
+												senseVal={0}
+												zoomVal={zoomVal}
+												rotateVal={rotateVal}
+												onHoverColor={setHoverHex}
+												brightness={brightness}
+												vibrance={vibrance}
+												isInverted={isInverted}
+											/>
+										</div>
+									)}
+									{(activeTab === "GENERATIVE" ||
+										activeTab === "SAMPLED") &&
+										!activeImage && (
+											<div className="flex flex-col items-center gap-4 text-white/40">
+												<ImagePlus
+													size={48}
+													strokeWidth={1}
+												/>
+												<button
+													onClick={() =>
+														fileInputRef.current?.click()
+													}
+													className="px-6 py-2 rounded-full border border-white/10 hover:bg-white/5 transition-all text-xs font-mono tracking-widest"
+												>
+													UPLOAD SOURCE
+												</button>
+												<button
+													onClick={activateCrayons}
+													className="text-[10px] underline hover:text-white transition-colors"
+												>
+													or use default source
+												</button>
+											</div>
+										)}
+								</motion.div>
+							</AnimatePresence>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	);
@@ -1065,10 +1165,9 @@ interface ColorWheelProps {
 	onChange: (h: number, s: number) => void;
 	secondaryColor?: string;
 	tertiaryColor?: string;
-	harmonyMode: string;
-	showMarkers?: boolean;
 	wheelMode?: WheelMode;
 	onHoverColor?: (hex: string | null) => void;
+	lightness?: number;
 }
 
 const ColorWheel = ({
@@ -1078,26 +1177,19 @@ const ColorWheel = ({
 	onChange,
 	secondaryColor,
 	tertiaryColor,
-	harmonyMode,
 	lightness = 50,
-	showMarkers = false,
 	wheelMode = "default",
 	onHoverColor,
-}: ColorWheelProps & { lightness?: number }) => {
+}: ColorWheelProps) => {
 	const wheelRef = useRef<HTMLDivElement>(null);
 	const [isDragging, setIsDragging] = useState(false);
 	const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
 	const [isHovering, setIsHovering] = useState(false);
 	const radius = size / 2;
 
-	// Mapping Logic: Angle (0-360) <-> Hue (0-360)
 	const getHueFromAngle = (angle: number) => {
-		if (wheelMode === "cool") {
-			// Cool range: 160 (Green-Blue) to 280 (Purple)
-			return 160 + (angle / 360) * 120;
-		}
+		if (wheelMode === "cool") return 160 + (angle / 360) * 120;
 		if (wheelMode === "warm") {
-			// Warm range: -20 (Deep Red) to 80 (Yellow-Orange)
 			let h = -20 + (angle / 360) * 100;
 			if (h < 0) h += 360;
 			return h;
@@ -1106,19 +1198,14 @@ const ColorWheel = ({
 	};
 
 	const getAngleFromHue = (h: number) => {
-		if (wheelMode === "cool") {
-			// Inverse of 160 + (d/360)*120
-			return ((h - 160) / 120) * 360;
-		}
+		if (wheelMode === "cool") return ((h - 160) / 120) * 360;
 		if (wheelMode === "warm") {
-			// Inverse of -20 + (d/360)*100
 			let normalizedH = h > 180 ? h - 360 : h;
 			return ((normalizedH + 20) / 100) * 360;
 		}
 		return h;
 	};
 
-	// Helper to get XY from H and S
 	const getPosition = (h: number, s: number) => {
 		const angle = getAngleFromHue(h);
 		const angleRad = (angle - 90) * (Math.PI / 180);
@@ -1138,13 +1225,10 @@ const ColorWheel = ({
 		const cy = rect.top + radius;
 		const dx = clientX - cx;
 		const dy = clientY - cy;
-
 		let angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
 		if (angle < 0) angle += 360;
-
 		const dist = Math.hypot(dx, dy);
 		const s = Math.min(100, (dist / radius) * 100);
-
 		const h = getHueFromAngle(angle);
 		onChange(h, s);
 	};
@@ -1154,7 +1238,6 @@ const ColorWheel = ({
 			if (isDragging) handleMove(e.clientX, e.clientY);
 		};
 		const onMouseUp = () => setIsDragging(false);
-
 		if (isDragging) {
 			globalThis.addEventListener("mousemove", onMouseMove);
 			globalThis.addEventListener("mouseup", onMouseUp);
@@ -1182,23 +1265,10 @@ const ColorWheel = ({
 	const hoverColor = getMouseColor(hoverPos.x, hoverPos.y);
 
 	useEffect(() => {
-		if (isHovering) {
-			onHoverColor?.(hoverColor);
-		} else {
-			onHoverColor?.(null);
-		}
+		if (isHovering) onHoverColor?.(hoverColor);
+		else onHoverColor?.(null);
 	}, [isHovering, hoverColor, onHoverColor]);
 
-	const getHarmonyPos = (cStr?: string) => {
-		if (!cStr) return null;
-		const c = colord(cStr);
-		return getPosition(c.hue(), c.toHsl().s);
-	};
-
-	const secPos = getHarmonyPos(secondaryColor);
-	const tertPos = getHarmonyPos(tertiaryColor);
-
-	// Composition Logic
 	const stops = useMemo(() => {
 		const steps = 12;
 		const arr = [];
@@ -1207,12 +1277,9 @@ const ColorWheel = ({
 			const h = getHueFromAngle(d);
 			let s = 100;
 			let l = lightness;
-
-			// Mode specific L/S shifts
 			if (wheelMode === "bright") l = 85;
 			else if (wheelMode === "dark") l = 20;
 			else if (wheelMode === "desaturated") s = 25;
-
 			arr.push(`${colord({ h, s, l }).toHex()} ${d}deg`);
 		}
 		return arr.join(", ");
@@ -1225,43 +1292,56 @@ const ColorWheel = ({
 		return colord({ h: 0, s: 0, l }).toHex();
 	}, [lightness, wheelMode]);
 
+	const secPos = useMemo(
+		() =>
+			secondaryColor
+				? getPosition(
+						colord(secondaryColor).hue(),
+						colord(secondaryColor).toHsl().s
+				  )
+				: null,
+		[secondaryColor, wheelMode]
+	);
+	const tertPos = useMemo(
+		() =>
+			tertiaryColor
+				? getPosition(
+						colord(tertiaryColor).hue(),
+						colord(tertiaryColor).toHsl().s
+				  )
+				: null,
+		[tertiaryColor, wheelMode]
+	);
+
 	return (
 		<div
 			ref={wheelRef}
-			className={`rounded-full relative shadow-2xl shadow-black/80 transition-all duration-500 ${
-				isDragging
-					? "cursor-grabbing"
-					: isHovering
-					? "cursor-none"
-					: "cursor-crosshair"
+			className={`rounded-full relative shadow-2xl transition-all duration-500 ${
+				isHovering || isDragging ? "cursor-none" : "cursor-crosshair"
 			}`}
 			style={{
 				width: size,
 				height: size,
-				background: `
-          radial-gradient(circle at center, ${centerColor} 0%, transparent 80%),
-          conic-gradient(from 0deg, ${stops})
-        `,
+				background: `radial-gradient(circle at center, ${centerColor} 0%, transparent 80%), conic-gradient(from 0deg, ${stops})`,
 			}}
 			onMouseDown={(e) => {
 				setIsDragging(true);
 				handleMove(e.clientX, e.clientY);
 			}}
 			onMouseMove={(e) => {
-				if (!wheelRef.current) return;
-				const rect = wheelRef.current.getBoundingClientRect();
-				const x = e.clientX - rect.left;
-				const y = e.clientY - rect.top;
-				setHoverPos({ x, y });
+				const rect = wheelRef.current?.getBoundingClientRect();
+				if (rect)
+					setHoverPos({
+						x: e.clientX - rect.left,
+						y: e.clientY - rect.top,
+					});
 				setIsHovering(true);
 			}}
 			onMouseEnter={() => setIsHovering(true)}
 			onMouseLeave={() => setIsHovering(false)}
 		>
 			<div className="absolute inset-0 rounded-full bg-black/5 pointer-events-none" />
-
-			{/* Harmony Markers */}
-			{(harmonyMode !== "manual" || showMarkers) && secPos && (
+			{secPos && (
 				<div
 					className="absolute w-4 h-4 rounded-full border-2 border-white/50 shadow-lg pointer-events-none transition-all duration-300"
 					style={{
@@ -1273,7 +1353,7 @@ const ColorWheel = ({
 					}}
 				/>
 			)}
-			{(harmonyMode !== "manual" || showMarkers) && tertPos && (
+			{tertPos && (
 				<div
 					className="absolute w-4 h-4 rounded-full border-2 border-white/50 shadow-lg pointer-events-none transition-all duration-300"
 					style={{
@@ -1285,8 +1365,6 @@ const ColorWheel = ({
 					}}
 				/>
 			)}
-
-			{/* Selection Handle */}
 			<div
 				className="absolute w-7 h-7 rounded-full border-[3px] border-white shadow-2xl transition-all duration-75 z-20"
 				style={{
@@ -1303,8 +1381,6 @@ const ColorWheel = ({
 					cursor: isDragging ? "grabbing" : "grab",
 				}}
 			/>
-
-			{/* Custom Magnifier Cursor */}
 			{isHovering && !isDragging && (
 				<div
 					className="absolute pointer-events-none transition-transform duration-75 rounded-full z-50 bg-transparent flex items-center justify-center"

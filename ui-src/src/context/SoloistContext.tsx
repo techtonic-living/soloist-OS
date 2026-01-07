@@ -91,6 +91,36 @@ interface SoloistContextType {
 	setSampledColors: React.Dispatch<React.SetStateAction<string[]>>;
 	isSamplerActive: boolean;
 	setIsSamplerActive: (active: boolean) => void;
+
+	// Remix Staging State
+	stagedRemixColors: string[];
+	setStagedRemixColors: React.Dispatch<React.SetStateAction<string[]>>;
+	stagedRemixPalettes: any[];
+	setStagedRemixPalettes: React.Dispatch<React.SetStateAction<any[]>>;
+
+	// Canvas State (Zoom/Rotation/Motion Picker Persistence)
+	canvasState: {
+		zoom: number;
+		rotate: number;
+		activeImage: string | null;
+		motionDensity: number;
+		motionSize: number;
+		pickerMode: "wheel" | "image" | "motion";
+	};
+	setCanvasState: React.Dispatch<
+		React.SetStateAction<{
+			zoom: number;
+			rotate: number;
+			activeImage: string | null;
+			motionDensity: number;
+			motionSize: number;
+			pickerMode: "wheel" | "image" | "motion";
+		}>
+	>;
+
+	// Manual Mode Persistence
+	visibleColorsCount: 1 | 2 | 3;
+	setVisibleColorsCount: React.Dispatch<React.SetStateAction<1 | 2 | 3>>;
 }
 
 // --- Context ---
@@ -188,6 +218,30 @@ export const SoloistProvider = ({ children }: { children: ReactNode }) => {
 	const [sampledColors, setSampledColors] = useState<string[]>([]);
 	const [isSamplerActive, setIsSamplerActive] = useState(false);
 
+	// 7. Remix Staging State
+	const [stagedRemixColors, setStagedRemixColors] = useState<string[]>([]);
+	const [stagedRemixPalettes, setStagedRemixPalettes] = useState<any[]>([]);
+
+	// 8. Image/Canvas Persistence (including Motion/Fluid picker settings)
+	const [canvasState, setCanvasState] = useState<{
+		zoom: number;
+		rotate: number;
+		activeImage: string | null;
+		motionDensity: number;
+		motionSize: number;
+		pickerMode: "wheel" | "image" | "motion";
+	}>({
+		zoom: 50,
+		rotate: 0,
+		activeImage: null,
+		motionDensity: 100,
+		motionSize: 100,
+		pickerMode: "wheel", // Default to Color Wheel
+	});
+
+	// 9. Manual Mode Persistence
+	const [visibleColorsCount, setVisibleColorsCount] = useState<1 | 2 | 3>(3);
+
 	// --- Output ---
 
 	const value: SoloistContextType = useMemo(
@@ -233,6 +287,14 @@ export const SoloistProvider = ({ children }: { children: ReactNode }) => {
 			setSampledColors,
 			isSamplerActive,
 			setIsSamplerActive,
+			stagedRemixColors,
+			setStagedRemixColors,
+			stagedRemixPalettes,
+			setStagedRemixPalettes,
+			canvasState,
+			setCanvasState,
+			visibleColorsCount,
+			setVisibleColorsCount,
 		}),
 		[
 			activeView,
@@ -258,6 +320,10 @@ export const SoloistProvider = ({ children }: { children: ReactNode }) => {
 			isSamplerActive,
 			updateSettings,
 			handleResize,
+			stagedRemixColors,
+			stagedRemixPalettes,
+			canvasState,
+			setCanvasState,
 		]
 	);
 

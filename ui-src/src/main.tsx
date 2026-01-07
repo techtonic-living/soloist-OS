@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
+import { V2App } from "./v2/V2App";
 import "./index.css";
 
 class ErrorBoundary extends React.Component<
@@ -19,7 +20,7 @@ class ErrorBoundary extends React.Component<
 	render() {
 		if (this.state.hasError) {
 			return (
-				<div style={{ padding: 20, color: "white" }}>
+				<div className="p-5 text-white">
 					<h1>Something went wrong.</h1>
 					<pre>{this.state.error?.toString()}</pre>
 				</div>
@@ -37,7 +38,13 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 		<ErrorBoundary>
 			<SoloistProvider>
 				<ToastProvider>
-					<App />
+					{new URLSearchParams(globalThis.location.search).has(
+						"v2"
+					) ? (
+						<V2App />
+					) : (
+						<App />
+					)}
 				</ToastProvider>
 			</SoloistProvider>
 		</ErrorBoundary>

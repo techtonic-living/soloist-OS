@@ -1,0 +1,74 @@
+{
+	"$schema": "soloist-os.variables.baseline-manifest.v1",
+	"generatedAt": "2026-01-01T13:52:45.451Z",
+	"source": {
+		"inventoryJson": "docs/devdocs/fig-bin/_inventory/latest-inventory.json",
+		"findingsJson": "docs/devdocs/fig-bin/_inventory/latest-findings.json"
+	},
+	"policy": {
+		"selection": "newestPerFileName",
+		"uniqueFileNamesExpected": 8,
+		"notes": [
+			"This manifest pins the canonical 8-file snapshot set for refactor/harmonization.",
+			"If you re-export snapshots, regenerate inventory/findings and update this manifest if you intend to change the baseline."
+		]
+	},
+	"files": [
+		{
+			"fileName": "00_Global Design System",
+			"snapshotPath": "docs/devdocs/fig-bin/00_Global_Design_System/variables-snapshot_00_Global_Design_System_no-fileKey_2026-01-01T13-10-51-048Z.json",
+			"exportedAt": "2026-01-01T13:10:51.048Z",
+			"collections": 6,
+			"variables": 167
+		},
+		{
+			"fileName": "Flock Design Library",
+			"snapshotPath": "docs/devdocs/fig-bin/Flock_Design_Library/variables-snapshot_Flock_Design_Library_no-fileKey_2026-01-01T13-24-19-819Z.json",
+			"exportedAt": "2026-01-01T13:24:19.819Z",
+			"collections": 6,
+			"variables": 190
+		},
+		{
+			"fileName": "Global Library",
+			"snapshotPath": "docs/devdocs/fig-bin/Global_Library/variables-snapshot_Global_Library_no-fileKey_2026-01-01T13-13-43-424Z.json",
+			"exportedAt": "2026-01-01T13:13:43.424Z",
+			"collections": 3,
+			"variables": 171
+		},
+		{
+			"fileName": "GS - Primitives",
+			"snapshotPath": "docs/devdocs/fig-bin/GS_-_Primitives/variables-snapshot_GS_-_Primitives_no-fileKey_2026-01-01T13-18-38-857Z.json",
+			"exportedAt": "2026-01-01T13:18:38.857Z",
+			"collections": 6,
+			"variables": 567
+		},
+		{
+			"fileName": "sandman",
+			"snapshotPath": "docs/devdocs/fig-bin/sandman/variables-snapshot_sandman_no-fileKey_2026-01-01T09-50-48-762Z.json",
+			"exportedAt": "2026-01-01T09:50:48.762Z",
+			"collections": 5,
+			"variables": 483
+		},
+		{
+			"fileName": "Smart Swatch",
+			"snapshotPath": "docs/devdocs/fig-bin/Smart_Swatch/variables-snapshot_Smart_Swatch_no-fileKey_2026-01-01T12-16-02-239Z.json",
+			"exportedAt": "2026-01-01T12:16:02.239Z",
+			"collections": 5,
+			"variables": 483
+		},
+		{
+			"fileName": "Soloist OS Plugin",
+			"snapshotPath": "docs/devdocs/fig-bin/Soloist_OS_Plugin/variables-snapshot_Soloist_OS_Plugin_no-fileKey_2026-01-01T12-08-56-670Z.json",
+			"exportedAt": "2026-01-01T12:08:56.670Z",
+			"collections": 5,
+			"variables": 716
+		},
+		{
+			"fileName": "unBind Library",
+			"snapshotPath": "docs/devdocs/fig-bin/unBind_Library/variables-snapshot_unBind_Library_no-fileKey_2026-01-01T13-31-04-672Z.json",
+			"exportedAt": "2026-01-01T13:31:04.672Z",
+			"collections": 1,
+			"variables": 182
+		}
+	]
+}

@@ -14,6 +14,7 @@ import { HeartToggle } from "../common/HeartToggle";
 import { useCopyFeedback } from "../../hooks/useCopyFeedback";
 import { SystemSettings } from "../../hooks/useSoloistSystem";
 import { useAsyncToggle } from "../../hooks/useAsyncToggle";
+import { useSoloist } from "../../context/SoloistContext";
 import { useToast } from "../../context/ToastContext";
 
 interface ColorControlPanelProps {
@@ -55,8 +56,16 @@ export const ColorControlPanel = ({
 	onAddToRemix,
 	onLoadPalette,
 }: ColorControlPanelProps) => {
+	// Global State for Visibility Persistence
+	const {
+		visibleColorsCount: visibleCount,
+		setVisibleColorsCount: setVisibleCount,
+	} = useSoloist();
 	const [activeEditorId, setActiveEditorId] = useState<string | null>(null);
-	const [visibleCount, setVisibleCount] = useState<1 | 2 | 3>(3);
+
+	// Force visibility to FULL (3) when not in Manual Mode
+	// This ensures swapping/hiding is only "active" conceptually in Manual mode.
+	const effectiveVisibleCount = harmonyMode === "manual" ? visibleCount : 3;
 
 	// Hooks
 	const { isCopied: isHexCopied, copy: copyHex } = useCopyFeedback();
@@ -183,7 +192,7 @@ export const ColorControlPanel = ({
 		seedColor.toUpperCase(),
 		secondaryColor.toUpperCase(),
 		tertiaryColor.toUpperCase(),
-	].slice(0, visibleCount);
+	].slice(0, effectiveVisibleCount);
 
 	const isPaletteFavorite = settings.library?.palettes.some(
 		(p: any) =>
@@ -524,20 +533,20 @@ export const ColorControlPanel = ({
 							: undefined
 					}
 					ActionIcon={
-						visibleCount === 3
+						effectiveVisibleCount === 3
 							? ArrowLeftRight
-							: visibleCount === 2
+							: effectiveVisibleCount === 2
 							? Eye
 							: EyeOff
 					}
 					actionTitle={
-						visibleCount === 3
+						effectiveVisibleCount === 3
 							? "Swap with Tertiary"
-							: visibleCount === 2
+							: effectiveVisibleCount === 2
 							? "Hide"
 							: "Show"
 					}
-					isHidden={visibleCount === 1}
+					isHidden={effectiveVisibleCount === 1}
 					onToggleFavorite={() =>
 						handleFavoriteToggle(secondaryColor.toUpperCase())
 					}
@@ -569,10 +578,10 @@ export const ColorControlPanel = ({
 							  }
 							: undefined
 					}
-					ActionIcon={visibleCount === 3 ? Eye : EyeOff}
-					actionTitle={visibleCount === 3 ? "Hide" : "Show"}
-					actionDisabled={visibleCount === 1}
-					isHidden={visibleCount < 3}
+					ActionIcon={effectiveVisibleCount === 3 ? Eye : EyeOff}
+					actionTitle={effectiveVisibleCount === 3 ? "Hide" : "Show"}
+					actionDisabled={effectiveVisibleCount === 1}
+					isHidden={effectiveVisibleCount < 3}
 					onToggleFavorite={() =>
 						handleFavoriteToggle(tertiaryColor.toUpperCase())
 					}
@@ -586,7 +595,7 @@ export const ColorControlPanel = ({
 			</div>
 
 			{/* PALETTE ACTION - Only show if > 1 color visible */}
-			{visibleCount > 1 && (
+			{effectiveVisibleCount > 1 && (
 				<div className="animate-in fade-in slide-in-from-top-4 duration-500 delay-100">
 					<div className="w-full relative aspect-[8/3] rounded-xl overflow-hidden border border-white/10 shadow-sm transition-all hover:shadow-lg group">
 						{/* Color Bars */}
@@ -599,7 +608,7 @@ export const ColorControlPanel = ({
 								},
 								{ color: tertiaryColor, label: "Tertiary" },
 							]
-								.slice(0, visibleCount)
+								.slice(0, effectiveVisibleCount)
 								.map((item, idx) => {
 									const isItemDark = colord(
 										item.color

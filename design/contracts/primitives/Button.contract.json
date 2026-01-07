@@ -1,0 +1,355 @@
+{
+  "schemaVersion": "soloist-os.primitives.button.contract.v1",
+  "meta": {
+    "exportedAt": "2026-01-07T19:06:08.888Z",
+    "fileName": "org-soloist-figmaPlugin",
+    "fileKey": null
+  },
+  "source": {
+    "nodeId": "2005:629",
+    "nodeName": "Button",
+    "nodeType": "COMPONENT_SET"
+  },
+  "properties": {
+    "componentProperties": [
+      "label#2005:20",
+      "showIconLeft#2005:21",
+      "showIconRight#2005:22",
+      "showLabel#2005:23",
+      "iconLeft#2005:24",
+      "iconRight#2005:25",
+      "variant",
+      "size",
+      "state"
+    ],
+    "variantPropsExpected": [
+      "variant",
+      "size",
+      "state"
+    ],
+    "allowedValuesByProp": {
+      "variant": [
+        "glass",
+        "ghost"
+      ],
+      "size": [
+        "sm",
+        "md",
+        "lg"
+      ],
+      "state": [
+        "default",
+        "disabled"
+      ]
+    }
+  },
+  "variants": [
+    {
+      "nodeId": "2005:556",
+      "nodeName": "variant=glass, size=sm, state=default",
+      "variantProperties": {
+        "variant": "glass",
+        "size": "sm",
+        "state": "default"
+      },
+      "size": {
+        "width": 70,
+        "height": 32
+      },
+      "detected": {
+        "variableNames": [
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/text/primary",
+          "radius/lg",
+          "space/2",
+          "stroke/thin"
+        ],
+        "textStyleNames": [
+          "mono/07"
+        ]
+      }
+    },
+    {
+      "nodeId": "2005:630",
+      "nodeName": "variant=glass, size=sm, state=disabled",
+      "variantProperties": {
+        "variant": "glass",
+        "size": "sm",
+        "state": "disabled"
+      },
+      "size": {
+        "width": 70,
+        "height": 32
+      },
+      "detected": {
+        "variableNames": [
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/text/primary",
+          "radius/lg",
+          "space/2",
+          "stroke/thin"
+        ],
+        "textStyleNames": [
+          "mono/07"
+        ]
+      }
+    },
+    {
+      "nodeId": "2005:643",
+      "nodeName": "variant=glass, size=md, state=default",
+      "variantProperties": {
+        "variant": "glass",
+        "size": "md",
+        "state": "default"
+      },
+      "size": {
+        "width": 91,
+        "height": 44
+      },
+      "detected": {
+        "variableNames": [
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/text/primary",
+          "radius/lg",
+          "space/3",
+          "stroke/thin"
+        ],
+        "textStyleNames": [
+          "mono/09"
+        ]
+      }
+    },
+    {
+      "nodeId": "2005:656",
+      "nodeName": "variant=glass, size=md, state=disabled",
+      "variantProperties": {
+        "variant": "glass",
+        "size": "md",
+        "state": "disabled"
+      },
+      "size": {
+        "width": 91,
+        "height": 44
+      },
+      "detected": {
+        "variableNames": [
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/text/primary",
+          "radius/lg",
+          "space/3",
+          "stroke/thin"
+        ],
+        "textStyleNames": [
+          "mono/09"
+        ]
+      }
+    },
+    {
+      "nodeId": "2005:669",
+      "nodeName": "variant=glass, size=lg, state=default",
+      "variantProperties": {
+        "variant": "glass",
+        "size": "lg",
+        "state": "default"
+      },
+      "size": {
+        "width": 113,
+        "height": 56
+      },
+      "detected": {
+        "variableNames": [
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/text/primary",
+          "radius/lg",
+          "space/4",
+          "stroke/thin"
+        ],
+        "textStyleNames": [
+          "mono/10"
+        ]
+      }
+    },
+    {
+      "nodeId": "2005:682",
+      "nodeName": "variant=glass, size=lg, state=disabled",
+      "variantProperties": {
+        "variant": "glass",
+        "size": "lg",
+        "state": "disabled"
+      },
+      "size": {
+        "width": 113,
+        "height": 56
+      },
+      "detected": {
+        "variableNames": [
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/text/primary",
+          "radius/lg",
+          "space/4",
+          "stroke/thin"
+        ],
+        "textStyleNames": [
+          "mono/10"
+        ]
+      }
+    },
+    {
+      "nodeId": "2005:695",
+      "nodeName": "variant=ghost, size=sm, state=default",
+      "variantProperties": {
+        "variant": "ghost",
+        "size": "sm",
+        "state": "default"
+      },
+      "size": {
+        "width": 70,
+        "height": 32
+      },
+      "detected": {
+        "variableNames": [
+          "color/text/primary",
+          "color/text/secondary",
+          "radius/lg",
+          "space/2",
+          "stroke/thin"
+        ],
+        "textStyleNames": [
+          "mono/07"
+        ]
+      }
+    },
+    {
+      "nodeId": "2005:708",
+      "nodeName": "variant=ghost, size=sm, state=disabled",
+      "variantProperties": {
+        "variant": "ghost",
+        "size": "sm",
+        "state": "disabled"
+      },
+      "size": {
+        "width": 70,
+        "height": 32
+      },
+      "detected": {
+        "variableNames": [
+          "color/text/primary",
+          "color/text/secondary",
+          "radius/lg",
+          "space/2",
+          "stroke/thin"
+        ],
+        "textStyleNames": [
+          "mono/07"
+        ]
+      }
+    },
+    {
+      "nodeId": "2005:721",
+      "nodeName": "variant=ghost, size=md, state=default",
+      "variantProperties": {
+        "variant": "ghost",
+        "size": "md",
+        "state": "default"
+      },
+      "size": {
+        "width": 91,
+        "height": 44
+      },
+      "detected": {
+        "variableNames": [
+          "color/text/primary",
+          "color/text/secondary",
+          "radius/lg",
+          "space/3",
+          "stroke/thin"
+        ],
+        "textStyleNames": [
+          "mono/09"
+        ]
+      }
+    },
+    {
+      "nodeId": "2005:734",
+      "nodeName": "variant=ghost, size=md, state=disabled",
+      "variantProperties": {
+        "variant": "ghost",
+        "size": "md",
+        "state": "disabled"
+      },
+      "size": {
+        "width": 91,
+        "height": 44
+      },
+      "detected": {
+        "variableNames": [
+          "color/text/primary",
+          "color/text/secondary",
+          "radius/lg",
+          "space/3",
+          "stroke/thin"
+        ],
+        "textStyleNames": [
+          "mono/09"
+        ]
+      }
+    },
+    {
+      "nodeId": "2005:747",
+      "nodeName": "variant=ghost, size=lg, state=default",
+      "variantProperties": {
+        "variant": "ghost",
+        "size": "lg",
+        "state": "default"
+      },
+      "size": {
+        "width": 113,
+        "height": 56
+      },
+      "detected": {
+        "variableNames": [
+          "color/text/primary",
+          "color/text/secondary",
+          "radius/lg",
+          "space/4",
+          "stroke/thin"
+        ],
+        "textStyleNames": [
+          "mono/10"
+        ]
+      }
+    },
+    {
+      "nodeId": "2005:760",
+      "nodeName": "variant=ghost, size=lg, state=disabled",
+      "variantProperties": {
+        "variant": "ghost",
+        "size": "lg",
+        "state": "disabled"
+      },
+      "size": {
+        "width": 113,
+        "height": 56
+      },
+      "detected": {
+        "variableNames": [
+          "color/text/primary",
+          "color/text/secondary",
+          "radius/lg",
+          "space/4",
+          "stroke/thin"
+        ],
+        "textStyleNames": [
+          "mono/10"
+        ]
+      }
+    }
+  ],
+  "issues": []
+}

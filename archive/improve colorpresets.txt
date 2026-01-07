@@ -1,0 +1,40 @@
+attached are current versions of color picker options i built into a plugin tool for users to explore and experiment with colors. i am very interested in adding a unique, interactive color picker option that can easily swap in and out with existing versions (see screenshots)-- 
+
+can you create a tool with tubes of oil/artsy paints laying flat on/around surface of a centralized artist's palette board. all tubes should be oriented so opening faces towards center of palette and very near or on its surface. this eliminates drag/drop functionality, which has been unpredictable with previous dev projects. target audience is figma users, target runtime environment is figma app (compatible with both desktop and web browser versions). 
+
+i am providing my github url so you can access DESIGN_SYSTEM.md, which i will also make accessible via public url
+
+the more you invest in this .md reference, my github files (full existing codebase) and attached screenshots, then following my design guidelines and references existing UI elements / components will allow for seamless integration /merging of this new color picker option with my current dev phase -- so it can blend in perfectly with existing plugin build-in-progress. 
+
+PRD cliffnotes: new color picker needs to be fully contained within circle container matching / same radius as existing color picker options. elements of picker are allowed to overflow a small amount off edge/beyond perimeter boundaries if doing so enhances UI/UE (you will see example of this with default color wheel screenshot. 
+
+interactive UI/UE details: cursor type upon mouse enter should become a hand capable of animating transition from index finger (only) extended -> index finger + middle finger extended and positioned closely together -> flat hand with palm facing away from viewer (will clarify in paragraph ahead). also needs to be capable of animating scale transition from small to medium-big. 
+
+plan is to repurpose sliders of existing toolbar docked at bottom of color picker circle area-- left slider can control hand state transition from 1 finger to 2 fingers to flat/open hand; right slider controls scaling of cursor hand size
+
+with this setup, user can interact with tubes of paint (to squeeze colored paint onto palette for mixing) and mixing of paints/colors on palette surface -- allow cursor hand `on press` to trigger squeeze animation (squeezing colored paint out of paint tube and onto surface of palette) --- and amount squeezed out of tube and onto palette can correlate to `while pressing` duration. 
+
+when cursor type is 1 finger extended, this allows user to mix more precisely/finely with streaks, swirls, and smudges and also used for low-force squeeze capability (animation should align with short distance and slow rate of paint expressed from tube)
+
+whereas open hand allows capability to mix faster but less precisely with broad strokes and sweeping spreads and also provides high-force squeeze capability ( animation should align with longer distance and faster rate of paint expressed from tube)
+
+and the double-finger pointer provides a goldilocks instrument for moderate mix and medium-force squeeze capabilities
+
+
+----------------
+
+Create a whimsical artist with paint on smock and holding palette board and artist paint brush. this is a friendly and interactive character that extends her palette board to receive paint from user action that triggers separate squeeze event of different colors of paint from toothpaste like tubes. after extending palette to receive paint, character used paintbrush to mix the colors together on the palette board, then returns to default state of smiling/ friendly passively waiting for next user-triggered action event to receive more paint
+
+----------------------------
+
+Improvement ideas for colorPresets.ts
+Normalize and dedupe colors: A few values repeat across libraries. Add a tiny validator script (e.g., check for duplicate hex across libraries, case-insensitive) to keep palettes distinct or intentionally annotated when shared.
+Stronger typing for metadata: meaning/usage are free-form. Consider an enum or tagged union for usage categories (e.g., "cta" | "accent" | "bg" | "warning" | "success" | "text") plus optional tone ("vibrant" | "muted" | "pastel" | "dark"), to make consumption more programmatic.
+Consistent ordering: Sort colors within each library by hue or semantic role (e.g., danger → warning → success → info → neutral → base). Improves scan-ability in UIs.
+Add accessibility hints: Optional contrastOnLight / contrastOnDark booleans or precomputed WCAG contrast scores vs. white/black. Helps downstream components pick safe text/background combos.
+Add tags for theming: Introduce tags?: string[] (e.g., ["brand", "cta", "nature", "retro"]) to support filtering and search in a color picker.
+Document provenance: Include an optional source/inspiredBy field for palettes (e.g., “Tailwind 3.4”, “Nord”) to clarify maintenance expectations.
+Build-time validation: Add a small script/test to assert hex format, uniqueness per library, required fields, and optionally contrast thresholds for “accessible” libraries.
+Consumers and examples: Provide a short usage example of how to render these palettes in a picker component, including recommended text colors per swatch (black/white) based on contrast.
+Automate exports: If this feeds design tokens, consider generating a flattened export (e.g., presetColorsByName) for O(1) lookup and a JSON snapshot for non-TS consumers.
+Unit tests: Lightweight tests (Jest/Vitest) to assert: array is non-empty, every library has name/description/colors, every color has name/value, and hex strings match /^#([0-9a-fA-F]{6})$/.

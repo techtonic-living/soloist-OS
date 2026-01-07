@@ -4,8 +4,40 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Utility: keep layout stable when scrollbars appear/disappear (supported browsers). */
+.scrollbar-gutter-stable {
+	scrollbar-gutter: stable;
+}
+
+/* App layout grid (avoid inline styles; keeps rail widths aligned across rows) */
+.soloist-app-grid {
+	display: grid;
+	/* Header intentionally smaller than footer (Figma canvas is cluttered; bottom gets breathing room) */
+	grid-template-rows: clamp(44px, 6.5vh, 60px) 1fr clamp(48px, 7.5vh, 70px);
+}
+
+.soloist-app-grid--railExpanded {
+	grid-template-columns: clamp(240px, 18vw, 360px) 1fr clamp(
+			300px,
+			24vw,
+			360px
+		);
+}
+
+.soloist-app-grid--railCollapsed {
+	grid-template-columns: clamp(72px, 7vw, 108px) 1fr clamp(300px, 24vw, 360px);
+}
+
+html,
+body,
+#root {
+	height: 100%;
+	width: 100%;
+	overflow: hidden;
+}
+
 body {
-	@apply bg-bg-void text-gray-300 font-sans antialiased overflow-hidden;
+	@apply bg-bg-void text-gray-300 font-sans antialiased;
 	/* Cinematic Easing */
 	transition-timing-function: cubic-bezier(0.32, 0.12, 0, 1);
 }
@@ -72,8 +104,19 @@ html.organize-dragging .organize-drop-target-active {
 	.custom-scrollbar::-webkit-scrollbar-track {
 		@apply bg-transparent;
 	}
+	.custom-scrollbar {
+		scrollbar-gutter: stable;
+	}
 	.custom-scrollbar::-webkit-scrollbar-thumb {
 		@apply bg-glass-stroke rounded-full hover:bg-glass-highlight;
+	}
+
+	.scrollbar-none {
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+	.scrollbar-none::-webkit-scrollbar {
+		display: none;
 	}
 
 	/* Dynamic text color using CSS variable */
@@ -92,6 +135,62 @@ html.organize-dragging .organize-drop-target-active {
 	/* Orbital Sampler Animations */
 	.animate-pulse-subtle {
 		animation: pulse-subtle 3s ease-in-out infinite;
+	}
+
+	/*
+	  Standard Slider (Design System)
+	  - Track: thin, subtle
+	  - Thumb: accent cyan + glow
+	  Usage: <input type="range" className="soloist-range" />
+	*/
+	.soloist-range {
+		-webkit-appearance: none;
+		appearance: none;
+		height: 4px;
+		border-radius: 9999px;
+		background: rgba(255, 255, 255, 0.2);
+		outline: none;
+	}
+	.soloist-range:focus {
+		box-shadow: 0 0 0 2px rgba(63, 227, 242, 0.25);
+	}
+	.soloist-range::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 16px;
+		height: 16px;
+		border-radius: 9999px;
+		background: rgb(63, 227, 242);
+		border: 2px solid rgb(63, 227, 242);
+		box-shadow: 0 0 10px rgba(63, 227, 242, 0.5);
+		transition: transform 120ms ease, box-shadow 120ms ease;
+	}
+	.soloist-range::-webkit-slider-thumb:hover {
+		transform: scale(1.06);
+		box-shadow: 0 0 12px rgba(63, 227, 242, 0.65);
+	}
+	.soloist-range::-moz-range-track {
+		height: 4px;
+		border-radius: 9999px;
+		background: rgba(255, 255, 255, 0.2);
+	}
+	.soloist-range::-moz-range-thumb {
+		width: 16px;
+		height: 16px;
+		border-radius: 9999px;
+		background: rgb(63, 227, 242);
+		border: 2px solid rgb(63, 227, 242);
+		box-shadow: 0 0 10px rgba(63, 227, 242, 0.5);
+		transition: transform 120ms ease, box-shadow 120ms ease;
+	}
+	.soloist-range::-moz-range-thumb:hover {
+		transform: scale(1.06);
+		box-shadow: 0 0 12px rgba(63, 227, 242, 0.65);
+	}
+
+	/* Positions the left-rail chevron toggle relative to the rail edge (no inline styles). */
+	.soloist-rail-toggle-anchor {
+		left: calc(100% - clamp(20px, 2.5vh, 26px));
 	}
 
 	@keyframes pulse-subtle {
@@ -120,5 +219,118 @@ html.organize-dragging .organize-drop-target-active {
 			transform: rotate(360deg) translateX(var(--orbit-radius, 32px))
 				rotate(-360deg);
 		}
+	}
+
+	/* ============================================
+	   FIGMA LAYOUT SYSTEM
+	   Based on Figma design: 3×3 Grid Layout
+	   ============================================ */
+
+	/* Layout Tokens - Figma Design Dimensions */
+	:root {
+		/* Header/Footer Heights */
+		--header-height: 56px;
+		--footer-height: 48px;
+
+		/* Left Rail Widths */
+		--rail-collapsed: 72px;
+		--rail-expanded: 280px;
+
+		/* Right Assistant Panel */
+		--assistant-width: 320px;
+		--assistant-collapsed: 0px;
+
+		/* Responsive scaling for smaller viewports */
+		@media (max-width: 1280px) {
+			--rail-expanded: 240px;
+			--assistant-width: 280px;
+		}
+
+		@media (max-width: 1024px) {
+			--header-height: 48px;
+			--footer-height: 40px;
+			--rail-expanded: 200px;
+			--rail-collapsed: 60px;
+			--assistant-width: 260px;
+		}
+	}
+
+	/* Master Grid Layout - 3×3 Structure */
+	.soloist-app-grid {
+		display: grid;
+		width: 100vw;
+		height: 100vh;
+		overflow: hidden;
+
+		/* 3 rows: header, content, footer */
+		grid-template-rows: var(--header-height) 1fr var(--footer-height);
+
+		/* 3 columns: rail, main, assistant */
+		grid-template-columns: var(--rail-width) 1fr var(--assistant-width);
+
+		/* Named grid areas for semantic positioning */
+		grid-template-areas:
+			"header-left header-main header-right"
+			"rail-left main-content assistant-right"
+			"footer-left footer-main footer-right";
+	}
+
+	/* Rail State Modifiers */
+	.soloist-app-grid--railExpanded {
+		--rail-width: var(--rail-expanded);
+	}
+
+	.soloist-app-grid--railCollapsed {
+		--rail-width: var(--rail-collapsed);
+	}
+
+	/* Assistant Panel State Modifiers */
+	.soloist-app-grid--assistantHidden {
+		--assistant-width: var(--assistant-collapsed);
+	}
+
+	/* Grid Cell Utilities */
+	.grid-header-left {
+		grid-area: header-left;
+	}
+	.grid-header-main {
+		grid-area: header-main;
+	}
+	.grid-header-right {
+		grid-area: header-right;
+	}
+	.grid-rail-left {
+		grid-area: rail-left;
+	}
+	.grid-main-content {
+		grid-area: main-content;
+	}
+	.grid-assistant-right {
+		grid-area: assistant-right;
+	}
+	.grid-footer-left {
+		grid-area: footer-left;
+	}
+	.grid-footer-main {
+		grid-area: footer-main;
+	}
+	.grid-footer-right {
+		grid-area: footer-right;
+	}
+
+	/* Header spanning all 3 columns (for unified TopNavBar) */
+	.grid-header-span {
+		grid-column: 1 / -1;
+		grid-row: 1;
+		display: grid;
+		grid-template-columns: var(--rail-width) 1fr var(--assistant-width);
+	}
+
+	/* Footer spanning all 3 columns (for unified StatusBar) */
+	.grid-footer-span {
+		grid-column: 1 / -1;
+		grid-row: 3;
+		display: grid;
+		grid-template-columns: var(--rail-width) 1fr var(--assistant-width);
 	}
 }

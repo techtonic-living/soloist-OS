@@ -69,6 +69,94 @@
 
 ---
 
+## 🧷 The drift-killer: a live co-design loop (human + agent, same page)
+
+Goal: eliminate “working independently on co-dependent components.”
+
+### 1) Pick a single source-of-truth surface in Figma
+
+Not “the whole file.” One canonical frame and a small set of primitives.
+
+- `01_PRIMITIVES`: `Button`, `IconButton`, `Card`, `Input`, `Slider`, `Tabs`
+- `03_SHELL`: `Shell / Default` (one canonical layout frame)
+
+Everything else can evolve later.
+
+### 2) Turn selections into structured, scrapeable facts (not vibes)
+
+When you select a node (e.g. `Button`), we extract:
+
+- component name + variant properties
+- layout signals (auto-layout / constraints)
+- token usage (variable bindings for color/spacing/radius/typography)
+- styles used (text/effect)
+- (optional) screenshot for quick review
+
+This becomes a machine-readable **contract** that lives in the repo.
+
+### 3) Map design nodes to code components (one-time wiring)
+
+Once a Figma component is mapped to a code component, the agent can:
+
+- inspect the selected node
+- jump to the exact React primitive source file
+- confirm props/variants match the design
+- propose a patch that moves code toward design (not vice versa)
+
+No handoff. No interpretation layer. No drift.
+
+### 4) Add design snapshots/contracts to the repo
+
+Example artifact paths:
+
+- `design/contracts/primitives/Button.contract.json`
+- `design/contracts/shell/ShellDefault.contract.json`
+- `design/contracts/tokens/color.tokens.json`
+
+Then we can validate continuously (locally and later in CI):
+
+- do code props match design properties?
+- do required variables/styles exist and are they referenced?
+- did someone add a new variant in code without adding it in Figma (or vice versa)?
+
+This makes drift detectable immediately.
+
+### 5) Work in thin slices
+
+Instead of rebuilding everything, iterate like:
+
+Token (variable exists) → Primitive → Composition → Shell
+
+Each slice ends with:
+
+- updated contract file(s)
+- checks passing
+
+### What Soloist can automate
+
+The plugin should own the “airlock eliminator” actions:
+
+- Export selected component contract
+- Export shell contract
+- Validate current file against repo contracts
+- Show drift report (what changed: props/tokens/layout)
+
+### 🔎 Bulk Edit Safety (Proposed refinement)
+
+-   [ ] **Rendered Preview for Bulk Changes ("sandbox")**
+    -   Goal: before any destructive or wide-impact operation, show a *visual*, side-by-side preview ("Before" vs "After") inside the Figma canvas.
+    -   Why: table-style diffs reduce errors, but a rendered preview is the highest-confidence UX for bulk edits.
+    -   Feasible approach (non-destructive):
+        1. Duplicate a user-selected frame/component set into a `99_PREVIEW` page.
+        2. Create `Soloist / Preview/*` variable collections mirroring the starter-kit collections.
+        3. Rebind variable usages on the duplicated nodes to the preview variables.
+        4. Apply the proposed bulk change *only* to preview variables (or preview styles), so the original document remains unchanged.
+        5. Provide explicit actions: **Apply for real** (run the actual operation), **Discard preview** (delete the preview page/collections).
+    -   Phase 1 (lighter-weight): show a structured diff + counts + sampled impacted items (already partially supported via dry-run).
+    -   Phase 2 (full gift): rendered preview sandbox for value-affecting edits (color/spacing/typography/shadows).
+
+---
+
 ## 🔮 Phase 4: The "Soul" (Future)
 
 -   [ ] **OpenAI Integration:** Replace local "Teacher" logic with LLM-based design critiques.

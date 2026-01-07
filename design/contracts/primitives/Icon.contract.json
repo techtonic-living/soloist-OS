@@ -1,0 +1,227 @@
+{
+  "schemaVersion": "soloist-os.primitives.icon.contract.v1",
+  "meta": {
+    "exportedAt": "2026-01-07T13:44:04.314Z",
+    "fileName": "org-soloist-figmaPlugin",
+    "fileKey": null
+  },
+  "source": {
+    "nodeId": "2002:498",
+    "nodeName": "Icon",
+    "nodeType": "COMPONENT_SET"
+  },
+  "properties": {
+    "hasInstanceSwapName": true,
+    "instanceSwapPropertyNames": [
+      "name#2002:3"
+    ],
+    "variantPropsExpected": [
+      "size",
+      "tone"
+    ],
+    "allowedValuesByProp": {
+      "size": [
+        "sm",
+        "md",
+        "lg"
+      ],
+      "tone": [
+        "primary",
+        "secondary",
+        "muted"
+      ]
+    }
+  },
+  "variants": [
+    {
+      "nodeId": "2002:485",
+      "nodeName": "size=sm, tone=primary",
+      "variantProperties": {
+        "size": "sm",
+        "tone": "primary"
+      },
+      "size": {
+        "width": 16,
+        "height": 16
+      },
+      "detected": {
+        "strokeWeights": [
+          1
+        ],
+        "variableNames": [
+          "color/text/primary",
+          "stroke/thin"
+        ]
+      }
+    },
+    {
+      "nodeId": "2002:509",
+      "nodeName": "size=sm, tone=secondary",
+      "variantProperties": {
+        "size": "sm",
+        "tone": "secondary"
+      },
+      "size": {
+        "width": 16,
+        "height": 16
+      },
+      "detected": {
+        "strokeWeights": [
+          1
+        ],
+        "variableNames": [
+          "color/text/secondary",
+          "stroke/thin"
+        ]
+      }
+    },
+    {
+      "nodeId": "2002:514",
+      "nodeName": "size=sm, tone=muted",
+      "variantProperties": {
+        "size": "sm",
+        "tone": "muted"
+      },
+      "size": {
+        "width": 16,
+        "height": 16
+      },
+      "detected": {
+        "strokeWeights": [
+          1
+        ],
+        "variableNames": [
+          "color/text/muted",
+          "stroke/thin"
+        ]
+      }
+    },
+    {
+      "nodeId": "2002:499",
+      "nodeName": "size=md, tone=primary",
+      "variantProperties": {
+        "size": "md",
+        "tone": "primary"
+      },
+      "size": {
+        "width": 20,
+        "height": 20
+      },
+      "detected": {
+        "strokeWeights": [
+          1
+        ],
+        "variableNames": [
+          "color/text/primary",
+          "stroke/thin"
+        ]
+      }
+    },
+    {
+      "nodeId": "2002:519",
+      "nodeName": "size=md, tone=secondary",
+      "variantProperties": {
+        "size": "md",
+        "tone": "secondary"
+      },
+      "size": {
+        "width": 20,
+        "height": 20
+      },
+      "detected": {
+        "strokeWeights": [
+          1
+        ],
+        "variableNames": [
+          "color/text/secondary",
+          "stroke/thin"
+        ]
+      }
+    },
+    {
+      "nodeId": "2002:524",
+      "nodeName": "size=md, tone=muted",
+      "variantProperties": {
+        "size": "md",
+        "tone": "muted"
+      },
+      "size": {
+        "width": 20,
+        "height": 20
+      },
+      "detected": {
+        "strokeWeights": [
+          1
+        ],
+        "variableNames": [
+          "color/text/muted",
+          "stroke/thin"
+        ]
+      }
+    },
+    {
+      "nodeId": "2002:504",
+      "nodeName": "size=lg, tone=primary",
+      "variantProperties": {
+        "size": "lg",
+        "tone": "primary"
+      },
+      "size": {
+        "width": 24,
+        "height": 24
+      },
+      "detected": {
+        "strokeWeights": [
+          1
+        ],
+        "variableNames": [
+          "color/text/primary",
+          "stroke/thin"
+        ]
+      }
+    },
+    {
+      "nodeId": "2002:529",
+      "nodeName": "size=lg, tone=secondary",
+      "variantProperties": {
+        "size": "lg",
+        "tone": "secondary"
+      },
+      "size": {
+        "width": 24,
+        "height": 24
+      },
+      "detected": {
+        "strokeWeights": [
+          1
+        ],
+        "variableNames": [
+          "color/text/secondary",
+          "stroke/thin"
+        ]
+      }
+    },
+    {
+      "nodeId": "2002:534",
+      "nodeName": "size=lg, tone=muted",
+      "variantProperties": {
+        "size": "lg",
+        "tone": "muted"
+      },
+      "size": {
+        "width": 24,
+        "height": 24
+      },
+      "detected": {
+        "strokeWeights": [
+          1
+        ],
+        "variableNames": [
+          "color/text/muted",
+          "stroke/thin"
+        ]
+      }
+    }
+  ],
+  "issues": []
+}

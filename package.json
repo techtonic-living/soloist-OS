@@ -2,11 +2,20 @@
 	"name": "soloist-os",
 	"version": "1.0.0",
 	"scripts": {
+		"preflight": "node scripts/soloist-preflight.mjs",
 		"build": "npm run build:plugin && npm run build:ui",
 		"build:ui": "npm run build --prefix ui-src",
-		"build:plugin": "esbuild plugin/code.tsx --bundle --outfile=dist/code.js --target=es6 --format=iife",
+		"build:plugin": "esbuild plugin/code.tsx --bundle --outfile=dist/code.js --target=es6 --format=iife --sourcemap",
+		"dev": "npm run dev --prefix ui-src",
+		"dev:web": "npm run dev",
+		"dev:plugin": "npm run watch:figma",
+		"dev:plugin:dist": "npm run watch:figma",
+		"dev:plugin:live": "concurrently \"npm run watch:ui\" \"npm run watch:plugin\"",
 		"watch": "concurrently \"npm run watch:ui\" \"npm run watch:plugin\"",
 		"watch:ui": "cd ui-src && npm run dev",
+		"watch:ui-dist": "cd ui-src && vite build --watch",
+		"watch:ui-types": "cd ui-src && tsc -w --preserveWatchOutput",
+		"watch:figma": "concurrently \"npm run watch:ui-dist\" \"npm run watch:ui-types\" \"npm run watch:plugin\"",
 		"watch:plugin": "npm run build:plugin -- --watch"
 	},
 	"devDependencies": {
@@ -20,6 +29,7 @@
 		"eslint-plugin-jsx-a11y": "^6.10.2",
 		"eslint-plugin-react": "^7.37.5",
 		"eslint-plugin-react-hooks": "^7.0.1",
+		"eslint-plugin-storybook": "^10.1.10",
 		"eslint-plugin-tailwindcss": "^3.18.2",
 		"typescript": "^5.2.2",
 		"typescript-eslint": "^8.50.0"

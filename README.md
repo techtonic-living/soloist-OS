@@ -28,20 +28,36 @@
     npm install
     cd ui-src && npm install
     ```
-3.  **Build the Plugin Backend**:
+3.  **Build the plugin (backend + UI)**:
     ```bash
-    npm run build:plugin
+    npm run build
     ```
-4.  **Start the UI Server** (Keep this terminal running):
+
+### Plugin Dev (recommended)
+
+You have two options depending on whether you want a production-accurate loop or the fastest UI iteration.
+
+**Option A — Dist-based (production-accurate)**
+
+- Import `manifest.json` into Figma.
+- Run:
     ```bash
-    npm run dev:ui
+    npm run dev:plugin
+    ```
+
+**Option B — Live UI (fastest iteration)**
+
+- Import `manifest.dev.json` into Figma.
+- Run:
+    ```bash
+    npm run dev:plugin:live
     ```
 
 ### Running in Figma
 
 1.  Open Figma.
 2.  `Right Click` > `Plugins` > `Development` > `Import plugin from manifest...`
-3.  Select `manifest.json`.
+3.  Select `manifest.json` (or `manifest.dev.json` for live UI).
 
 ## 🏗 Architecture
 

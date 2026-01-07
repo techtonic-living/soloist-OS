@@ -2,6 +2,18 @@
 
 > **Note**: This is a living document. As new patterns emerge, they should be documented here to maintain consistency.
 
+## What this doc is (and isn’t)
+
+This document defines the **product-facing design language** and **UI behavior conventions** for Soloist OS (what we ship).
+
+- If you are implementing UI in code, this is your primary reference.
+- If you are constructing Figma primitives/components for scraping, use the Figma-first build spec: `docs/admin/DESIGN_SYSTEM_STARTER_KIT.md`.
+
+When something is duplicated between these docs, the intent is:
+
+- `docs/DESIGN_SYSTEM.md` = **what** the system should be (visual + interaction rules)
+- `docs/admin/DESIGN_SYSTEM_STARTER_KIT.md` = **how** to build it in Figma so scraping stays deterministic
+
 ## 1. Brand Identity
 
 The Soloist OS visual language is "Cinematic Technical" – combining the precision of developer tools with the elegance of high-end creative software.
@@ -10,12 +22,24 @@ The Soloist OS visual language is "Cinematic Technical" – combining the precis
 
 We use a specific font stack to differentiate content types:
 
-| Role        | Font Family    | Tailwind Class | Usage                                        |
-| ----------- | -------------- | -------------- | -------------------------------------------- |
-| **Brand**   | Hubballi       | `font-brand`   | Headings, Logos, "Cinematic" labeling        |
-| **UI**      | Inter          | `font-sans`    | General UI text, labels, readable content    |
-| **Display** | Satoshi        | `font-display` | Large key numbers, stats, feature highlights |
-| **Code**    | JetBrains Mono | `font-mono`    | Code snippets, hex values, technical data    |
+| Role        | Font Family                       | Tailwind Class | Usage                                        |
+| ----------- | --------------------------------- | -------------- | -------------------------------------------- |
+| **Brand**   | Hubballi                          | `font-brand`   | Headings, Logos, "Cinematic" labeling        |
+| **UI**      | Inter                             | `font-sans`    | General UI text, labels, readable content    |
+| **Display** | Satoshi (web) / Acier BAT (Figma) | `font-display` | Large key numbers, stats, feature highlights |
+| **Code**    | JetBrains Mono                    | `font-mono`    | Code snippets, hex values, technical data    |
+
+#### Figma typography governance (important)
+
+In Figma, **Variables and Text Styles have separate responsibilities**:
+
+- Typography *Variables* store **font family only** (`font/ui`, `font/mono`, `font/brand`, `font/display`).
+- **Text Styles** govern size + line-height.
+
+Text style naming is intentionally mechanical and sortable:
+
+- `ui/01..12`, `mono/01..12`
+- `brand/01..06`, `display/01..06`
 
 ### Color Palette (Semantic)
 
@@ -38,6 +62,27 @@ Avoid hardcoding hex values. Use semantic Tailwind classes defined in `tailwind.
 -   `text-primary` / `bg-primary`: Core action color (Blue #3D8BFF).
 -   `text-accent-cyan`: Tech/Data emphasis (Cyan #3FE3F2).
 -   `text-accent-violet`: Creative/Magic emphasis (Violet #9466FF).
+
+#### Figma tool colors
+
+In Figma Variables, `color/tool/*` tokens are **aliases** to the accent tokens (`color/accent/*`).
+This avoids duplicated hex values and keeps “tool identity” as a semantic alias layer.
+
+## 0. Contracts-first loop (drift killer)
+
+We treat exported artifacts under `design/contracts/` as the bridge between Figma and code.
+
+- Variables snapshots: `design/contracts/variables/`
+- Primitive contracts (next): `design/contracts/primitives/`
+
+See `design/contracts/README.md` for the workflow.
+
+### Authoritative token truths
+
+From the current ground-truth snapshot:
+
+- `stroke/hairline = 0.5`, `stroke/thin = 1`, `stroke/medium = 1.5`, `stroke/bold = 2`
+- `color/tool/*` are `VARIABLE_ALIAS` → `color/accent/*`
 
 ## 2. UI Patterns & Effects
 
@@ -170,9 +215,9 @@ Organize mode is a _precision interaction mode_.
 
 Must handle asynchronous API latency (metadata generation) gracefully.
 
--   **State 1 (Default)**: Outline icon (`lucide-heart`).
+-   **State 1 (Default)**: Outline heart icon.
 -   **State 2 (Pending)**: Animate scale/pulse while awaiting API response.
--   **State 3 (Active)**: Filled icon (`fill-red-500`) with "pop" animation.
+-   **State 3 (Active)**: Filled heart icon (`fill-red-500`) with "pop" animation.
 -   **Rule**: Never snap instantly without feedback; use the animation to bridge the API delay.
 -   **Contrast Pattern (Swatches)**: Heart toggles appearing on/within color swatches must follow the text color of their labels:
     -   **Dark swatches**: `text-white hover:bg-white/20`
@@ -338,9 +383,40 @@ Classes referencing `transition-all duration-300` are common. We use a custom "C
 
 ### Iconography
 
--   Use **Lucide React** for all system icons.
+-   Use **Tabler icons** (stroke-based) for all system icons.
 -   **Toolbar Icons**: Standard size is `size={16}` for primary toolbars and `size={14}` for secondary/management clusters.
--   **Stroke Weight**: Default (2px). Revert any ad-hoc weight increases (e.g., 2.5px) to maintain the "Technical Cinematic" baseline.
+-   **Stroke Weight**: Default is **1px** (Tabler baseline). Avoid ad-hoc stroke overrides.
+
+    If an icon must support multiple strokes, use the design system stroke ladder (e.g. `stroke/thin = 1`, `stroke/medium = 1.5`) and keep the available options deliberate (avoid “almost the same” weights).
+
+#### Icon sources & attribution (Figma)
+
+When we import or trace icon vectors from third-party libraries (e.g. Tabler), we must keep provenance attached to the design artifact.
+
+**Decision (Pattern 1):** store attribution in the **Figma component description** for the icon glyph component (or the icon component set if glyphs are variants).
+
+Minimum fields to include:
+
+- **Source**: URL to the icon page (or repo path)
+- **Library**: name (and version if known)
+- **License**: name + URL
+- **Modifications**: any geometry/stroke/grid normalization notes
+
+Suggested description template:
+
+- Source: <url>
+- Library: <name> (<version or "unknown">)
+- License: <name> (<url>)
+- Modifications: <none | notes>
+
+Machine-readable mirror (recommended for solo + agent workflows):
+
+- Keep a matching record in `design/contracts/icons/icon-provenance.json` so automation can read provenance deterministically.
+
+Internal CDN (recommended when icons ship from our infra):
+
+- If icon SVGs are mirrored/served from an internal CDN, record the canonical URL (or URL pattern) in the same provenance record (the `internalCdn` fields in `design/contracts/icons/icon-provenance.json`).
+- This lets code + automation resolve the runtime asset source deterministically, without scraping Figma.
 
 ## 7. The Studio Workbench
 
@@ -365,6 +441,65 @@ The Color Studio is a specialized high-fidelity environment. It adheres to speci
     -   **Instruments**: Use `cursor-crosshair` for precision instrument interaction.
     -   **Feedback**: Color picker instrumentos should provide a magnifier/ring feedback loop centered on the pick point.
 -   **Pointer Event Decoupling**: Large absolute containers for pickers should use `pointer-events-none` on the container, with `pointer-events-auto` strictly on the interactive nodes. This ensures toolbars behind the handles remain clickable.
+
+### Motion / Fluid Mode
+
+The "Fluid" picker introduces a dynamic, generative interactions layer:
+
+-   **Visuals**: Uses a "Bloom" layout with multi-ring gradients and orbiting particles.
+-   **Feedback**: Cursor interaction triggers a localized "gravity well" effect, expanding particles and changing their opacity based on proximity (`150px` radius).
+-   **Controls**: Slider inputs map to generative parameters (`Density` = Particle Count, `Size` = Particle Radius) rather than direct color values.
+
+---
+
+## 8. Interaction Zones & Sampling
+
+Specialized rules for the `SharedSampler` and its interaction with the UI workspace.
+
+### Zone Isolation
+
+To prevent accidental data capture, the UI is divided into strict interaction zones:
+
+-   **Safe Zones (Toolbars)**: All control surfaces (Harmony Toolbar, Mode Selectors, Docked Sliders, Bottom Utility Bar) must use `e.stopPropagation()` to prevent clicks from bubbling to the canvas/sampler layer.
+-   **Active Zones (Canvas)**: Only the dedicated instrument area (Wheel, Fluid field, Image Canvas) should trigger sampling events.
+
+### Programmatic vs. User Intent
+
+When updating state via UI controls (sliders, reset buttons) while a Sampler is active:
+
+-   **Rule**: Programmatic value changes (e.g., sliding a saturation slider) must be flagged with `{ skipRecording: true }` to prevent flooding the sampler history with intermediate values.
+-   **Intent**: Only explicit clicks on the canvas or specific "color commits" should be recorded as samples.
+
+### Manual Mode Persistence
+
+User preferences for advanced modes must be respected across sessions:
+
+-   **Visibility**: If a user collapses UI sections (e.g., Manual Mode color cards), this state is persisted in `SoloistContext` to maintain their preferred workspace density.
+-   **Scope**: Hidden states apply strictly to Manual Mode; other modes (Complementary, Triadic) force full visibility to ensure all generated colors are accessible.
+
+---
+
+---
+
+## 9. Protected Patterns (Anti-Regression)
+
+Features in this section have been tuned to a high degree of polish. **Do not refactor** these patterns without explicit justification, as simplifications often break the intended "Cinematic" experience.
+
+### SharedSampler "Satellite" Physics
+
+-   **Structure**: Must use a dual-motion system (Parent rotates CW, Child rotates CCW) to keep the particle upright while orbiting.
+-   **Anti-Pattern**: Replacing this with a simple CSS `rotate` spin, which causes the inner content (like delete badges) to rotate improperly.
+-   **Iconography**: The sampler icon is **Target**, not `Orbit`.
+
+### Global State vs. Local State
+
+-   **Context**: `SoloistContext` is the source of truth for global session state (e.g., Image Zoom, Manual Mode Visibility, Sampler History).
+-   **Rule**: Do not move this state back into local components (`ColorCreator`, `ColorControlPanel`) as it breaks persistence between tab switches (e.g., losing your work when switching to "Explore").
+
+### Component & Type Integrity
+
+-   **Strict Typing**: Use shared interfaces like `UserLibrary` (from `types.ts`) instead of loose ad-hoc types (`LibraryData`). Ad-hoc typing leads to build failures during integration.
+-   **Restoration**: If a file is found to be empty or missing during a refactor, it must be **restored** from the most complex known state, not recreated as a stub.
 
 ---
 

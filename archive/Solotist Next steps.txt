@@ -1,0 +1,176 @@
+Short answer: **don’t copy one system—hybridize three**. The strongest design systems borrow *structure* from one, *naming rigor* from another, and *implementation discipline* from a third.
+
+Here are the **top 3 design systems to model tokens after**, and *exactly* what to steal from each.
+
+---
+
+## 1. **Material Design (Google)** — *Best Overall Token Architecture*
+
+**Why it’s elite**
+
+* Deeply thought-through **semantic token layers**
+* Clear separation of **base → semantic → component**
+* Proven at massive scale (Android, Web, Wear, Auto)
+
+**Steal this from Material**
+
+* **Layered token model**
+
+  ```
+  ref.color.blue.500
+  sys.color.primary
+  comp.button.container
+  ```
+* Tokens describe **intent**, not appearance
+* State-aware tokens (hover, focus, disabled baked in)
+
+**When to use as your backbone**
+
+* You’re building a **cross-platform system**
+* You want tokens to survive **rebrands + theme changes**
+* You care about long-term maintainability
+
+**Caution**
+Material can be *overkill* if you copy it verbatim. Use the **concept**, not the verbosity.
+
+---
+
+## 2. **Carbon Design System (IBM)** — *Best Naming & Enterprise Discipline*
+
+**Why it’s elite**
+
+* Extremely strict naming conventions
+* Clear contrast between **primitive vs semantic**
+* Designed for **large teams with turnover**
+
+**Steal this from Carbon**
+
+* **Functional naming**
+
+  * `text-primary`
+  * `background-inverse`
+  * `border-subtle`
+* Dark mode parity baked in from day one
+* Token descriptions that explain **usage boundaries**
+
+**When it shines**
+
+* Enterprise apps
+* Multi-team environments
+* Regulated or long-lived products
+
+**Caution**
+Carbon prioritizes consistency over visual flair. It’s excellent—but conservative.
+
+---
+
+## 3. **Polaris (Shopify)** — *Best Real-World Product Pragmatism*
+
+**Why it’s elite**
+
+* Tokens map **directly to components**
+* Designed for speed, not theory
+* Extremely well-documented usage guidance
+
+**Steal this from Polaris**
+
+* **Action-oriented semantic tokens**
+
+  * `interactive`
+  * `critical`
+  * `success`
+* Token decisions grounded in **actual UI use**
+* Tight feedback loop between design and code
+
+**When it’s perfect**
+
+* SaaS dashboards
+* E-commerce or admin-heavy UIs
+* Teams that ship fast and refactor later
+
+**Caution**
+Polaris is less abstract than Material. Great for products—less ideal for frameworks.
+
+---
+
+## The “Best” Token Strategy (What I Recommend)
+
+If I were designing **your** system (given your dev + design background):
+
+### Use this hybrid:
+
+* **Architecture → Material**
+* **Naming rigor → Carbon**
+* **Practical semantics → Polaris**
+
+### Example token stack:
+
+```json
+{
+  "ref": {
+    "color": {
+      "blue": { "500": "#1A73E8" }
+    }
+  },
+  "sys": {
+    "color": {
+      "primary": "{ref.color.blue.500}",
+      "text-primary": "#111111",
+      "text-inverse": "#FFFFFF"
+    }
+  },
+  "comp": {
+    "button": {
+      "background": "{sys.color.primary}",
+      "text": "{sys.color.text-inverse}"
+    }
+  }
+}
+```
+
+This structure:
+
+* Survives rebrands
+* Supports theming
+* Maps cleanly to Tailwind, CSS vars, iOS, Android
+* Plays nicely with Figma Variables + Dev Mode
+
+---
+
+## Hard Truth (No Sugarcoating)
+
+Most design systems fail because:
+
+* Tokens mirror UI instead of **intent**
+* Naming is inconsistent
+* No one agrees on ownership
+
+If you model after **these three**, you avoid all of that.
+
+---
+
+If you want, next I can:
+
+* **Audit your current token JSON**
+* **Generate a starter token schema tailored to Tailwind + Figma**
+* **Show how to auto-sync tokens to code**
+
+Just say the word.
+
+
+
+-----------
+
+reorganize/rearrange colors and groups -- should allow drag and drop to order colors within group and also drag from custom group and drop to different custom group or drop back to Global
++ and instead of scale down, remain 100% scale but decrease opacity of color cards/swatches and change border to 2x width dashed 
++ change cursor to hand grabber when hovering over color card/swatch
+
+add search tab to Favorites / Libraries / Search
+include filters, sort by options, and search input text field
+
+when colors removed from saved/favorites, prior group assignment should be cleared in case color added back to saved and that group persists (user may overlook if color auto-assigns itself back to old group assignment)
+
+heart toggle for Global doesn't trigger confirmation dialogue
+
+
+
