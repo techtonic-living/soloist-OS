@@ -11,4 +11,6 @@ parent.postMessage(
 	"*"
 );
 
-console.log("✅ Sent TextField instructions to designAssistant (node 2002:712)");
+console.log(
+	"✅ Sent TextField instructions to designAssistant (node 2002:712)"
+);

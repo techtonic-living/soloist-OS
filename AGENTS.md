@@ -44,12 +44,15 @@ Do not violate these unless the user explicitly changes the contract + docs:
 
 ## Next planned work
 
-- Next primitive: **TextField**
-  - Use plugin to send instructions to designAssistant (node 2002:712)
-  - Designer builds in Figma following instructions
-  - Export `design/contracts/primitives/TextField.contract.json`
-  - Implement TextField in code against the contract
-  - Re-export + drift-check
+**Current Primitives status:**
+- Icon: ✅
+- Button: ✅
+- TextField: ✅
+- Switch: ✅
+- Slider: ✅
+
+**Next slice:**
+- Modal / Dialog loop initialized.
 
 ## DesignAssistant Workflow (Important)
 
@@ -74,7 +77,35 @@ When starting a new primitive component:
    - Add button to ConnectView UI
    - Rebuild plugin + UI
 
-4. **Future optimization:**
+4. **To add new component CONTRACT EXPORT (critical - complete checklist):**
+
+   **A. Plugin backend (`plugin/code.tsx`):**
+   - Add `{Component}ContractIssueV1` type (copy from Button/TextField)
+   - Add `{Component}ContractV1` type with proper schemaVersion
+   - Add `coerceSelected{Component}Target()` function
+   - Add `build{Component}ContractV1()` function with:
+     - Component-specific property validation (e.g., value, placeholder for TextField)
+     - Variant property validation (state, size, etc.)
+     - Inline variable/style detection (copy from Button - uses walk() function)
+     - DO NOT call non-existent helper functions
+   - Add `handleExport{Component}Contract()` handler
+   - Add `export-{component}-contract` to `PluginMessage` union type
+   - Add case to `onUiMessage` switch statement
+
+   **B. UI frontend (`ui-src/src/components/ConnectView.tsx`):**
+   - Add export button in Connect tab export section
+   - Add `{component}-contract-ready` message handler in useEffect
+   - Add `{component}-contract-error` message handler
+   - Use `downloadJson()` with proper filename pattern
+   - Rebuild UI
+
+   **C. Common mistakes to avoid:**
+   - ❌ Forgetting UI message handlers → export works but file doesn't download
+   - ❌ Calling non-existent helper functions → runtime error
+   - ❌ Forgetting UI button → no way to trigger export
+   - ❌ Copy/paste validation without updating component-specific properties
+
+5. **Future optimization:**
    - Move to `design/contracts/templates/*.md` files
    - Plugin reads at runtime (no rebuild)
    - Just create/update markdown files

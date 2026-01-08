@@ -16,6 +16,12 @@ This repo is running a **drift-killer loop** between Figma and code. The goal is
 - ✅ **Icon** component implemented against contract ([Icon.tsx](../ui-src/src/v2/primitives/Icon.tsx))
 - ✅ **Button** contract exported (12 variants: glass/ghost × sm/md/lg × default/disabled, zero issues)
 - ✅ **Button** component implemented against contract ([Button.tsx](../ui-src/src/v2/primitives/Button.tsx))
+- ✅ **TextField** contract exported (12 variants: 4 states × 3 sizes, zero issues)
+- ✅ **TextField** component implemented against contract ([TextField.tsx](../ui-src/src/v2/primitives/TextField.tsx))
+- ✅ **Switch** contract exported (18 variants: 2 checked × 3 states × 3 sizes, zero issues)
+- ✅ **Switch** component implemented against contract ([Switch.tsx](../ui-src/src/v2/primitives/Switch.tsx))
+- ✅ **Slider** contract exported (9 variants: 3 states × 3 sizes, zero issues)
+- ✅ **Slider** component implemented against contract ([Slider.tsx](../ui-src/src/v2/primitives/Slider.tsx))
 
 **Icon glyph inventory: ✅ Operational**
 
@@ -36,12 +42,26 @@ This repo is running a **drift-killer loop** between Figma and code. The goal is
 
 See [design/contracts/README.md](../design/contracts/README.md#icon-glyphs-add-new-icons) for full workflow.
 
-**Next primitive: TextField**
+**Next primitive: Modal / Dialog**
 
 Workflow pattern established (designAssistant integration):
 
 1. **Agent sends instructions to Figma:**
-   - Plugin has pre-built instructions for each component
+   - Plugin has pre-built instructions for each component (`BUTTON_BUILD_NOTES_V1`, `TEXTFIELD_BUILD_NOTES_V1`, `SWITCH_BUILD_NOTES_V1`, `SLIDER_BUILD_NOTES_V1`, `MODAL_BUILD_NOTES_V1`)
+   - User clicks button in "Connect" tab (e.g. "Modal Instructions")
+   - Plugin writes instructions into a specific text node in Figma (`2002:712`)
+   - Human/Figma Agent builds the component set to match the instructions
+
+2. **User exports contract:**
+   - "EXPORT MODAL CONTRACT" button in Connect tab
+   - Plugin scans selection, validates naming/structure, identifies variables/styles
+   - Downloads `Modal.contract.json` to `design/contracts/primitives/`
+   - **Soloist Drift Guard**: Export is blocked if critical errors exist.
+
+3. **Agent implements code:**
+   - Reads the contract JSON
+   - Implements React component in `ui-src/src/v2/primitives/`
+   - Binds to tokens/styles strictly defined in the contract
    - In plugin UI: Connect tab → "Write instructions: designAssistant"
    - Click component button (e.g., "TextField Instructions")
    - Instructions written to node 2002:712 (designAssistant component)
@@ -71,6 +91,16 @@ Workflow pattern established (designAssistant integration):
 - Message types: `apply-{component}-build-notes-to-node`
 - Target node: 2002:712 (designAssistant component)
 - Mode: "replace" (always overwrites for current instructions)
+
+**Contract export system:**
+- Each component needs its own contract validator (rigorous, component-specific)
+- Required files to update:
+  1. `plugin/code.tsx`: Types, validator, builder, handler, message type, switch case
+  2. `ui-src/src/components/ConnectView.tsx`: Export button, message handlers
+- Common gotchas:
+  - Variable/style detection must be inline (no helper function)
+  - UI message handlers required for file download
+  - Component-specific validation (don't copy Button validation blindly)
 
 ## What’s true (do not regress)
 

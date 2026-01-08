@@ -1,0 +1,485 @@
+{
+  "schemaVersion": "soloist-os.primitives.switch.contract.v1",
+  "meta": {
+    "exportedAt": "2026-01-08T09:38:50.616Z",
+    "fileName": "org-soloist-figmaPlugin",
+    "fileKey": null
+  },
+  "source": {
+    "nodeId": "2012:9000",
+    "nodeName": "Switch",
+    "nodeType": "COMPONENT_SET"
+  },
+  "properties": {
+    "componentProperties": [
+      "checked",
+      "state",
+      "size"
+    ],
+    "variantPropsExpected": [
+      "checked",
+      "state",
+      "size"
+    ],
+    "allowedValuesByProp": {
+      "checked": [
+        "true",
+        "false"
+      ],
+      "state": [
+        "default",
+        "focused",
+        "disabled"
+      ],
+      "size": [
+        "sm",
+        "md",
+        "lg"
+      ]
+    }
+  },
+  "variants": [
+    {
+      "nodeId": "2012:8999",
+      "nodeName": "checked=true, state=default, size=sm",
+      "variantProperties": {
+        "checked": "true",
+        "state": "default",
+        "size": "sm"
+      },
+      "size": {
+        "width": 38,
+        "height": 26
+      },
+      "detected": {
+        "variableNames": [
+          "color/glass/stroke",
+          "color/primary",
+          "color/text/primary",
+          "radius/pill",
+          "space/1",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9032",
+      "nodeName": "checked=false, state=default, size=sm",
+      "variantProperties": {
+        "checked": "false",
+        "state": "default",
+        "size": "sm"
+      },
+      "size": {
+        "width": 38,
+        "height": 26
+      },
+      "detected": {
+        "variableNames": [
+          "color/bg/surface",
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/text/primary",
+          "radius/pill",
+          "space/1",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9007",
+      "nodeName": "checked=true, state=focused, size=sm",
+      "variantProperties": {
+        "checked": "true",
+        "state": "focused",
+        "size": "sm"
+      },
+      "size": {
+        "width": 38,
+        "height": 26
+      },
+      "detected": {
+        "variableNames": [
+          "color/accent/cyan",
+          "color/primary",
+          "color/text/primary",
+          "radius/pill",
+          "space/1",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9036",
+      "nodeName": "checked=false, state=focused, size=sm",
+      "variantProperties": {
+        "checked": "false",
+        "state": "focused",
+        "size": "sm"
+      },
+      "size": {
+        "width": 38,
+        "height": 26
+      },
+      "detected": {
+        "variableNames": [
+          "color/bg/surface",
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/text/primary",
+          "radius/pill",
+          "space/1",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9010",
+      "nodeName": "checked=true, state=disabled, size=sm",
+      "variantProperties": {
+        "checked": "true",
+        "state": "disabled",
+        "size": "sm"
+      },
+      "size": {
+        "width": 38,
+        "height": 26
+      },
+      "detected": {
+        "variableNames": [
+          "color/glass/stroke",
+          "color/primary",
+          "color/text/primary",
+          "radius/pill",
+          "space/1",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9040",
+      "nodeName": "checked=false, state=disabled, size=sm",
+      "variantProperties": {
+        "checked": "false",
+        "state": "disabled",
+        "size": "sm"
+      },
+      "size": {
+        "width": 38,
+        "height": 26
+      },
+      "detected": {
+        "variableNames": [
+          "color/bg/surface",
+          "color/glass/highlight",
+          "color/glass/stroke",
+          "color/text/primary",
+          "radius/pill",
+          "space/1",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9052",
+      "nodeName": "checked=true, state=default, size=md",
+      "variantProperties": {
+        "checked": "true",
+        "state": "default",
+        "size": "md"
+      },
+      "size": {
+        "width": 46,
+        "height": 30
+      },
+      "detected": {
+        "variableNames": [
+          "color/glass/stroke",
+          "color/primary",
+          "color/text/primary",
+          "radius/pill",
+          "space/1",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9131",
+      "nodeName": "checked=false, state=default, size=md",
+      "variantProperties": {
+        "checked": "false",
+        "state": "default",
+        "size": "md"
+      },
+      "size": {
+        "width": 46,
+        "height": 30
+      },
+      "detected": {
+        "variableNames": [
+          "color/bg/surface",
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/text/primary",
+          "radius/pill",
+          "space/1",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9135",
+      "nodeName": "checked=true, state=focused, size=md",
+      "variantProperties": {
+        "checked": "true",
+        "state": "focused",
+        "size": "md"
+      },
+      "size": {
+        "width": 46,
+        "height": 30
+      },
+      "detected": {
+        "variableNames": [
+          "color/accent/cyan",
+          "color/primary",
+          "color/text/primary",
+          "radius/pill",
+          "space/1",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9064",
+      "nodeName": "checked=false, state=focused, size=md",
+      "variantProperties": {
+        "checked": "false",
+        "state": "focused",
+        "size": "md"
+      },
+      "size": {
+        "width": 46,
+        "height": 30
+      },
+      "detected": {
+        "variableNames": [
+          "color/bg/surface",
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/text/primary",
+          "radius/pill",
+          "space/1",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9068",
+      "nodeName": "checked=true, state=disabled, size=md",
+      "variantProperties": {
+        "checked": "true",
+        "state": "disabled",
+        "size": "md"
+      },
+      "size": {
+        "width": 46,
+        "height": 30
+      },
+      "detected": {
+        "variableNames": [
+          "color/glass/stroke",
+          "color/primary",
+          "color/text/primary",
+          "radius/pill",
+          "space/1",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9147",
+      "nodeName": "checked=false, state=disabled, size=md",
+      "variantProperties": {
+        "checked": "false",
+        "state": "disabled",
+        "size": "md"
+      },
+      "size": {
+        "width": 46,
+        "height": 30
+      },
+      "detected": {
+        "variableNames": [
+          "color/bg/surface",
+          "color/glass/highlight",
+          "color/glass/stroke",
+          "color/text/primary",
+          "radius/pill",
+          "space/1",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9127",
+      "nodeName": "checked=true, state=default, size=lg",
+      "variantProperties": {
+        "checked": "true",
+        "state": "default",
+        "size": "lg"
+      },
+      "size": {
+        "width": 54,
+        "height": 34
+      },
+      "detected": {
+        "variableNames": [
+          "color/glass/stroke",
+          "color/primary",
+          "color/text/primary",
+          "radius/pill",
+          "space/1",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9056",
+      "nodeName": "checked=false, state=default, size=lg",
+      "variantProperties": {
+        "checked": "false",
+        "state": "default",
+        "size": "lg"
+      },
+      "size": {
+        "width": 54,
+        "height": 34
+      },
+      "detected": {
+        "variableNames": [
+          "color/bg/surface",
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/text/primary",
+          "radius/pill",
+          "space/1",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9060",
+      "nodeName": "checked=true, state=focused, size=lg",
+      "variantProperties": {
+        "checked": "true",
+        "state": "focused",
+        "size": "lg"
+      },
+      "size": {
+        "width": 54,
+        "height": 34
+      },
+      "detected": {
+        "variableNames": [
+          "color/accent/cyan",
+          "color/primary",
+          "color/text/primary",
+          "radius/pill",
+          "space/1",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9139",
+      "nodeName": "checked=false, state=focused, size=lg",
+      "variantProperties": {
+        "checked": "false",
+        "state": "focused",
+        "size": "lg"
+      },
+      "size": {
+        "width": 54,
+        "height": 34
+      },
+      "detected": {
+        "variableNames": [
+          "color/bg/surface",
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/text/primary",
+          "radius/pill",
+          "space/1",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9143",
+      "nodeName": "checked=true, state=disabled, size=lg",
+      "variantProperties": {
+        "checked": "true",
+        "state": "disabled",
+        "size": "lg"
+      },
+      "size": {
+        "width": 54,
+        "height": 34
+      },
+      "detected": {
+        "variableNames": [
+          "color/glass/stroke",
+          "color/primary",
+          "color/text/primary",
+          "radius/pill",
+          "space/1",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9072",
+      "nodeName": "checked=false, state=disabled, size=lg",
+      "variantProperties": {
+        "checked": "false",
+        "state": "disabled",
+        "size": "lg"
+      },
+      "size": {
+        "width": 54,
+        "height": 34
+      },
+      "detected": {
+        "variableNames": [
+          "color/bg/surface",
+          "color/glass/highlight",
+          "color/glass/stroke",
+          "color/text/primary",
+          "radius/pill",
+          "space/1",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    }
+  ],
+  "issues": []
+}

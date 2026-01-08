@@ -708,6 +708,51 @@ export const ConnectView = ({
 		);
 	};
 
+	const handleWriteSwitchBuildNotesToDesignAssistant = () => {
+		setButtonNotesStatus("applying");
+		setButtonNotesError(undefined);
+		setButtonNotesAppliedTo(undefined);
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "apply-switch-build-notes-to-node",
+					payload: { nodeId: "2002:712", mode: "replace" },
+				},
+			},
+			parentOrigin
+		);
+	};
+
+	const handleWriteSliderBuildNotesToDesignAssistant = () => {
+		setButtonNotesStatus("applying");
+		setButtonNotesError(undefined);
+		setButtonNotesAppliedTo(undefined);
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "apply-slider-build-notes-to-node",
+					payload: { nodeId: "2002:712", mode: "replace" },
+				},
+			},
+			parentOrigin
+		);
+	};
+
+	const handleWriteModalBuildNotesToDesignAssistant = () => {
+		setButtonNotesStatus("applying");
+		setButtonNotesError(undefined);
+		setButtonNotesAppliedTo(undefined);
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "apply-modal-build-notes-to-node",
+					payload: { nodeId: "2002:712", mode: "replace" },
+				},
+			},
+			parentOrigin
+		);
+	};
+
 	const handleLoadAnnotationsSnapshot = async (
 		e: ChangeEvent<HTMLInputElement>
 	) => {
@@ -953,6 +998,110 @@ export const ConnectView = ({
 				setButtonContractError(message || "Unknown error");
 				setTimeout(() => setButtonContractStatus("idle"), 5000);
 			}
+			if (type === "textfield-contract-ready") {
+				const payload = event.data.pluginMessage?.payload;
+				const exportedAt = payload?.meta?.exportedAt
+					? String(payload.meta.exportedAt)
+					: new Date().toISOString();
+				const fileNameBase = payload?.meta?.fileName
+					? String(payload.meta.fileName)
+					: "figma-file";
+				const fileKey = payload?.meta?.fileKey
+					? String(payload.meta.fileKey)
+					: "no-fileKey";
+				const stamp = exportedAt.replace(/[:.]/g, "-");
+				const filename = sanitizeFilename(
+					`TextField.contract__${fileNameBase}__${fileKey}__${stamp}.json`
+				);
+
+				try {
+					downloadJson(filename, payload);
+					console.log("TextField contract downloaded:", filename);
+				} catch (e: any) {
+					console.error("TextField contract download error:", e);
+				}
+			}
+			if (type === "textfield-contract-error") {
+				console.error("TextField contract export error:", message);
+			}
+			if (type === "switch-contract-ready") {
+				const payload = event.data.pluginMessage?.payload;
+				const exportedAt = payload?.meta?.exportedAt
+					? String(payload.meta.exportedAt)
+					: new Date().toISOString();
+				const fileNameBase = payload?.meta?.fileName
+					? String(payload.meta.fileName)
+					: "figma-file";
+				const fileKey = payload?.meta?.fileKey
+					? String(payload.meta.fileKey)
+					: "no-fileKey";
+				const stamp = exportedAt.replace(/[:.]/g, "-");
+				const filename = sanitizeFilename(
+					`Switch.contract__${fileNameBase}__${fileKey}__${stamp}.json`
+				);
+
+				try {
+					downloadJson(filename, payload);
+					console.log("Switch contract downloaded:", filename);
+				} catch (e: any) {
+					console.error("Switch contract download error:", e);
+				}
+			}
+			if (type === "switch-contract-error") {
+				console.error("Switch contract export error:", message);
+			}
+			if (type === "slider-contract-ready") {
+				const payload = event.data.pluginMessage?.payload;
+				const exportedAt = payload?.meta?.exportedAt
+					? String(payload.meta.exportedAt)
+					: new Date().toISOString();
+				const fileNameBase = payload?.meta?.fileName
+					? String(payload.meta.fileName)
+					: "figma-file";
+				const fileKey = payload?.meta?.fileKey
+					? String(payload.meta.fileKey)
+					: "no-fileKey";
+				const stamp = exportedAt.replace(/[:.]/g, "-");
+				const filename = sanitizeFilename(
+					`Slider.contract__${fileNameBase}__${fileKey}__${stamp}.json`
+				);
+
+				try {
+					downloadJson(filename, payload);
+					console.log("Slider contract downloaded:", filename);
+				} catch (e: any) {
+					console.error("Slider contract download error:", e);
+				}
+			}
+			if (type === "slider-contract-error") {
+				console.error("Slider contract export error:", message);
+			}
+			if (type === "modal-contract-ready") {
+				const payload = event.data.pluginMessage?.payload;
+				const exportedAt = payload?.meta?.exportedAt
+					? String(payload.meta.exportedAt)
+					: new Date().toISOString();
+				const fileNameBase = payload?.meta?.fileName
+					? String(payload.meta.fileName)
+					: "figma-file";
+				const fileKey = payload?.meta?.fileKey
+					? String(payload.meta.fileKey)
+					: "no-fileKey";
+				const stamp = exportedAt.replace(/[:.]/g, "-");
+				const filename = sanitizeFilename(
+					`Modal.contract__${fileNameBase}__${fileKey}__${stamp}.json`
+				);
+
+				try {
+					downloadJson(filename, payload);
+					console.log("Modal contract downloaded:", filename);
+				} catch (e: any) {
+					console.error("Modal contract download error:", e);
+				}
+			}
+			if (type === "modal-contract-error") {
+				console.error("Modal contract export error:", message);
+			}
 			if (type === "icon-glyphs-ready") {
 				const payload = event.data.pluginMessage?.payload;
 				const exportedAt = payload?.meta?.exportedAt
@@ -984,7 +1133,13 @@ export const ConnectView = ({
 				setIconGlyphsError(message || "Unknown error");
 				setTimeout(() => setIconGlyphsStatus("idle"), 5000);
 			}
-			if (type === "button-notes-applied") {
+			if (
+				type === "button-notes-applied" ||
+				type === "textfield-notes-applied" ||
+				type === "switch-notes-applied" ||
+				type === "slider-notes-applied" ||
+				type === "modal-notes-applied"
+			) {
 				const payload = event.data.pluginMessage?.payload;
 				setButtonNotesAppliedTo(
 					payload && typeof payload?.nodeId === "string"
@@ -1004,7 +1159,13 @@ export const ConnectView = ({
 				setButtonNotesStatus("success");
 				setTimeout(() => setButtonNotesStatus("idle"), 3000);
 			}
-			if (type === "button-notes-error") {
+			if (
+				type === "button-notes-error" ||
+				type === "textfield-notes-error" ||
+				type === "switch-notes-error" ||
+				type === "slider-notes-error" ||
+				type === "modal-notes-error"
+			) {
 				setButtonNotesStatus("error");
 				setButtonNotesError(message || "Unknown error");
 				setTimeout(() => setButtonNotesStatus("idle"), 5000);
@@ -2177,6 +2338,140 @@ export const ConnectView = ({
 							</div>
 							<div className="mt-4 p-4 rounded-xl bg-bg-raised/30 border border-white/5">
 								<div className="text-xs font-mono text-gray-400 uppercase tracking-wide mb-3">
+									Primitive contract: TextField
+								</div>
+								<div className="flex flex-col gap-3">
+									<div className="flex items-center justify-between gap-3 flex-wrap">
+										<button
+											onClick={() => {
+												parent.postMessage(
+													{
+														pluginMessage: {
+															type: "export-textfield-contract",
+															payload: {
+																includeVariableNames:
+																	true,
+															},
+														},
+													},
+													parentOrigin
+												);
+											}}
+											className="flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-[11px] uppercase tracking-wider font-semibold bg-accent-cyan/10 hover:bg-accent-cyan/20 text-accent-cyan border-accent-cyan/30"
+										>
+											<Download size={14} />
+											<span>
+												EXPORT TEXTFIELD CONTRACT
+											</span>
+										</button>
+										<div className="text-xs font-mono text-gray-500">
+											Select the TextField component set
+											before exporting.
+										</div>
+									</div>
+								</div>
+							</div>
+							<div className="mt-4 p-4 rounded-xl bg-bg-raised/30 border border-white/5">
+								<div className="text-xs font-mono text-gray-400 uppercase tracking-wide mb-3">
+									Primitive contract: Switch
+								</div>
+								<div className="flex flex-col gap-3">
+									<div className="flex items-center justify-between gap-3 flex-wrap">
+										<button
+											onClick={() => {
+												parent.postMessage(
+													{
+														pluginMessage: {
+															type: "export-switch-contract",
+															payload: {
+																includeVariableNames:
+																	true,
+															},
+														},
+													},
+													parentOrigin
+												);
+											}}
+											className="flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-[11px] uppercase tracking-wider font-semibold bg-accent-cyan/10 hover:bg-accent-cyan/20 text-accent-cyan border-accent-cyan/30"
+										>
+											<Download size={14} />
+											<span>EXPORT SWITCH CONTRACT</span>
+										</button>
+										<div className="text-xs font-mono text-gray-500">
+											Select the Switch component set
+											before exporting.
+										</div>
+									</div>
+								</div>
+							</div>
+							<div className="mt-4 p-4 rounded-xl bg-bg-raised/30 border border-white/5">
+								<div className="text-xs font-mono text-gray-400 uppercase tracking-wide mb-3">
+									Primitive contract: Slider
+								</div>
+								<div className="flex flex-col gap-3">
+									<div className="flex items-center justify-between gap-3 flex-wrap">
+										<button
+											onClick={() => {
+												parent.postMessage(
+													{
+														pluginMessage: {
+															type: "export-slider-contract",
+															payload: {
+																includeVariableNames:
+																	true,
+															},
+														},
+													},
+													parentOrigin
+												);
+											}}
+											className="flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-[11px] uppercase tracking-wider font-semibold bg-accent-cyan/10 hover:bg-accent-cyan/20 text-accent-cyan border-accent-cyan/30"
+										>
+											<Download size={14} />
+											<span>EXPORT SLIDER CONTRACT</span>
+										</button>
+										<div className="text-xs font-mono text-gray-500">
+											Select the Slider component set
+											before exporting.
+										</div>
+									</div>
+								</div>
+							</div>
+							<div className="mt-4 p-4 rounded-xl bg-bg-raised/30 border border-white/5">
+								<div className="text-xs font-mono text-gray-400 uppercase tracking-wide mb-3">
+									Primitive contract: Modal
+								</div>
+								<div className="flex flex-col gap-3">
+									<div className="flex items-center justify-between gap-3 flex-wrap">
+										<button
+											onClick={() => {
+												parent.postMessage(
+													{
+														pluginMessage: {
+															type: "export-modal-contract",
+															payload: {
+																includeVariableNames:
+																	true,
+															},
+														},
+													},
+													parentOrigin
+												);
+											}}
+											className="flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-[11px] uppercase tracking-wider font-semibold bg-accent-cyan/10 hover:bg-accent-cyan/20 text-accent-cyan border-accent-cyan/30"
+										>
+											<Download size={14} />
+											<span>EXPORT MODAL CONTRACT</span>
+										</button>
+										<div className="text-xs font-mono text-gray-500">
+											Select the Modal component set
+											before exporting.
+										</div>
+									</div>
+								</div>
+							</div>
+							<div className="mt-4 p-4 rounded-xl bg-bg-raised/30 border border-white/5">
+								<div className="text-xs font-mono text-gray-400 uppercase tracking-wide mb-3">
 									Attach notes: Button
 								</div>
 								<div className="flex flex-col gap-3">
@@ -2246,6 +2541,42 @@ export const ConnectView = ({
 										>
 											<Download size={14} />
 											<span>TextField Instructions</span>
+										</button>
+										<button
+											onClick={
+												handleWriteSwitchBuildNotesToDesignAssistant
+											}
+											disabled={
+												buttonNotesStatus === "applying"
+											}
+											className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-[11px] uppercase tracking-wider font-semibold ${buttonNotesStatusClass}`}
+										>
+											<Download size={14} />
+											<span>Switch Instructions</span>
+										</button>
+										<button
+											onClick={
+												handleWriteSliderBuildNotesToDesignAssistant
+											}
+											disabled={
+												buttonNotesStatus === "applying"
+											}
+											className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-[11px] uppercase tracking-wider font-semibold ${buttonNotesStatusClass}`}
+										>
+											<Download size={14} />
+											<span>Slider Instructions</span>
+										</button>
+										<button
+											onClick={
+												handleWriteModalBuildNotesToDesignAssistant
+											}
+											disabled={
+												buttonNotesStatus === "applying"
+											}
+											className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-all text-[11px] uppercase tracking-wider font-semibold ${buttonNotesStatusClass}`}
+										>
+											<Download size={14} />
+											<span>Modal Instructions</span>
 										</button>
 										<div className="text-xs font-mono text-gray-500">
 											Writes into node 2002:712

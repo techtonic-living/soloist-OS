@@ -111,7 +111,11 @@ const App = () => {
 			return { sectionLabel: "System", label: "Settings", subTools: [] };
 		}
 		if (activeTool === "primitives") {
-			return { sectionLabel: "System", label: "Primitives", subTools: [] };
+			return {
+				sectionLabel: "System",
+				label: "Primitives",
+				subTools: [],
+			};
 		}
 
 		// Fallback for other nav entries (e.g. structure-*, document-*)

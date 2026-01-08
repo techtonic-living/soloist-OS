@@ -1,0 +1,257 @@
+{
+  "schemaVersion": "soloist-os.primitives.slider.contract.v1",
+  "meta": {
+    "exportedAt": "2026-01-08T10:43:01.623Z",
+    "fileName": "org-soloist-figmaPlugin",
+    "fileKey": null
+  },
+  "source": {
+    "nodeId": "2012:9166",
+    "nodeName": "Slider",
+    "nodeType": "COMPONENT_SET"
+  },
+  "properties": {
+    "componentProperties": [
+      "state",
+      "size"
+    ],
+    "variantPropsExpected": [
+      "state",
+      "size"
+    ],
+    "allowedValuesByProp": {
+      "state": [
+        "default",
+        "focused",
+        "disabled"
+      ],
+      "size": [
+        "sm",
+        "md",
+        "lg"
+      ]
+    }
+  },
+  "variants": [
+    {
+      "nodeId": "2012:9165",
+      "nodeName": "state=default, size=sm",
+      "variantProperties": {
+        "state": "default",
+        "size": "sm"
+      },
+      "size": {
+        "width": 199,
+        "height": 32
+      },
+      "detected": {
+        "variableNames": [
+          "color/bg/surface",
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/primary",
+          "radius/pill",
+          "space/1",
+          "space/2",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9178",
+      "nodeName": "state=focused, size=sm",
+      "variantProperties": {
+        "state": "focused",
+        "size": "sm"
+      },
+      "size": {
+        "width": 199,
+        "height": 32
+      },
+      "detected": {
+        "variableNames": [
+          "color/bg/surface",
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/primary",
+          "radius/pill",
+          "space/1",
+          "space/2",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9183",
+      "nodeName": "state=disabled, size=sm",
+      "variantProperties": {
+        "state": "disabled",
+        "size": "sm"
+      },
+      "size": {
+        "width": 199,
+        "height": 32
+      },
+      "detected": {
+        "variableNames": [
+          "color/bg/surface",
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/primary",
+          "radius/pill",
+          "space/1",
+          "space/2",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9188",
+      "nodeName": "state=default, size=md",
+      "variantProperties": {
+        "state": "default",
+        "size": "md"
+      },
+      "size": {
+        "width": 199,
+        "height": 32
+      },
+      "detected": {
+        "variableNames": [
+          "color/bg/surface",
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/primary",
+          "radius/pill",
+          "space/2",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9164",
+      "nodeName": "state=focused, size=md",
+      "variantProperties": {
+        "state": "focused",
+        "size": "md"
+      },
+      "size": {
+        "width": 199,
+        "height": 32
+      },
+      "detected": {
+        "variableNames": [
+          "color/bg/surface",
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/primary",
+          "radius/pill",
+          "space/2",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9193",
+      "nodeName": "state=disabled, size=md",
+      "variantProperties": {
+        "state": "disabled",
+        "size": "md"
+      },
+      "size": {
+        "width": 199,
+        "height": 32
+      },
+      "detected": {
+        "variableNames": [
+          "color/bg/surface",
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/primary",
+          "radius/pill",
+          "space/2",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9163",
+      "nodeName": "state=default, size=lg",
+      "variantProperties": {
+        "state": "default",
+        "size": "lg"
+      },
+      "size": {
+        "width": 199,
+        "height": 32
+      },
+      "detected": {
+        "variableNames": [
+          "color/bg/surface",
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/primary",
+          "radius/pill",
+          "space/2",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9198",
+      "nodeName": "state=focused, size=lg",
+      "variantProperties": {
+        "state": "focused",
+        "size": "lg"
+      },
+      "size": {
+        "width": 199,
+        "height": 32
+      },
+      "detected": {
+        "variableNames": [
+          "color/bg/surface",
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/primary",
+          "radius/pill",
+          "space/2",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    },
+    {
+      "nodeId": "2012:9203",
+      "nodeName": "state=disabled, size=lg",
+      "variantProperties": {
+        "state": "disabled",
+        "size": "lg"
+      },
+      "size": {
+        "width": 199,
+        "height": 32
+      },
+      "detected": {
+        "variableNames": [
+          "color/bg/surface",
+          "color/glass/stroke",
+          "color/glass/subtle",
+          "color/primary",
+          "radius/pill",
+          "space/2",
+          "stroke/hairline"
+        ],
+        "textStyleNames": []
+      }
+    }
+  ],
+  "issues": []
+}

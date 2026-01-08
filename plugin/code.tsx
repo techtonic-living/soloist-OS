@@ -88,6 +88,30 @@ type PluginMessage =
 			};
 	  }
 	| {
+			type: "export-textfield-contract";
+			payload?: {
+				includeVariableNames?: boolean;
+			};
+	  }
+	| {
+			type: "export-switch-contract";
+			payload?: {
+				includeVariableNames?: boolean;
+			};
+	  }
+	| {
+			type: "export-slider-contract";
+			payload?: {
+				includeVariableNames?: boolean;
+			};
+	  }
+	| {
+			type: "export-modal-contract";
+			payload?: {
+				includeVariableNames?: boolean;
+			};
+	  }
+	| {
 			type: "export-icon-glyphs";
 			payload?: {
 				/** Optional: restrict to specific instance swap property name */
@@ -132,6 +156,30 @@ type PluginMessage =
 	  }
 	| {
 			type: "apply-textfield-build-notes-to-node";
+			payload: {
+				/** Target node id (e.g. a designAssistant component or a TEXT node inside it). */
+				nodeId: string;
+				mode?: "replace" | "append";
+			};
+	  }
+	| {
+			type: "apply-switch-build-notes-to-node";
+			payload: {
+				/** Target node id (e.g. a designAssistant component or a TEXT node inside it). */
+				nodeId: string;
+				mode?: "replace" | "append";
+			};
+	  }
+	| {
+			type: "apply-slider-build-notes-to-node";
+			payload: {
+				/** Target node id (e.g. a designAssistant component or a TEXT node inside it). */
+				nodeId: string;
+				mode?: "replace" | "append";
+			};
+	  }
+	| {
+			type: "apply-modal-build-notes-to-node";
 			payload: {
 				/** Target node id (e.g. a designAssistant component or a TEXT node inside it). */
 				nodeId: string;
@@ -510,6 +558,270 @@ GOVERNANCE RULES (DO NOT VIOLATE)
 Contract path: design/contracts/primitives/TextField.contract.json
 `;
 
+const SWITCH_BUILD_NOTES_V1 = `Switch Component — Build Instructions
+
+═══════════════════════════════════════════════════════════════════════════════
+SWITCH COMPONENT — SOLOIST OS
+═══════════════════════════════════════════════════════════════════════════════
+
+Component: Switch
+Target Variants: 18 total (2 checked × 3 states × 3 sizes)
+Contract: design/contracts/primitives/Switch.contract.json
+
+═══════════════════════════════════════════════════════════════════════════════
+1. CREATE COMPONENT SET
+═══════════════════════════════════════════════════════════════════════════════
+
+• Name: Switch
+• Position: Near Icon, Button, and TextField primitives
+• Type: Component Set
+
+═══════════════════════════════════════════════════════════════════════════════
+2. DEFINE VARIANT PROPERTIES
+═══════════════════════════════════════════════════════════════════════════════
+
+Add these variant properties:
+
+• checked: true | false
+• state: default | focused | disabled
+• size: sm | md | lg
+
+Total variants: 2 checked × 3 states × 3 sizes = 18 variants
+
+═══════════════════════════════════════════════════════════════════════════════
+3. STRUCTURE (EACH VARIANT)
+═══════════════════════════════════════════════════════════════════════════════
+
+Switch (component)
+  └─ Track (frame, auto layout)
+      └─ Thumb (frame or ellipse)
+
+═══════════════════════════════════════════════════════════════════════════════
+4. TOKEN BINDINGS (CRITICAL — NO HARD-CODED VALUES)
+═══════════════════════════════════════════════════════════════════════════════
+
+TRACK (BACKGROUND):
+• Checked=true: Fill: color/primary
+• Checked=false: Fill: color/glass/subtle, Stroke: color/glass/stroke
+• Stroke Weight: stroke/thin (1px)
+• Corner Radius: radius/full (usually 100px)
+• Padding: space/1 (4px) or space/0.5 (2px)
+
+THUMB:
+• Fill: color/text/primary (White)
+• Corner Radius: radius/full (100px)
+• Shadow: shadow/monolith (optional, subtle)
+
+DIMENSIONS (TRACK WIDTH/HEIGHT):
+• sm: 28×16px
+• md: 36×20px
+• lg: 44×24px
+
+THUMB SIZE (INSIDE TRACK):
+• sm: 12×12px
+• md: 16×16px
+• lg: 20×20px
+
+═══════════════════════════════════════════════════════════════════════════════
+5. FINISH & EXPORT
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Select Switch component set
+2. Note the node ID from URL (node-id=XXXX-XXX)
+3. Run plugin: Export Component Contract
+4. Report node ID and "zero issues" confirmation
+
+═══════════════════════════════════════════════════════════════════════════════
+GOVERNANCE RULES (DO NOT VIOLATE)
+═══════════════════════════════════════════════════════════════════════════════
+
+✓ Stroke ladder: 0.5/1/1.5/2 (hairline/thin/medium/bold)
+✓ Use spacing tokens (space/*) for padding/gap, not hardcoded px
+✓ Use radius tokens (radius/*) for corner radius (radius/full)
+✓ Checked color must use variables: color/primary
+✓ Disabled state: Track/Thumb at 50% opacity
+
+Contract path: design/contracts/primitives/Switch.contract.json
+`;
+
+const SLIDER_BUILD_NOTES_V1 = `Slider Component — Build Instructions
+
+═══════════════════════════════════════════════════════════════════════════════
+SLIDER COMPONENT — SOLOIST OS
+═══════════════════════════════════════════════════════════════════════════════
+
+Component: Slider
+Target Variants: 9 total (3 states × 3 sizes)
+Contract: design/contracts/primitives/Slider.contract.json
+
+═══════════════════════════════════════════════════════════════════════════════
+1. CREATE COMPONENT SET
+═══════════════════════════════════════════════════════════════════════════════
+
+• Name: Slider
+• Type: Component Set
+
+═══════════════════════════════════════════════════════════════════════════════
+2. DEFINE VARIANT PROPERTIES
+═══════════════════════════════════════════════════════════════════════════════
+
+Add these variant properties:
+
+• state: default | focused | disabled
+• size: sm | md | lg
+
+Total variants: 3 states × 3 sizes = 9 variants
+
+═══════════════════════════════════════════════════════════════════════════════
+3. STRUCTURE (EACH VARIANT)
+═══════════════════════════════════════════════════════════════════════════════
+
+Slider (component)
+  └─ Track (frame, auto layout, fill: color/glass/subtle)
+      └─ Progress (frame, fill: color/primary)
+      └─ Thumb (frame, fill: color/primary or white)
+
+═══════════════════════════════════════════════════════════════════════════════
+4. TOKEN BINDINGS (CRITICAL)
+═══════════════════════════════════════════════════════════════════════════════
+
+TRACK:
+• Fill: color/glass/subtle
+• Stroke: color/glass/stroke
+• Stroke Weight: stroke/hairline (0.5px)
+• Corner Radius: radius/full
+
+PROGRESS:
+• Fill: color/primary
+
+THUMB:
+• Fill: color/text/primary (White) or color/primary
+• Shadow: shadow/monolith
+
+DIMENSIONS (TRACK HEIGHT):
+• sm: 4px
+• md: 6px
+• lg: 8px
+
+THUMB SIZE:
+• sm: 12×12px
+• md: 16×16px
+• lg: 20×20px
+
+═══════════════════════════════════════════════════════════════════════════════
+5. FINISH & EXPORT
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Select Slider component set
+2. Export contract via plugin
+3. Verify zero issues
+`;
+
+const MODAL_BUILD_NOTES_V1 = `Modal Component — Build Instructions
+
+═══════════════════════════════════════════════════════════════════════════════
+MODAL COMPONENT — SOLOIST OS
+═══════════════════════════════════════════════════════════════════════════════
+
+Component: Modal
+Target Variants: 3 sizes (sm | md | lg)
+Contract: design/contracts/primitives/Modal.contract.json
+
+═══════════════════════════════════════════════════════════════════════════════
+1. CREATE COMPONENT SET
+═══════════════════════════════════════════════════════════════════════════════
+
+• Name: Modal
+• Type: Component Set
+
+═══════════════════════════════════════════════════════════════════════════════
+2. DEFINE VARIANT PROPERTIES
+═══════════════════════════════════════════════════════════════════════════════
+
+Add these variant properties:
+
+• size: sm | md | lg
+
+Total variants: 3 variants
+
+═══════════════════════════════════════════════════════════════════════════════
+3. SIZING & TYPOGRAPHY SPECS
+═══════════════════════════════════════════════════════════════════════════════
+
+SIZE SM (MINI / ALERT):
+• Backdrop: 1000x700 (fill color/bg/void @ 80%)
+• Surface Dimensions: 420 x 280 (Fixed)
+• Padding: space/5 (20px)
+• Title: Text style ui/07 (18px Inter)
+• Body: Text style ui/05 (14px Inter)
+
+SIZE MD (STANDARD):
+• Backdrop: 1000x700 (fill color/bg/void @ 80%)
+• Surface Dimensions: 640 x 440 (Fixed)
+• Padding: space/6 (24px)
+• Title: Text style ui/08 (20px Inter)
+• Body: Text style ui/06 (16px Inter)
+
+SIZE LG (EXPANDED):
+• Backdrop: 1000x700 (fill color/bg/void @ 80%)
+• Surface Dimensions: 860 x 600 (Fixed)
+• Padding: space/8 (32px)
+• Title: Text style ui/10 (24px Inter)
+• Body: Text style ui/07 (18px Inter)
+
+═══════════════════════════════════════════════════════════════════════════════
+4. STRUCTURE (EACH VARIANT)
+═══════════════════════════════════════════════════════════════════════════════
+
+Modal (component)
+  └─ Backdrop (frame, fill: color/bg/void @ 80%)
+  └─ Surface (frame, auto layout, fill: color/bg/surface)
+      ├─ Header (frame, title + close icon)
+      ├─ Content (frame, slot area, fills remaining height)
+      └─ Footer (frame, actions area)
+
+═══════════════════════════════════════════════════════════════════════════════
+4. FOOTER & HEADER SPECS
+═══════════════════════════════════════════════════════════════════════════════
+
+SIZE SM (420 x 280):
+• Header: 56px height
+• Footer: 64px height. Contains sm Buttons.
+• Divider: Bottom of Header, Top of Footer (color/glass/stroke)
+
+SIZE MD (640 x 440):
+• Header: 64px height
+• Footer: 80px height. Contains md Buttons.
+• Divider: Bottom of Header, Top of Footer (color/glass/stroke)
+
+SIZE LG (860 x 600):
+• Header: 80px height
+• Footer: 96px height. Contains lg Buttons.
+• Divider: Bottom of Header, Top of Footer (color/glass/stroke)
+
+═══════════════════════════════════════════════════════════════════════════════
+5. TOKEN BINDINGS (CRITICAL)
+═══════════════════════════════════════════════════════════════════════════════
+
+SURFACE:
+• Fill: color/bg/surface
+• Stroke: color/glass/stroke
+• Stroke Weight: stroke/hairline (0.5px)
+• Corner Radius: radius/lg
+• Shadow: shadow/monolith
+
+BACKDROP:
+• Fill: color/bg/void (Opacity 80%)
+
+═══════════════════════════════════════════════════════════════════════════════
+5. FINISH & EXPORT
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Select Modal component set
+2. Export contract via plugin
+3. Verify zero issues
+`;
+
 function findNearestNodeWithDescription(
 	start: BaseNode
 ): (BaseNode & { description: string }) | null {
@@ -631,6 +943,72 @@ async function writeTextFieldNotesIntoTextNode(opts: {
 		startMarker,
 		endMarker,
 		content: TEXTFIELD_BUILD_NOTES_V1,
+		mode: opts.mode,
+	});
+	opts.text.characters = next;
+}
+
+async function writeSwitchNotesIntoTextNode(opts: {
+	text: TextNode;
+	mode: "replace" | "append";
+}): Promise<void> {
+	const ok = await loadTextNodeFontForEdit(opts.text);
+	if (!ok) {
+		throw new Error(
+			"Unable to load font for target text node. Try selecting a simpler text node (non-mixed font), or ensure Inter is available."
+		);
+	}
+	const startMarker = "[soloist:switch-build-notes:v1:start]";
+	const endMarker = "[soloist:switch-build-notes:v1:end]";
+	const next = upsertMarkedBlock({
+		existing: opts.text.characters ?? "",
+		startMarker,
+		endMarker,
+		content: SWITCH_BUILD_NOTES_V1,
+		mode: opts.mode,
+	});
+	opts.text.characters = next;
+}
+
+async function writeSliderNotesIntoTextNode(opts: {
+	text: TextNode;
+	mode: "replace" | "append";
+}): Promise<void> {
+	const ok = await loadTextNodeFontForEdit(opts.text);
+	if (!ok) {
+		throw new Error(
+			"Unable to load font for target text node. Try selecting a simpler text node (non-mixed font), or ensure Inter is available."
+		);
+	}
+	const startMarker = "[soloist:slider-build-notes:v1:start]";
+	const endMarker = "[soloist:slider-build-notes:v1:end]";
+	const next = upsertMarkedBlock({
+		existing: opts.text.characters ?? "",
+		startMarker,
+		endMarker,
+		content: SLIDER_BUILD_NOTES_V1,
+		mode: opts.mode,
+	});
+	opts.text.characters = next;
+}
+
+async function writeModalNotesIntoTextNode(opts: {
+	text: TextNode;
+	mode: "replace" | "append";
+}): Promise<void> {
+	const ok = await loadTextNodeFontForEdit(opts.text);
+	if (!ok) {
+		throw new Error(
+			"Unable to load font for target text node. Try selecting a simpler text node (non-mixed font), or ensure Inter is available."
+		);
+	}
+	const startMarker = "[soloist:modal-build-notes:v1:start]";
+	const endMarker = "[soloist:modal-build-notes:v1:end]";
+	const next = upsertMarkedBlock({
+		existing: opts.text.characters ?? "",
+		startMarker,
+		endMarker,
+		content: MODAL_BUILD_NOTES_V1,
 		mode: opts.mode,
 	});
 	opts.text.characters = next;
@@ -1243,6 +1621,171 @@ type ButtonContractIssueV1 = {
 	details?: any;
 };
 
+type ButtonContractIssueV1 = {
+	severity: "error" | "warning";
+	code: string;
+	message: string;
+	nodeId?: string;
+	nodeName?: string;
+	details?: Record<string, any>;
+};
+
+type TextFieldContractIssueV1 = {
+	severity: "error" | "warning";
+	code: string;
+	message: string;
+	nodeId?: string;
+	nodeName?: string;
+	details?: Record<string, any>;
+};
+
+type SwitchContractIssueV1 = {
+	severity: "error" | "warning";
+	code: string;
+	message: string;
+	nodeId?: string;
+	nodeName?: string;
+	details?: Record<string, any>;
+};
+
+type SliderContractIssueV1 = {
+	severity: "error" | "warning";
+	code: string;
+	message: string;
+	nodeId?: string;
+	nodeName?: string;
+	details?: Record<string, any>;
+};
+
+type ModalContractIssueV1 = {
+	severity: "error" | "warning";
+	code: string;
+	message: string;
+	nodeId?: string;
+	nodeName?: string;
+	details?: Record<string, any>;
+};
+
+type TextFieldContractV1 = {
+	schemaVersion: "soloist-os.primitives.textfield.contract.v1";
+	meta: {
+		exportedAt: string;
+		fileName: string;
+		fileKey: string | null;
+	};
+	source: {
+		nodeId: string;
+		nodeName: string;
+		nodeType: "COMPONENT" | "COMPONENT_SET";
+	};
+	properties: {
+		componentProperties: string[];
+		variantPropsExpected: string[];
+		allowedValuesByProp: Record<string, string[]>;
+	};
+	variants: Array<{
+		nodeId: string;
+		nodeName: string;
+		variantProperties: { [k: string]: string } | null;
+		size: { width: number; height: number };
+		detected: {
+			variableNames: string[];
+			textStyleNames: string[];
+		};
+	}>;
+	issues: TextFieldContractIssueV1[];
+};
+
+type SwitchContractV1 = {
+	schemaVersion: "soloist-os.primitives.switch.contract.v1";
+	meta: {
+		exportedAt: string;
+		fileName: string;
+		fileKey: string | null;
+	};
+	source: {
+		nodeId: string;
+		nodeName: string;
+		nodeType: "COMPONENT" | "COMPONENT_SET";
+	};
+	properties: {
+		componentProperties: string[];
+		variantPropsExpected: string[];
+		allowedValuesByProp: Record<string, string[]>;
+	};
+	variants: Array<{
+		nodeId: string;
+		nodeName: string;
+		variantProperties: { [k: string]: string } | null;
+		size: { width: number; height: number };
+		detected: {
+			variableNames: string[];
+			textStyleNames: string[];
+		};
+	}>;
+	issues: SwitchContractIssueV1[];
+};
+
+type SliderContractV1 = {
+	schemaVersion: "soloist-os.primitives.slider.contract.v1";
+	meta: {
+		exportedAt: string;
+		fileName: string;
+		fileKey: string | null;
+	};
+	source: {
+		nodeId: string;
+		nodeName: string;
+		nodeType: "COMPONENT" | "COMPONENT_SET";
+	};
+	properties: {
+		componentProperties: string[];
+		variantPropsExpected: string[];
+		allowedValuesByProp: Record<string, string[]>;
+	};
+	variants: Array<{
+		nodeId: string;
+		nodeName: string;
+		variantProperties: { [k: string]: string } | null;
+		size: { width: number; height: number };
+		detected: {
+			variableNames: string[];
+			textStyleNames: string[];
+		};
+	}>;
+	issues: SliderContractIssueV1[];
+};
+
+type ModalContractV1 = {
+	schemaVersion: "soloist-os.primitives.modal.contract.v1";
+	meta: {
+		exportedAt: string;
+		fileName: string;
+		fileKey: string | null;
+	};
+	source: {
+		nodeId: string;
+		nodeName: string;
+		nodeType: "COMPONENT" | "COMPONENT_SET";
+	};
+	properties: {
+		componentProperties: string[];
+		variantPropsExpected: string[];
+		allowedValuesByProp: Record<string, string[]>;
+	};
+	variants: Array<{
+		nodeId: string;
+		nodeName: string;
+		variantProperties: { [k: string]: string } | null;
+		size: { width: number; height: number };
+		detected: {
+			variableNames: string[];
+			textStyleNames: string[];
+		};
+	}>;
+	issues: ModalContractIssueV1[];
+};
+
 type ButtonContractV1 = {
 	schemaVersion: "soloist-os.primitives.button.contract.v1";
 	meta: {
@@ -1574,6 +2117,1035 @@ async function buildButtonContractV1(opts?: {
 	};
 }
 
+async function buildTextFieldContractV1(opts?: {
+	includeVariableNames?: boolean;
+}): Promise<TextFieldContractV1> {
+	const includeVariableNames = opts?.includeVariableNames ?? true;
+
+	const selection = figma.currentPage.selection;
+	const targetRes = coerceSelectedTextFieldTarget(selection);
+	const exportedAt = new Date().toISOString();
+	const fileName = figma.root.name;
+	const fileKey = safeFileKey();
+
+	if (!targetRes.ok) {
+		return {
+			schemaVersion: "soloist-os.primitives.textfield.contract.v1",
+			meta: { exportedAt, fileName, fileKey },
+			source: {
+				nodeId: "",
+				nodeName: "",
+				nodeType: "COMPONENT",
+			},
+			properties: {
+				componentProperties: [],
+				variantPropsExpected: [],
+				allowedValuesByProp: {},
+			},
+			variants: [],
+			issues: [targetRes.issue],
+		};
+	}
+
+	const target = targetRes.target;
+	const issues: TextFieldContractIssueV1[] = [];
+
+	let expectedProps: string[] = [];
+	let allowedValuesByProp: Record<string, string[]> = {};
+	let variants: ComponentNode[] = [];
+
+	if (target.type === "COMPONENT_SET") {
+		const defs = getVariantGroupDefinitions(target);
+		expectedProps = defs.expectedProps;
+		allowedValuesByProp = defs.allowedValuesByProp;
+		variants = (target.children ?? []).filter(
+			(n): n is ComponentNode => n.type === "COMPONENT"
+		);
+	} else {
+		expectedProps = [];
+		allowedValuesByProp = {};
+		variants = [target];
+	}
+
+	const propDefs = getComponentPropertyDefinitions(target);
+	const componentPropertyNames: string[] = propDefs
+		? Object.keys(propDefs)
+		: [];
+
+	// Validate component properties for TextField
+	const requiredComponentProps = [
+		"value",
+		"placeholder",
+		"iconLeft",
+		"iconRight",
+	];
+	for (const req of requiredComponentProps) {
+		const hasProperty = componentPropertyNames.some(
+			(p) => p === req || p.startsWith(`${req}#`)
+		);
+		if (!hasProperty) {
+			// value or text is acceptable
+			if (req === "value") {
+				const hasText = componentPropertyNames.some(
+					(p) => p === "text" || p.startsWith("text#")
+				);
+				if (hasText) continue;
+			}
+			issues.push({
+				severity: "warning",
+				code: "MISSING_COMPONENT_PROPERTY",
+				message: `TextField is missing component property "${req}".`,
+				nodeId: target.id,
+				nodeName: target.name,
+				details: { componentPropertyNames },
+			});
+		}
+	}
+
+	// Validate variant properties for TextField
+	if (target.type === "COMPONENT_SET") {
+		const requiredVariantProps = ["state", "size"];
+		for (const req of requiredVariantProps) {
+			if (!expectedProps.includes(req)) {
+				issues.push({
+					severity: "error",
+					code: "MISSING_VARIANT_PROPERTY",
+					message: `TextField component set is missing variant property "${req}".`,
+					nodeId: target.id,
+					nodeName: target.name,
+					details: { expectedProps },
+				});
+			}
+		}
+
+		// Validate state values
+		const stateValues = allowedValuesByProp["state"] || [];
+		const expectedStates = ["default", "focused", "disabled", "error"];
+		for (const expected of expectedStates) {
+			if (!stateValues.includes(expected)) {
+				issues.push({
+					severity: "warning",
+					code: "MISSING_STATE_VALUE",
+					message: `TextField "state" variant property is missing value "${expected}".`,
+					nodeId: target.id,
+					nodeName: target.name,
+					details: { stateValues, expectedStates },
+				});
+			}
+		}
+
+		// Validate size values
+		const sizeValues = allowedValuesByProp["size"] || [];
+		const expectedSizes = ["sm", "md", "lg"];
+		for (const expected of expectedSizes) {
+			if (!sizeValues.includes(expected)) {
+				issues.push({
+					severity: "warning",
+					code: "MISSING_SIZE_VALUE",
+					message: `TextField "size" variant property is missing value "${expected}".`,
+					nodeId: target.id,
+					nodeName: target.name,
+					details: { sizeValues, expectedSizes },
+				});
+			}
+		}
+	}
+
+	// Process variants
+	const outVariants: TextFieldContractV1["variants"] = [];
+	for (const comp of variants) {
+		const vp = comp.variantProperties ?? null;
+		const { width, height } = comp;
+
+		const aliasIds = new Set<string>();
+		const textStyleIds = new Set<string>();
+
+		// Collect all variable aliases and text style ids
+		function walk(n: BaseNode) {
+			if ((n as any).boundVariables) {
+				collectVariableAliasIds((n as any).boundVariables, aliasIds);
+			}
+			if ((n as any).textStyleId) {
+				textStyleIds.add((n as any).textStyleId);
+			}
+			if ("children" in n) {
+				for (const child of (n as ChildrenMixin).children) {
+					walk(child);
+				}
+			}
+		}
+		walk(comp);
+
+		let variableNames: string[] = [];
+		let textStyleNames: string[] = [];
+
+		if (includeVariableNames && aliasIds.size > 0) {
+			const resolved = await resolveVariableNamesById(
+				Array.from(aliasIds)
+			);
+			variableNames = resolved.names.sort((a, b) => a.localeCompare(b));
+			for (const err of resolved.errors) {
+				issues.push({
+					severity: "info",
+					code: "COULD_NOT_RESOLVE_VARIABLE",
+					message: `Could not resolve variable id ${err.id}: ${err.message}`,
+					nodeId: comp.id,
+					nodeName: comp.name,
+				});
+			}
+		}
+
+		// Resolve text style names
+		if (textStyleIds.size > 0) {
+			for (const id of textStyleIds) {
+				try {
+					const style = await figma.getStyleByIdAsync(id);
+					if (style && style.type === "TEXT") {
+						textStyleNames.push(style.name);
+					}
+				} catch (e) {
+					// Ignore
+				}
+			}
+			textStyleNames.sort((a, b) => a.localeCompare(b));
+		}
+
+		outVariants.push({
+			nodeId: comp.id,
+			nodeName: comp.name,
+			variantProperties: vp,
+			size: { width, height },
+			detected: {
+				variableNames,
+				textStyleNames,
+			},
+		});
+	}
+
+	return {
+		schemaVersion: "soloist-os.primitives.textfield.contract.v1",
+		meta: { exportedAt, fileName, fileKey },
+		source: {
+			nodeId: target.id,
+			nodeName: target.name,
+			nodeType: target.type,
+		},
+		properties: {
+			componentProperties: componentPropertyNames,
+			variantPropsExpected: expectedProps,
+			allowedValuesByProp,
+		},
+		variants: outVariants,
+		issues,
+	};
+}
+
+function coerceSelectedSliderTarget(
+	selection: readonly SceneNode[]
+):
+	| { ok: true; target: ComponentSetNode | ComponentNode }
+	| { ok: false; issue: SliderContractIssueV1 } {
+	if (!selection || selection.length === 0) {
+		return {
+			ok: false,
+			issue: {
+				severity: "error",
+				code: "NO_SELECTION",
+				message:
+					"No selection. Select the Slider component (or component set) and try again.",
+			},
+		};
+	}
+
+	const node = selection[0];
+	if (node.type === "COMPONENT_SET") {
+		return { ok: true, target: node };
+	}
+	if (node.type === "COMPONENT") {
+		const parent = node.parent;
+		if (parent && parent.type === "COMPONENT_SET") {
+			return { ok: true, target: parent };
+		}
+		return { ok: true, target: node };
+	}
+
+	return {
+		ok: false,
+		issue: {
+			severity: "error",
+			code: "UNSUPPORTED_SELECTION",
+			message:
+				"Unsupported selection. Select a COMPONENT_SET (preferred) or COMPONENT for Slider.",
+			nodeId: node.id,
+			nodeName: node.name,
+			details: { type: node.type },
+		},
+	};
+}
+
+function coerceSelectedModalTarget(
+	selection: readonly SceneNode[]
+):
+	| { ok: true; target: ComponentSetNode | ComponentNode }
+	| { ok: false; issue: ModalContractIssueV1 } {
+	if (!selection || selection.length === 0) {
+		return {
+			ok: false,
+			issue: {
+				severity: "error",
+				code: "NO_SELECTION",
+				message:
+					"No selection. Select the Modal component (or component set) and try again.",
+			},
+		};
+	}
+
+	const node = selection[0];
+	if (node.type === "COMPONENT_SET") {
+		return { ok: true, target: node };
+	}
+	if (node.type === "COMPONENT") {
+		const parent = node.parent;
+		if (parent && parent.type === "COMPONENT_SET") {
+			return { ok: true, target: parent };
+		}
+		return { ok: true, target: node };
+	}
+
+	return {
+		ok: false,
+		issue: {
+			severity: "error",
+			code: "INVALID_SELECTION",
+			message: "Selection must be a COMPONENT or COMPONENT_SET.",
+			nodeId: node.id,
+			nodeName: node.name,
+		},
+	};
+}
+
+async function buildSliderContractV1(opts?: {
+	includeVariableNames?: boolean;
+}): Promise<SliderContractV1> {
+	const includeVariableNames = opts?.includeVariableNames ?? true;
+
+	const selection = figma.currentPage.selection;
+	const targetRes = coerceSelectedSliderTarget(selection);
+	const exportedAt = new Date().toISOString();
+	const fileName = figma.root.name;
+	const fileKey = safeFileKey();
+
+	if (!targetRes.ok) {
+		return {
+			schemaVersion: "soloist-os.primitives.slider.contract.v1",
+			meta: { exportedAt, fileName, fileKey },
+			source: {
+				nodeId: "",
+				nodeName: "",
+				nodeType: "COMPONENT",
+			},
+			properties: {
+				componentProperties: [],
+				variantPropsExpected: [],
+				allowedValuesByProp: {},
+			},
+			variants: [],
+			issues: [targetRes.issue],
+		};
+	}
+
+	const target = targetRes.target;
+	const issues: SliderContractIssueV1[] = [];
+
+	let expectedProps: string[] = [];
+	let allowedValuesByProp: Record<string, string[]> = {};
+	let variants: ComponentNode[] = [];
+
+	if (target.type === "COMPONENT_SET") {
+		const defs = getVariantGroupDefinitions(target);
+		expectedProps = defs.expectedProps;
+		allowedValuesByProp = defs.allowedValuesByProp;
+		variants = (target.children ?? []).filter(
+			(n): n is ComponentNode => n.type === "COMPONENT"
+		);
+	} else {
+		expectedProps = [];
+		allowedValuesByProp = {};
+		variants = [target];
+	}
+
+	const propDefs =
+		figma.currentPage.selection[0].type === "COMPONENT_SET" ||
+		figma.currentPage.selection[0].type === "COMPONENT"
+			? (figma.currentPage.selection[0] as any)
+					.componentPropertyDefinitions ?? {}
+			: {};
+	const componentPropertyNames: string[] = Object.keys(propDefs);
+
+	// Validate variant properties for Slider
+	if (target.type === "COMPONENT_SET") {
+		const requiredVariantProps = ["state", "size"];
+		for (const req of requiredVariantProps) {
+			if (!expectedProps.includes(req)) {
+				issues.push({
+					severity: "error",
+					code: "MISSING_VARIANT_PROPERTY",
+					message: `Slider component set is missing variant property "${req}".`,
+					nodeId: target.id,
+					nodeName: target.name,
+					details: { expectedProps },
+				});
+			}
+		}
+
+		// Validate state values
+		const stateValues = allowedValuesByProp["state"] || [];
+		const expectedStates = ["default", "focused", "disabled"];
+		for (const expected of expectedStates) {
+			if (!stateValues.includes(expected)) {
+				issues.push({
+					severity: "warning",
+					code: "MISSING_STATE_VALUE",
+					message: `Slider "state" variant property is missing value "${expected}".`,
+					nodeId: target.id,
+					nodeName: target.name,
+					details: { stateValues, expectedStates },
+				});
+			}
+		}
+
+		// Validate size values
+		const sizeValues = allowedValuesByProp["size"] || [];
+		const expectedSizes = ["sm", "md", "lg"];
+		for (const expected of expectedSizes) {
+			if (!sizeValues.includes(expected)) {
+				issues.push({
+					severity: "warning",
+					code: "MISSING_SIZE_VALUE",
+					message: `Slider "size" variant property is missing value "${expected}".`,
+					nodeId: target.id,
+					nodeName: target.name,
+					details: { sizeValues, expectedSizes },
+				});
+			}
+		}
+	}
+
+	// Process variants
+	const outVariants: SliderContractV1["variants"] = [];
+	for (const comp of variants) {
+		const vp = comp.variantProperties ?? null;
+		const { width, height } = comp;
+
+		const aliasIds = new Set<string>();
+		const textStyleIds = new Set<string>();
+
+		// Collect all variable aliases and text style ids
+		function walk(n: BaseNode) {
+			if ((n as any).boundVariables) {
+				const vars = (n as any).boundVariables;
+				if (vars) {
+					for (const key in vars) {
+						const value = vars[key];
+						if (Array.isArray(value)) {
+							value.forEach((v) => {
+								if (v.id) aliasIds.add(v.id);
+							});
+						} else if (
+							value &&
+							typeof value === "object" &&
+							value.id
+						) {
+							aliasIds.add(value.id);
+						}
+					}
+				}
+			}
+			if ((n as any).textStyleId) {
+				textStyleIds.add((n as any).textStyleId);
+			}
+			if ("children" in n) {
+				for (const child of (n as ChildrenMixin).children) {
+					walk(child);
+				}
+			}
+		}
+		walk(comp);
+
+		let variableNames: string[] = [];
+		let textStyleNames: string[] = [];
+
+		if (includeVariableNames && aliasIds.size > 0) {
+			const resolved = await resolveVariableNamesById(
+				Array.from(aliasIds)
+			);
+			variableNames = resolved.names.sort((a, b) => a.localeCompare(b));
+			for (const err of resolved.errors) {
+				issues.push({
+					severity: "info",
+					code: "COULD_NOT_RESOLVE_VARIABLE",
+					message: `Could not resolve variable id ${err.id}: ${err.message}`,
+					nodeId: comp.id,
+					nodeName: comp.name,
+				});
+			}
+		}
+
+		// Resolve text style names
+		if (textStyleIds.size > 0) {
+			for (const id of textStyleIds) {
+				try {
+					const style = await figma.getStyleByIdAsync(id);
+					if (style && style.type === "TEXT") {
+						textStyleNames.push(style.name);
+					}
+				} catch (e) {
+					// Ignore
+				}
+			}
+			textStyleNames.sort((a, b) => a.localeCompare(b));
+		}
+
+		outVariants.push({
+			nodeId: comp.id,
+			nodeName: comp.name,
+			variantProperties: vp,
+			size: { width, height },
+			detected: {
+				variableNames,
+				textStyleNames,
+			},
+		});
+	}
+
+	return {
+		schemaVersion: "soloist-os.primitives.slider.contract.v1",
+		meta: { exportedAt, fileName, fileKey },
+		source: {
+			nodeId: target.id,
+			nodeName: target.name,
+			nodeType: target.type,
+		},
+		properties: {
+			componentProperties: componentPropertyNames,
+			variantPropsExpected: expectedProps,
+			allowedValuesByProp: allowedValuesByProp,
+		},
+		variants: outVariants,
+		issues,
+	};
+}
+
+async function buildModalContractV1(opts?: {
+	includeVariableNames?: boolean;
+}): Promise<ModalContractV1> {
+	const includeVariableNames = opts?.includeVariableNames ?? true;
+
+	const selection = figma.currentPage.selection;
+	const targetRes = coerceSelectedModalTarget(selection);
+	const exportedAt = new Date().toISOString();
+	const fileName = figma.root.name;
+	const fileKey = safeFileKey();
+
+	if (!targetRes.ok) {
+		return {
+			schemaVersion: "soloist-os.primitives.modal.contract.v1",
+			meta: { exportedAt, fileName, fileKey },
+			source: {
+				nodeId: "",
+				nodeName: "",
+				nodeType: "COMPONENT",
+			},
+			properties: {
+				componentProperties: [],
+				variantPropsExpected: [],
+				allowedValuesByProp: {},
+			},
+			variants: [],
+			issues: [targetRes.issue],
+		};
+	}
+
+	const target = targetRes.target;
+	const issues: ModalContractIssueV1[] = [];
+
+	let expectedProps: string[] = [];
+	let allowedValuesByProp: Record<string, string[]> = {};
+	let variants: ComponentNode[] = [];
+
+	if (target.type === "COMPONENT_SET") {
+		const defs = getVariantGroupDefinitions(target);
+		expectedProps = defs.expectedProps;
+		allowedValuesByProp = defs.allowedValuesByProp;
+		variants = (target.children ?? []).filter(
+			(n): n is ComponentNode => n.type === "COMPONENT"
+		);
+	} else {
+		expectedProps = [];
+		allowedValuesByProp = {};
+		variants = [target];
+	}
+
+	const propDefs =
+		figma.currentPage.selection[0].type === "COMPONENT_SET" ||
+		figma.currentPage.selection[0].type === "COMPONENT"
+			? (figma.currentPage.selection[0] as any)
+					.componentPropertyDefinitions ?? {}
+			: {};
+	const componentPropertyNames: string[] = Object.keys(propDefs);
+
+	// Validate variant properties for Modal
+	if (target.type === "COMPONENT_SET") {
+		const requiredVariantProps = ["size"]; // Minimal for now
+		for (const req of requiredVariantProps) {
+			if (!expectedProps.includes(req)) {
+				issues.push({
+					severity: "warning",
+					code: "MISSING_VARIANT_PROPERTY",
+					message: `Modal component set is missing variant property "${req}".`,
+					nodeId: target.id,
+					nodeName: target.name,
+					details: { expectedProps },
+				});
+			}
+		}
+
+		// Validate size values
+		const sizeValues = allowedValuesByProp["size"] || [];
+		const expectedSizes = ["sm", "md", "lg"];
+		for (const expected of expectedSizes) {
+			if (!sizeValues.includes(expected)) {
+				issues.push({
+					severity: "info",
+					code: "MISSING_SIZE_VALUE",
+					message: `Modal "size" variant property is missing value "${expected}".`,
+					nodeId: target.id,
+					nodeName: target.name,
+					details: { sizeValues, expectedSizes },
+				});
+			}
+		}
+	}
+
+	// Process variants
+	const outVariants: ModalContractV1["variants"] = [];
+	for (const comp of variants) {
+		const vp = comp.variantProperties ?? null;
+		const { width, height } = comp;
+
+		const aliasIds = new Set<string>();
+		const textStyleIds = new Set<string>();
+
+		// Collect all variable aliases and text style ids
+		function walk(n: BaseNode) {
+			if ((n as any).boundVariables) {
+				const vars = (n as any).boundVariables;
+				if (vars) {
+					for (const key in vars) {
+						const value = vars[key];
+						if (Array.isArray(value)) {
+							value.forEach((v) => {
+								if (v.id) aliasIds.add(v.id);
+							});
+						} else if (
+							value &&
+							typeof value === "object" &&
+							value.id
+						) {
+							aliasIds.add(value.id);
+						}
+					}
+				}
+			}
+			if ((n as any).textStyleId) {
+				textStyleIds.add((n as any).textStyleId);
+			}
+			if ("children" in n) {
+				for (const child of (n as ChildrenMixin).children) {
+					walk(child);
+				}
+			}
+		}
+		walk(comp);
+
+		let variableNames: string[] = [];
+		let textStyleNames: string[] = [];
+
+		if (includeVariableNames && aliasIds.size > 0) {
+			const resolved = await resolveVariableNamesById(
+				Array.from(aliasIds)
+			);
+			variableNames = resolved.names.sort((a, b) => a.localeCompare(b));
+			for (const err of resolved.errors) {
+				issues.push({
+					severity: "info",
+					code: "COULD_NOT_RESOLVE_VARIABLE",
+					message: `Could not resolve variable id ${err.id}: ${err.message}`,
+					nodeId: comp.id,
+					nodeName: comp.name,
+				});
+			}
+		}
+
+		// Resolve text style names
+		if (textStyleIds.size > 0) {
+			for (const id of textStyleIds) {
+				try {
+					const style = await figma.getStyleByIdAsync(id);
+					if (style && style.type === "TEXT") {
+						textStyleNames.push(style.name);
+					}
+				} catch (e) {
+					// Ignore
+				}
+			}
+			textStyleNames.sort((a, b) => a.localeCompare(b));
+		}
+
+		outVariants.push({
+			nodeId: comp.id,
+			nodeName: comp.name,
+			variantProperties: vp,
+			size: { width, height },
+			detected: {
+				variableNames,
+				textStyleNames,
+			},
+		});
+	}
+
+	return {
+		schemaVersion: "soloist-os.primitives.modal.contract.v1",
+		meta: { exportedAt, fileName, fileKey },
+		source: {
+			nodeId: target.id,
+			nodeName: target.name,
+			nodeType: target.type,
+		},
+		properties: {
+			componentProperties: componentPropertyNames,
+			variantPropsExpected: expectedProps,
+			allowedValuesByProp,
+		},
+		variants: outVariants,
+		issues,
+	};
+}
+
+function coerceSelectedSwitchTarget(
+	selection: readonly SceneNode[]
+):
+	| { ok: true; target: ComponentSetNode | ComponentNode }
+	| { ok: false; issue: SwitchContractIssueV1 } {
+	if (!selection || selection.length === 0) {
+		return {
+			ok: false,
+			issue: {
+				severity: "error",
+				code: "NO_SELECTION",
+				message:
+					"No selection. Select the Switch component (or component set) and try again.",
+			},
+		};
+	}
+
+	const node = selection[0];
+	if (node.type === "COMPONENT_SET") {
+		return { ok: true, target: node };
+	}
+	if (node.type === "COMPONENT") {
+		const parent = node.parent;
+		if (parent && parent.type === "COMPONENT_SET") {
+			return { ok: true, target: parent };
+		}
+		return { ok: true, target: node };
+	}
+
+	return {
+		ok: false,
+		issue: {
+			severity: "error",
+			code: "UNSUPPORTED_SELECTION",
+			message:
+				"Unsupported selection. Select a COMPONENT_SET (preferred) or COMPONENT for Switch.",
+			nodeId: node.id,
+			nodeName: node.name,
+			details: { type: node.type },
+		},
+	};
+}
+
+async function buildSwitchContractV1(opts?: {
+	includeVariableNames?: boolean;
+}): Promise<SwitchContractV1> {
+	const includeVariableNames = opts?.includeVariableNames ?? true;
+
+	const selection = figma.currentPage.selection;
+	const targetRes = coerceSelectedSwitchTarget(selection);
+	const exportedAt = new Date().toISOString();
+	const fileName = figma.root.name;
+	const fileKey = safeFileKey();
+
+	if (!targetRes.ok) {
+		return {
+			schemaVersion: "soloist-os.primitives.switch.contract.v1",
+			meta: { exportedAt, fileName, fileKey },
+			source: {
+				nodeId: "",
+				nodeName: "",
+				nodeType: "COMPONENT",
+			},
+			properties: {
+				componentProperties: [],
+				variantPropsExpected: [],
+				allowedValuesByProp: {},
+			},
+			variants: [],
+			issues: [targetRes.issue],
+		};
+	}
+
+	const target = targetRes.target;
+	const issues: SwitchContractIssueV1[] = [];
+
+	let expectedProps: string[] = [];
+	let allowedValuesByProp: Record<string, string[]> = {};
+	let variants: ComponentNode[] = [];
+
+	if (target.type === "COMPONENT_SET") {
+		const defs = getVariantGroupDefinitions(target);
+		expectedProps = defs.expectedProps;
+		allowedValuesByProp = defs.allowedValuesByProp;
+		variants = (target.children ?? []).filter(
+			(n): n is ComponentNode => n.type === "COMPONENT"
+		);
+	} else {
+		expectedProps = [];
+		allowedValuesByProp = {};
+		variants = [target];
+	}
+
+	const propDefs =
+		figma.currentPage.selection[0].type === "COMPONENT_SET" ||
+		figma.currentPage.selection[0].type === "COMPONENT"
+			? (figma.currentPage.selection[0] as any)
+					.componentPropertyDefinitions ?? {}
+			: {};
+	const componentPropertyNames: string[] = Object.keys(propDefs);
+
+	// Validate variant properties for Switch
+	if (target.type === "COMPONENT_SET") {
+		const requiredVariantProps = ["checked", "state", "size"];
+		for (const req of requiredVariantProps) {
+			if (!expectedProps.includes(req)) {
+				issues.push({
+					severity: "error",
+					code: "MISSING_VARIANT_PROPERTY",
+					message: `Switch component set is missing variant property "${req}".`,
+					nodeId: target.id,
+					nodeName: target.name,
+					details: { expectedProps },
+				});
+			}
+		}
+
+		// Validate checked values
+		const checkedValues = allowedValuesByProp["checked"] || [];
+		const expectedChecked = ["true", "false"];
+		for (const expected of expectedChecked) {
+			if (!checkedValues.includes(expected)) {
+				issues.push({
+					severity: "warning",
+					code: "MISSING_CHECKED_VALUE",
+					message: `Switch "checked" variant property is missing value "${expected}".`,
+					nodeId: target.id,
+					nodeName: target.name,
+					details: { checkedValues, expectedChecked },
+				});
+			}
+		}
+
+		// Validate state values
+		const stateValues = allowedValuesByProp["state"] || [];
+		const expectedStates = ["default", "focused", "disabled"];
+		for (const expected of expectedStates) {
+			if (!stateValues.includes(expected)) {
+				issues.push({
+					severity: "warning",
+					code: "MISSING_STATE_VALUE",
+					message: `Switch "state" variant property is missing value "${expected}".`,
+					nodeId: target.id,
+					nodeName: target.name,
+					details: { stateValues, expectedStates },
+				});
+			}
+		}
+
+		// Validate size values
+		const sizeValues = allowedValuesByProp["size"] || [];
+		const expectedSizes = ["sm", "md", "lg"];
+		for (const expected of expectedSizes) {
+			if (!sizeValues.includes(expected)) {
+				issues.push({
+					severity: "warning",
+					code: "MISSING_SIZE_VALUE",
+					message: `Switch "size" variant property is missing value "${expected}".`,
+					nodeId: target.id,
+					nodeName: target.name,
+					details: { sizeValues, expectedSizes },
+				});
+			}
+		}
+	}
+
+	// Process variants
+	const outVariants: SwitchContractV1["variants"] = [];
+	for (const comp of variants) {
+		const vp = comp.variantProperties ?? null;
+		const { width, height } = comp;
+
+		const aliasIds = new Set<string>();
+		const textStyleIds = new Set<string>();
+
+		// Collect all variable aliases and text style ids
+		function walk(n: BaseNode) {
+			if ((n as any).boundVariables) {
+				const vars = (n as any).boundVariables;
+				if (vars) {
+					for (const key in vars) {
+						const value = vars[key];
+						if (Array.isArray(value)) {
+							value.forEach((v) => {
+								if (v.id) aliasIds.add(v.id);
+							});
+						} else if (
+							value &&
+							typeof value === "object" &&
+							value.id
+						) {
+							aliasIds.add(value.id);
+						}
+					}
+				}
+			}
+			if ((n as any).textStyleId) {
+				textStyleIds.add((n as any).textStyleId);
+			}
+			if ("children" in n) {
+				for (const child of (n as ChildrenMixin).children) {
+					walk(child);
+				}
+			}
+		}
+		walk(comp);
+
+		let variableNames: string[] = [];
+		let textStyleNames: string[] = [];
+
+		if (includeVariableNames && aliasIds.size > 0) {
+			const resolved = await resolveVariableNamesById(
+				Array.from(aliasIds)
+			);
+			variableNames = resolved.names.sort((a, b) => a.localeCompare(b));
+			for (const err of resolved.errors) {
+				issues.push({
+					severity: "info",
+					code: "COULD_NOT_RESOLVE_VARIABLE",
+					message: `Could not resolve variable id ${err.id}: ${err.message}`,
+					nodeId: comp.id,
+					nodeName: comp.name,
+				});
+			}
+		}
+
+		// Resolve text style names
+		if (textStyleIds.size > 0) {
+			for (const id of textStyleIds) {
+				try {
+					const style = await figma.getStyleByIdAsync(id);
+					if (style && style.type === "TEXT") {
+						textStyleNames.push(style.name);
+					}
+				} catch (e) {
+					// Ignore
+				}
+			}
+			textStyleNames.sort((a, b) => a.localeCompare(b));
+		}
+
+		outVariants.push({
+			nodeId: comp.id,
+			nodeName: comp.name,
+			variantProperties: vp,
+			size: { width, height },
+			detected: {
+				variableNames,
+				textStyleNames,
+			},
+		});
+	}
+
+	return {
+		schemaVersion: "soloist-os.primitives.switch.contract.v1",
+		meta: { exportedAt, fileName, fileKey },
+		source: {
+			nodeId: target.id,
+			nodeName: target.name,
+			nodeType: target.type,
+		},
+		properties: {
+			componentProperties: componentPropertyNames,
+			variantPropsExpected: expectedProps,
+			allowedValuesByProp,
+		},
+		variants: outVariants,
+		issues,
+	};
+}
+
+function coerceSelectedTextFieldTarget(
+	selection: readonly SceneNode[]
+):
+	| { ok: true; target: ComponentSetNode | ComponentNode }
+	| { ok: false; issue: TextFieldContractIssueV1 } {
+	if (!selection || selection.length === 0) {
+		return {
+			ok: false,
+			issue: {
+				severity: "error",
+				code: "NO_SELECTION",
+				message:
+					"No selection. Select the TextField component (or component set) and try again.",
+			},
+		};
+	}
+
+	const node = selection[0];
+	if (node.type === "COMPONENT_SET") {
+		return { ok: true, target: node };
+	}
+	if (node.type === "COMPONENT") {
+		const parent = node.parent;
+		if (parent && parent.type === "COMPONENT_SET") {
+			return { ok: true, target: parent };
+		}
+		return { ok: true, target: node };
+	}
+
+	return {
+		ok: false,
+		issue: {
+			severity: "error",
+			code: "UNSUPPORTED_SELECTION",
+			message:
+				"Unsupported selection. Select a COMPONENT_SET (preferred) or COMPONENT for TextField.",
+			nodeId: node.id,
+			nodeName: node.name,
+			details: { type: node.type },
+		},
+	};
+}
+
 async function handleExportIconContract(
 	msg: Extract<PluginMessage, { type: "export-icon-contract" }>
 ): Promise<void> {
@@ -1582,18 +3154,33 @@ async function handleExportIconContract(
 		const contract = await buildIconContractV1({
 			includeVariableNames: msg.payload?.includeVariableNames ?? true,
 		});
-		figma.ui.postMessage({
-			type: "icon-contract-ready",
-			payload: contract,
-		});
+
 		const errorCount = contract.issues.filter(
 			(i) => i.severity === "error"
 		).length;
 		const issueCount = contract.issues.length;
+
+		if (errorCount > 0) {
+			figma.notify(
+				`EXPORT FAILED: ${errorCount} critical error(s) found. Fix drift in Figma before exporting.`,
+				{ error: true }
+			);
+			figma.ui.postMessage({
+				type: "icon-contract-error",
+				message: `${errorCount} critical error(s) found in Icon contract. Export blocked.`,
+			});
+			return;
+		}
+
+		figma.ui.postMessage({
+			type: "icon-contract-ready",
+			payload: contract,
+		});
+
 		if (issueCount > 0) {
 			figma.notify(
-				`Icon contract exported with ${issueCount} issue(s) (${errorCount} error). See Export panel.`,
-				{ error: errorCount > 0 }
+				`Icon contract exported with ${issueCount} warning(s).`,
+				{ error: false }
 			);
 		} else {
 			figma.notify("Icon contract exported.");
@@ -1618,18 +3205,33 @@ async function handleExportButtonContract(
 		const contract = await buildButtonContractV1({
 			includeVariableNames: msg.payload?.includeVariableNames ?? true,
 		});
-		figma.ui.postMessage({
-			type: "button-contract-ready",
-			payload: contract,
-		});
+
 		const errorCount = contract.issues.filter(
 			(i) => i.severity === "error"
 		).length;
 		const issueCount = contract.issues.length;
+
+		if (errorCount > 0) {
+			figma.notify(
+				`EXPORT FAILED: ${errorCount} critical error(s) found. Fix drift in Figma before exporting.`,
+				{ error: true }
+			);
+			figma.ui.postMessage({
+				type: "button-contract-error",
+				message: `${errorCount} critical error(s) found in Button contract. Export blocked.`,
+			});
+			return;
+		}
+
+		figma.ui.postMessage({
+			type: "button-contract-ready",
+			payload: contract,
+		});
+
 		if (issueCount > 0) {
 			figma.notify(
-				`Button contract exported with ${issueCount} issue(s) (${errorCount} error). See Export panel.`,
-				{ error: errorCount > 0 }
+				`Button contract exported with ${issueCount} warning(s).`,
+				{ error: false }
 			);
 		} else {
 			figma.notify("Button contract exported.");
@@ -1641,6 +3243,210 @@ async function handleExportButtonContract(
 		});
 		figma.ui.postMessage({
 			type: "button-contract-error",
+			message: e?.message ?? String(e),
+		});
+	}
+}
+
+async function handleExportTextFieldContract(
+	msg: Extract<PluginMessage, { type: "export-textfield-contract" }>
+): Promise<void> {
+	try {
+		figma.notify("Exporting TextField contract...");
+		const contract = await buildTextFieldContractV1({
+			includeVariableNames: msg.payload?.includeVariableNames ?? true,
+		});
+
+		const errorCount = contract.issues.filter(
+			(i) => i.severity === "error"
+		).length;
+		const issueCount = contract.issues.length;
+
+		if (errorCount > 0) {
+			figma.notify(
+				`EXPORT FAILED: ${errorCount} critical error(s) found. Fix drift in Figma before exporting.`,
+				{ error: true }
+			);
+			figma.ui.postMessage({
+				type: "textfield-contract-error",
+				message: `${errorCount} critical error(s) found in TextField contract. Export blocked.`,
+			});
+			return;
+		}
+
+		figma.ui.postMessage({
+			type: "textfield-contract-ready",
+			payload: contract,
+		});
+
+		if (issueCount > 0) {
+			figma.notify(
+				`TextField contract exported with ${issueCount} warning(s).`,
+				{ error: false }
+			);
+		} else {
+			figma.notify("TextField contract exported.");
+		}
+	} catch (e: any) {
+		console.error("PLUGIN: Error exporting TextField contract", e);
+		figma.notify("TextField contract export error: " + e.message, {
+			error: true,
+		});
+		figma.ui.postMessage({
+			type: "textfield-contract-error",
+			message: e?.message ?? String(e),
+		});
+	}
+}
+
+async function handleExportSwitchContract(
+	msg: Extract<PluginMessage, { type: "export-switch-contract" }>
+): Promise<void> {
+	try {
+		figma.notify("Exporting Switch contract...");
+		const contract = await buildSwitchContractV1({
+			includeVariableNames: msg.payload?.includeVariableNames ?? true,
+		});
+
+		const errorCount = contract.issues.filter(
+			(i) => i.severity === "error"
+		).length;
+		const issueCount = contract.issues.length;
+
+		if (errorCount > 0) {
+			figma.notify(
+				`EXPORT FAILED: ${errorCount} critical error(s) found. Fix drift in Figma before exporting.`,
+				{ error: true }
+			);
+			figma.ui.postMessage({
+				type: "switch-contract-error",
+				message: `${errorCount} critical error(s) found in Switch contract. Export blocked.`,
+			});
+			return;
+		}
+
+		figma.ui.postMessage({
+			type: "switch-contract-ready",
+			payload: contract,
+		});
+
+		if (issueCount > 0) {
+			figma.notify(
+				`Switch contract exported with ${issueCount} warning(s).`,
+				{ error: false }
+			);
+		} else {
+			figma.notify("Switch contract exported.");
+		}
+	} catch (e: any) {
+		console.error("PLUGIN: Error exporting Switch contract", e);
+		figma.notify("Switch contract export error: " + e.message, {
+			error: true,
+		});
+		figma.ui.postMessage({
+			type: "switch-contract-error",
+			message: e?.message ?? String(e),
+		});
+	}
+}
+
+async function handleExportSliderContract(
+	msg: Extract<PluginMessage, { type: "export-slider-contract" }>
+): Promise<void> {
+	try {
+		figma.notify("Exporting Slider contract...");
+		const contract = await buildSliderContractV1({
+			includeVariableNames: msg.payload?.includeVariableNames ?? true,
+		});
+
+		const errorCount = contract.issues.filter(
+			(i) => i.severity === "error"
+		).length;
+		const issueCount = contract.issues.length;
+
+		if (errorCount > 0) {
+			figma.notify(
+				`EXPORT FAILED: ${errorCount} critical error(s) found. Fix drift in Figma before exporting.`,
+				{ error: true }
+			);
+			figma.ui.postMessage({
+				type: "slider-contract-error",
+				message: `${errorCount} critical error(s) found in Slider contract. Export blocked.`,
+			});
+			return;
+		}
+
+		figma.ui.postMessage({
+			type: "slider-contract-ready",
+			payload: contract,
+		});
+
+		if (issueCount > 0) {
+			figma.notify(
+				`Slider contract exported with ${issueCount} warning(s).`,
+				{ error: false }
+			);
+		} else {
+			figma.notify("Slider contract exported.");
+		}
+	} catch (e: any) {
+		console.error("PLUGIN: Error exporting Slider contract", e);
+		figma.notify("Slider contract export error: " + e.message, {
+			error: true,
+		});
+		figma.ui.postMessage({
+			type: "slider-contract-error",
+			message: e?.message ?? String(e),
+		});
+	}
+}
+
+async function handleExportModalContract(
+	msg: Extract<PluginMessage, { type: "export-modal-contract" }>
+): Promise<void> {
+	try {
+		figma.notify("Exporting Modal contract...");
+		const contract = await buildModalContractV1({
+			includeVariableNames: msg.payload?.includeVariableNames ?? true,
+		});
+
+		const errorCount = contract.issues.filter(
+			(i) => i.severity === "error"
+		).length;
+		const issueCount = contract.issues.length;
+
+		if (errorCount > 0) {
+			figma.notify(
+				`EXPORT FAILED: ${errorCount} critical error(s) found. Fix drift in Figma before exporting.`,
+				{ error: true }
+			);
+			figma.ui.postMessage({
+				type: "modal-contract-error",
+				message: `${errorCount} critical error(s) found in Modal contract. Export blocked.`,
+			});
+			return;
+		}
+
+		figma.ui.postMessage({
+			type: "modal-contract-ready",
+			payload: contract,
+		});
+
+		if (issueCount > 0) {
+			figma.notify(
+				`Modal contract exported with ${issueCount} warning(s).`,
+				{ error: false }
+			);
+		} else {
+			figma.notify("Modal contract exported.");
+		}
+	} catch (e: any) {
+		console.error("PLUGIN: Error exporting Modal contract", e);
+		figma.notify("Modal contract export error: " + e.message, {
+			error: true,
+		});
+		figma.ui.postMessage({
+			type: "modal-contract-error",
 			message: e?.message ?? String(e),
 		});
 	}
@@ -4190,12 +5996,195 @@ async function handleApplyTextFieldBuildNotesToNode(
 			},
 		});
 	} catch (e: any) {
-		console.error("PLUGIN: Error applying textfield build notes to node", e);
+		console.error(
+			"PLUGIN: Error applying textfield build notes to node",
+			e
+		);
 		figma.notify("TextField notes error: " + (e?.message ?? String(e)), {
 			error: true,
 		});
 		figma.ui.postMessage({
 			type: "textfield-notes-error",
+			message: e?.message ?? String(e),
+		});
+	}
+}
+
+async function handleApplySwitchBuildNotesToNode(
+	msg: Extract<PluginMessage, { type: "apply-switch-build-notes-to-node" }>
+): Promise<void> {
+	try {
+		const nodeId = msg.payload?.nodeId;
+		if (!nodeId || typeof nodeId !== "string") {
+			figma.ui.postMessage({
+				type: "switch-notes-error",
+				message: "Missing nodeId.",
+			});
+			return;
+		}
+
+		const raw = await figma.getNodeByIdAsync(nodeId);
+		if (!raw) {
+			figma.notify(`Node not found: ${nodeId}`, { error: true });
+			figma.ui.postMessage({
+				type: "switch-notes-error",
+				message: `Node not found: ${nodeId}`,
+			});
+			return;
+		}
+
+		const text = findTextTargetWithin(raw as BaseNode);
+		if (!text) {
+			figma.notify(
+				"Target node has no TEXT layer to write into. Point to a TEXT node or a component/frame containing one.",
+				{ error: true }
+			);
+			figma.ui.postMessage({
+				type: "switch-notes-error",
+				message:
+					"Target has no TEXT layer. Provide a TEXT node id, or a container that contains a text layer.",
+			});
+			return;
+		}
+
+		const mode = msg.payload?.mode ?? "replace";
+		await writeSwitchNotesIntoTextNode({ text, mode });
+		figma.notify(`Wrote Switch notes into text: ${text.name}`);
+		figma.ui.postMessage({
+			type: "switch-notes-applied",
+			payload: {
+				nodeId: (text as any).id,
+				nodeName: (text as any).name,
+				nodeType: (text as any).type,
+			},
+		});
+	} catch (e: any) {
+		console.error("PLUGIN: Error applying switch build notes to node", e);
+		figma.notify("Switch notes error: " + (e?.message ?? String(e)), {
+			error: true,
+		});
+		figma.ui.postMessage({
+			type: "switch-notes-error",
+			message: e?.message ?? String(e),
+		});
+	}
+}
+
+async function handleApplySliderBuildNotesToNode(
+	msg: Extract<PluginMessage, { type: "apply-slider-build-notes-to-node" }>
+): Promise<void> {
+	try {
+		const nodeId = msg.payload?.nodeId;
+		if (!nodeId || typeof nodeId !== "string") {
+			figma.ui.postMessage({
+				type: "slider-notes-error",
+				message: "Missing nodeId.",
+			});
+			return;
+		}
+
+		const raw = await figma.getNodeByIdAsync(nodeId);
+		if (!raw) {
+			figma.notify(`Node not found: ${nodeId}`, { error: true });
+			figma.ui.postMessage({
+				type: "slider-notes-error",
+				message: `Node not found: ${nodeId}`,
+			});
+			return;
+		}
+
+		const text = findTextTargetWithin(raw as BaseNode);
+		if (!text) {
+			figma.notify(
+				"Target node has no TEXT layer to write into. Point to a TEXT node or a component/frame containing one.",
+				{ error: true }
+			);
+			figma.ui.postMessage({
+				type: "slider-notes-error",
+				message:
+					"Target has no TEXT layer. Provide a TEXT node id, or a container that contains a text layer.",
+			});
+			return;
+		}
+
+		const mode = msg.payload?.mode ?? "replace";
+		await writeSliderNotesIntoTextNode({ text, mode });
+		figma.notify(`Wrote Slider notes into text: ${text.name}`);
+		figma.ui.postMessage({
+			type: "slider-notes-applied",
+			payload: {
+				nodeId: (text as any).id,
+				nodeName: (text as any).name,
+				nodeType: (text as any).type,
+			},
+		});
+	} catch (e: any) {
+		console.error("PLUGIN: Error applying slider build notes to node", e);
+		figma.notify("Slider notes error: " + (e?.message ?? String(e)), {
+			error: true,
+		});
+		figma.ui.postMessage({
+			type: "slider-notes-error",
+			message: e?.message ?? String(e),
+		});
+	}
+}
+
+async function handleApplyModalBuildNotesToNode(
+	msg: Extract<PluginMessage, { type: "apply-modal-build-notes-to-node" }>
+): Promise<void> {
+	try {
+		const nodeId = msg.payload?.nodeId;
+		if (!nodeId || typeof nodeId !== "string") {
+			figma.ui.postMessage({
+				type: "modal-notes-error",
+				message: "Missing nodeId.",
+			});
+			return;
+		}
+
+		const raw = await figma.getNodeByIdAsync(nodeId);
+		if (!raw) {
+			figma.notify(`Node not found: ${nodeId}`, { error: true });
+			figma.ui.postMessage({
+				type: "modal-notes-error",
+				message: `Node not found: ${nodeId}`,
+			});
+			return;
+		}
+
+		const text = findTextTargetWithin(raw as BaseNode);
+		if (!text) {
+			figma.notify(
+				"Target node has no TEXT layer to write into. Point to a TEXT node or a component/frame containing one.",
+				{ error: true }
+			);
+			figma.ui.postMessage({
+				type: "modal-notes-error",
+				message:
+					"Target has no TEXT layer. Provide a TEXT node id, or a container that contains a text layer.",
+			});
+			return;
+		}
+
+		const mode = msg.payload?.mode ?? "replace";
+		await writeModalNotesIntoTextNode({ text, mode });
+		figma.notify(`Wrote Modal notes into text: ${text.name}`);
+		figma.ui.postMessage({
+			type: "modal-notes-applied",
+			payload: {
+				nodeId: (text as any).id,
+				nodeName: (text as any).name,
+				nodeType: (text as any).type,
+			},
+		});
+	} catch (e: any) {
+		console.error("PLUGIN: Error applying modal build notes to node", e);
+		figma.notify("Modal notes error: " + (e?.message ?? String(e)), {
+			error: true,
+		});
+		figma.ui.postMessage({
+			type: "modal-notes-error",
 			message: e?.message ?? String(e),
 		});
 	}
@@ -4236,6 +6225,14 @@ async function onUiMessage(msg: PluginMessage): Promise<void> {
 			return handleExportIconContract(msg);
 		case "export-button-contract":
 			return handleExportButtonContract(msg);
+		case "export-textfield-contract":
+			return handleExportTextFieldContract(msg);
+		case "export-switch-contract":
+			return handleExportSwitchContract(msg);
+		case "export-slider-contract":
+			return handleExportSliderContract(msg);
+		case "export-modal-contract":
+			return handleExportModalContract(msg);
 		case "export-icon-glyphs":
 			return handleExportIconGlyphs(msg);
 		case "apply-annotations-snapshot":
@@ -4248,6 +6245,12 @@ async function onUiMessage(msg: PluginMessage): Promise<void> {
 			return handleApplyButtonBuildNotesToNode(msg);
 		case "apply-textfield-build-notes-to-node":
 			return handleApplyTextFieldBuildNotesToNode(msg);
+		case "apply-switch-build-notes-to-node":
+			return handleApplySwitchBuildNotesToNode(msg);
+		case "apply-slider-build-notes-to-node":
+			return handleApplySliderBuildNotesToNode(msg);
+		case "apply-modal-build-notes-to-node":
+			return handleApplyModalBuildNotesToNode(msg);
 		case "resize-ui":
 			handleResizeUi(msg);
 			return;
